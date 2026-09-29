@@ -62,3 +62,7 @@ is an independent model from published specs, not a copy of NI's or E-mu's code.
 - Out 1-2: a 4 kHz burst is >15 dB louder in its first millisecond than once the filter has closed.
 - Decay 100 ms: the tone is below -60 dB after 300 ms; with decay off it sustains.
 - Mix 0 and Bypass are bit-exact dry; every preset produces finite, bounded output.
+- Slow Q-Link turns (read, add 1/127, write back) step through all 20 Tune positions and all 4 Outputs. The plugin
+  returns the host's exact position rather than the rounded step, the fix MPC plugins need for stepped controls.
+- Moving Output or taking Tune off 0 in Pitch mode mid-note makes no sample jump larger than the signal's own
+  (before this fix: jumps of ~0.22, audible clicks).

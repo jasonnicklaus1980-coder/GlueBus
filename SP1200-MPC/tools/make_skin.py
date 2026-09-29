@@ -256,7 +256,7 @@ def build():
     for fn in ("Q-Links.json", "Q-Links - 8by1.json"): json.dump(q, open(os.path.join(OUT, fn), "w"), indent=4)
     open(os.path.join(SKIN_DIR, "version.xml"), "w").write(
         "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>gluebus.vst.sp1200</identifier>\n"
-        "\t<version>1.0.0.0</version>\n</plugincontent>\n")
+        "\t<version>1.0.1.0</version>\n</plugincontent>\n")
     print("skin written to", SKIN_DIR)
 
 # ---------- preview (typical values; MPC draws the live name/value labels itself) ----------

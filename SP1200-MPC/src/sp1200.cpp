@@ -41,6 +41,7 @@ constexpr float  kSsmRes    = 0.55f;     // ...fixed low resonance set by the fe
 constexpr int    kPsBits    = 12, kPsLen = 1 << kPsBits, kPsMask = kPsLen - 1;   // pitch-mode sample memory (157 ms)
 constexpr float  kPsWin     = 2048.f;    // pitch-mode splice window in SP samples (79 ms)
 constexpr float  kPsXfade   = 0.2f;      // share of the window spent crossfading between the two read heads
+constexpr float  kPsFade    = 0.0038f;   // per-SP-sample step of the tune-0 <-> read-heads fade (~10 ms)
 
 const char* const kChannelNames[] { "Out 1-2 Dyn", "Out 3-4", "Out 5-6", "Out 7-8" };
 const char* const kModeNames[]    { "45>33 Grit", "Pitch" };
@@ -184,14 +185,17 @@ struct Plugin
     AEffect fx {};
     audioMasterCallback master = nullptr;
 
-    std::atomic<float> v[P_COUNT];     // plain (un-normalised) parameter values
+    std::atomic<float> v[P_COUNT];     // plain (un-normalised) parameter values, used by the DSP and display
+    std::atomic<float> nv[P_COUNT];    // exact normalised positions the host set. Returned unrounded, so small
+                                       // Q-Link / touch moves on stepped sliders (Tune, Output) accumulate
+                                       // instead of being rounded back to the same step
     int program = 0;
     float sr = 44100.f;
 
     // DSP state (audio thread only)
     double adcPhase = 0.0, dacPhase = 0.0;
     float held[2] {}, dac[2] {};
-    float mem[2][kPsLen] {};  int wpos = 0;  float psDelay = 0.f;
+    float mem[2][kPsLen] {};  int wpos = 0;  float psDelay = 0.f, psMix = 0.f;
     float envFast = 0.f, envSlow = 0.f, decayGain = 1.f, dynEnv = 0.f;
     int holdoff = 0;
     Ssm2044 filt[2];
@@ -199,14 +203,21 @@ struct Plugin
     int lastChannel = -1;
     bool snap = true;
 
-    Plugin() { for (int i = 0; i < P_COUNT; ++i) v[i].store (kParams[i].def); }
+    Plugin() { for (int i = 0; i < P_COUNT; ++i) setPlain (i, kParams[i].def); }
+
+    void setPlain (int i, float plain) { v[i].store (plain); nv[i].store (toNorm (kParams[i], plain)); }
+    void setNorm (int i, float norm)
+    {
+        norm = clampf (norm, 0.f, 1.f);
+        nv[i].store (norm); v[i].store (toPlain (kParams[i], norm));
+    }
 
     void applyPreset (int i)
     {
         if (i < 0 || i >= kNumPresets) return;
         program = i;
-        for (int p = 0; p < P_COUNT; ++p) if (p != P_BYPASS) v[p].store (kParams[p].def);
-        for (int k = 0; k < kPresets[i].n; ++k) v[kPresets[i].ov[k].id].store (kPresets[i].ov[k].v);
+        for (int p = 0; p < P_COUNT; ++p) if (p != P_BYPASS) setPlain (p, kParams[p].def);
+        for (int k = 0; k < kPresets[i].n; ++k) setPlain (kPresets[i].ov[k].id, kPresets[i].ov[k].v);
     }
 
     // Tell the host every parameter changed (after a preset load), then ask it to refresh its display.
@@ -214,7 +225,7 @@ struct Plugin
     {
         if (master == nullptr) return;
         for (int i = 0; i < P_COUNT; ++i)
-            master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, toNorm (kParams[i], v[i].load()));
+            master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, nv[i].load());
         master (&fx, 42 /* audioMasterUpdateDisplay */, 0, 0, nullptr, 0.f);
     }
 
@@ -222,7 +233,7 @@ struct Plugin
     {
         adcPhase = dacPhase = 0.0;
         for (int c = 0; c < 2; ++c) { held[c] = dac[c] = 0.f; filt[c].clear(); std::memset (mem[c], 0, sizeof mem[c]); }
-        wpos = 0; psDelay = 0.f;
+        wpos = 0; psDelay = 0.f; psMix = 0.f;
         envFast = envSlow = 0.f; decayGain = 1.f; dynEnv = 0.f; holdoff = 0;
         snap = true; lastChannel = -1;
     }
@@ -269,11 +280,10 @@ struct Plugin
         const float slowK   = std::exp (-1.f / (0.08f * sr));
         const int   holdN   = (int) (0.04f * sr);
 
-        if (channel != lastChannel)
+        if (channel != lastChannel)   // filter state is kept (clearing it would click); only the cutoff changes
         {
-            filt[0].clear(); filt[1].clear();
-            if (channel == 1) { filt[0].setCutoff (kOut34Hz, sr); filt[1].setCutoff (kOut34Hz, sr); }
-            if (channel == 2) { filt[0].setCutoff (kOut56Hz, sr); filt[1].setCutoff (kOut56Hz, sr); }
+            const float hz = channel == 1 ? kOut34Hz : (channel == 2 ? kOut56Hz : kDynTopHz);
+            filt[0].setCutoff (hz, sr); filt[1].G = filt[0].G;
             lastChannel = channel;
         }
 
@@ -313,7 +323,10 @@ struct Plugin
                 if (pitchMode)
                 {
                     mem[0][wpos] = q12 (x[0]); mem[1][wpos] = q12 (x[1]);
-                    if (! retune) { smp[0] = mem[0][wpos]; smp[1] = mem[1][wpos]; }
+                    // tune 0 plays the incoming sample directly; moving Tune off 0 (or back) fades to the
+                    // read heads over ~10 ms instead of switching, which would click
+                    psMix += ((retune ? 1.f : 0.f) - psMix) * kPsFade;
+                    if (psMix < 1e-4f) { psMix = 0.f; smp[0] = mem[0][wpos]; smp[1] = mem[1][wpos]; }
                     else
                     {
                         // two drop-sample read heads (no interpolation) sweeping through memory; one plays solo
@@ -325,7 +338,8 @@ struct Plugin
                         const int r1 = (wpos - (int) psDelay) & kPsMask, r2 = (wpos - (int) d2) & kPsMask;
                         const float tri = 1.f - std::fabs (2.f * psDelay / kPsWin - 1.f);
                         const float g1 = clampf ((tri - 0.5f) / kPsXfade + 0.5f, 0.f, 1.f), g2 = 1.f - g1;
-                        for (int c = 0; c < 2; ++c) smp[c] = mem[c][r1] * g1 + mem[c][r2] * g2;
+                        for (int c = 0; c < 2; ++c)
+                            smp[c] = mem[c][wpos] + psMix * (mem[c][r1] * g1 + mem[c][r2] * g2 - mem[c][wpos]);
                     }
                     wpos = (wpos + 1) & kPsMask;
                 }
@@ -341,7 +355,9 @@ struct Plugin
                 const float hz = floorHz * std::exp2 (dynSpan * dynEnv);
                 filt[0].setCutoff (hz, sr); filt[1].G = filt[0].G;
             }
-            if (channel != 3) { y[0] = filt[0].run (y[0]); y[1] = filt[1].run (y[1]); }
+            // filters run on every output so switching between them is seamless; Out 7-8 takes the unfiltered DAC
+            const float fl = filt[0].run (y[0]), fr = filt[1].run (y[1]);
+            if (channel != 3) { y[0] = fl; y[1] = fr; }
 
             // output amplifier: gentle op-amp rounding, then mix + volume slider
             y[0] = softSat (y[0] * 0.5f) * 2.f;
@@ -374,13 +390,13 @@ void processAccumulating (AEffect* e, float** in, float** out, int32_t n)   // l
 void setParameter (AEffect* e, int32_t i, float norm)
 {
     if (i < 0 || i >= P_COUNT) return;
-    static_cast<Plugin*> (e->object)->v[i].store (toPlain (kParams[i], norm));
+    static_cast<Plugin*> (e->object)->setNorm (i, norm);
 }
 
 float getParameter (AEffect* e, int32_t i)
 {
     if (i < 0 || i >= P_COUNT) return 0.f;
-    return toNorm (kParams[i], static_cast<Plugin*> (e->object)->v[i].load());
+    return static_cast<Plugin*> (e->object)->nv[i].load();
 }
 
 intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* ptr, float opt)
@@ -403,11 +419,11 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effCanBeAutomated:   return (idx >= 0 && idx < P_COUNT) ? 1 : 0;
         case effSetSampleRate:    if (opt > 1000.f) { p->sr = opt; p->reset(); } return 0;
         case effMainsChanged:     p->reset(); return 0;
-        case effSetBypass:        p->v[P_BYPASS].store (val ? 1.f : 0.f); return 1;
+        case effSetBypass:        p->setPlain (P_BYPASS, val ? 1.f : 0.f); return 1;
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "SP1200", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1010;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -442,6 +458,6 @@ SP_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('S' << 24) | ('P' << 16) | ('1' << 8) | '2';   // 'SP12' = 0x53503132
-    fx.version = 1000;
+    fx.version = 1010;
     return &fx;
 }

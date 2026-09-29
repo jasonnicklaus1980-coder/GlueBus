@@ -232,6 +232,47 @@ int main(int argc, char** argv) {
     float* in[2] = { l.data(), r.data() }; float* out[2] = { a.data(), b.data() };
     fx->process(fx, in, out, 512); CHECK(std::fabs(a[100] - 1.25f) < 0.01f, "accumulating process %.3f", a[100]);
 
+    // 14) Slow Q-Link turns (host reads, adds 1/127, writes back) walk through every step of the stepped sliders
+    //     instead of being rounded back to the same step (sliders felt stuck, then jumped, on the MPC)
+    for (int p : { P_TUNE, P_CHANNEL }) {
+        setNorm(p, 0.f); int changes = 0; char last[64] = {}; D(effGetParamDisplay, p, 0, last);
+        for (int k = 0; k < 127; ++k) {
+            setNorm(p, std::fmin(1.f, getNorm(p) + 1.f / 127.f));
+            char d[64] = {}; D(effGetParamDisplay, p, 0, d);
+            if (std::strcmp(d, last)) { ++changes; std::strcpy(last, d); }
+        }
+        std::printf("slow Q-Link turn, param %d: %d steps, ends at '%s'\n", p, changes, last);
+        CHECK(changes == (p == P_TUNE ? 19 : 3), "Q-Link walks every step of param %d (%d)", p, changes);
+    }
+    setNorm(P_TUNE, 0.5f); setNorm(P_TUNE, 0.503f);
+    CHECK(std::fabs(getNorm(P_TUNE) - 0.503f) < 1e-6f, "host position kept exactly (%.4f)", getNorm(P_TUNE));
+
+    // 15) Moving sliders mid-sound doesn't click: largest sample-to-sample jump stays near the signal's own
+    auto maxJump = [](const std::vector<float>& v, int from, int to) {
+        float m = 0; for (int i = from + 1; i < to; ++i) m = std::fmax(m, std::fabs(v[i] - v[i - 1])); return m;
+    };
+    auto switchRun = [&](int param, float from, float to, int modeSel) {
+        fresh(); mode(modeSel); setNorm(param, from); makeSine(l, r, 0.5f, 200.5f, N);   // switch lands near a peak, not a zero crossing
+        ol.assign(N, 0); orr.assign(N, 0);
+        const int sw = (N / 2 / 256) * 256;                  // first sample of the block after the move
+        for (int pos = 0; pos < N; pos += 256) {
+            if (pos == sw) setNorm(param, to);
+            float* in[2] = { &l[pos], &r[pos] }; float* out[2] = { &ol[pos], &orr[pos] };
+            fx->processReplacing(fx, in, out, std::min(256, N - pos));
+        }
+        return std::make_pair(maxJump(ol, N / 4, sw - 1), maxJump(ol, sw - 1, sw + 4410));
+    };
+    for (auto c : { std::make_pair(3, 1), std::make_pair(1, 2), std::make_pair(2, 0) }) {
+        auto j = switchRun(P_CHANNEL, c.first / 3.f, c.second / 3.f, 0);
+        std::printf("Output %d -> %d: steady max step %.3f, at switch %.3f\n", c.first, c.second, j.first, j.second);
+        CHECK(j.second < 2.f * j.first + 0.02f, "Output switch click (%.3f vs %.3f)", j.second, j.first);
+    }
+    {
+        auto j = switchRun(P_TUNE, 12 / 19.f, 8 / 19.f, 1);   // Pitch mode, tune 0 -> -4
+        std::printf("Pitch mode tune 0 -> -4: steady max step %.3f, at switch %.3f\n", j.first, j.second);
+        CHECK(j.second < 2.f * j.first + 0.02f, "tune-0 switch click (%.3f vs %.3f)", j.second, j.first);
+    }
+
     char s[64] = {}; D(effGetEffectName, 0, 0, s); CHECK(!std::strcmp(s, "SP1200"), "effect name");
     D(effClose);
     std::printf("\n%s (%d failure%s)\n", fails ? "TESTS FAILED" : "ALL TESTS PASSED", fails, fails == 1 ? "" : "s");

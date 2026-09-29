@@ -18,7 +18,7 @@ pipeline.
 
 ## Build + install
     make test                         # native x86 build + offline VST2 host test (clock, 12-bit, tuning, filters, decay)
-    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-1.0.0-mpc-armv7.zip
+    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-1.0.1-mpc-armv7.zip
     ./scripts/deploy.sh <mpc-ip>      # tar-over-ssh, runs install.sh (stop MPC, copy, back up, register, restart)
     python3 tools/make_skin.py docs/skin-preview.png   # regenerate the skin (needs Pillow)
 On GitHub, every push builds and publishes the zip as a release tagged `sp1200-build-N` (`.github/workflows/sp1200.yml`).
