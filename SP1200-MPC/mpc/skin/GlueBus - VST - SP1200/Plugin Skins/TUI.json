@@ -157,7 +157,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "17 28 76 330",
+                                    "bounds": "-110 28 330 330",
                                     "additionalInvalidatingHandles": []
                                 }
                             },

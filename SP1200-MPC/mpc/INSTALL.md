@@ -1,4 +1,4 @@
-# SP1200 1.0.1
+# SP1200 1.0.2
 
 SP-1200 character (12-bit, 26.04 kHz, drop-sample tuning, SSM2044 / fixed output filters) as a native MPC OS
 VST2 insert effect, with an eight-slider screen. Loaded by MPC's built-in plugin host.
@@ -8,8 +8,8 @@ VST2 insert effect, with an eight-slider screen. Loaded by MPC's built-in plugin
 - **Root shell access** (SSH). Installing plugins this way is unofficial: back up first, use at your own risk.
 
 ## Install (scripted)
-1. From your computer: `scp -r SP1200-1.0.1 root@<device-ip>:/tmp/`  (or use `scripts/deploy.sh <device-ip>`)
-2. Run it: `ssh root@<device-ip> sh /tmp/SP1200-1.0.1/install.sh`
+1. From your computer: `scp -r SP1200-1.0.2 root@<device-ip>:/tmp/`  (or use `scripts/deploy.sh <device-ip>`)
+2. Run it: `ssh root@<device-ip> sh /tmp/SP1200-1.0.2/install.sh`
 
 The installer checks the device, copies `sp1200.so` to `/sdcard/vst/` and the skin to
 `/sdcard/Synths/GlueBus - VST - SP1200/`, **stops MPC** (save your project first),
@@ -35,7 +35,7 @@ Then add **SP1200** as an insert (on a drum program, pad, track or bus) from the
 The 13 factory presets are the plugin's programs.
 
 ## Uninstall
-`ssh root@<device-ip> sh /tmp/SP1200-1.0.1/uninstall.sh` removes the plugin, its skin and the plugin-list entry.
+`ssh root@<device-ip> sh /tmp/SP1200-1.0.2/uninstall.sh` removes the plugin, its skin and the plugin-list entry.
 
 ## Install by hand
 1. Copy `payload/vst/sp1200.so` to `/sdcard/vst/sp1200.so` and

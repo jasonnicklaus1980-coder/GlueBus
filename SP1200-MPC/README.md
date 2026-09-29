@@ -18,15 +18,16 @@ pipeline.
 
 ## Build + install
     make test                         # native x86 build + offline VST2 host test (clock, 12-bit, tuning, filters, decay)
-    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-1.0.1-mpc-armv7.zip
+    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-1.0.2-mpc-armv7.zip
     ./scripts/deploy.sh <mpc-ip>      # tar-over-ssh, runs install.sh (stop MPC, copy, back up, register, restart)
     python3 tools/make_skin.py docs/skin-preview.png   # regenerate the skin (needs Pillow)
 On GitHub, every push builds and publishes the zip as a release tagged `sp1200-build-N` (`.github/workflows/sp1200.yml`).
 Device install steps: `mpc/INSTALL.md`.
 
 ## Not covered / unverified
-- Not run on a real MPC yet. The skin uses the GlueBus/JV-880 TUI.json format. The sliders are vertical-drag filmstrip
-  controls, which that format supports, but no one has seen them on an MPC screen yet.
+- Tested on an MPC X: the plugin loads, presets and parameters work. MPC slices filmstrips into square frames
+  (frame height = image width), so the fader strip uses square 330 x 330 frames with the fader centred, the same way
+  other native MPC plugins build sliders. 1.0.0/1.0.1 used tall 76 x 330 frames, and their caps jumped off screen.
 - The Q-Link map assigns only Q-Links 1-10. How MPC treats the unassigned 11-16 is untested.
 - The filter cutoffs and the Out 1-2 envelope come from owners' measurements of the hardware, not from a schematic
   simulation. Real units vary, and so do their trimmers.

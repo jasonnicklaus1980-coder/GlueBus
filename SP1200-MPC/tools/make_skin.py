@@ -55,7 +55,11 @@ SLIDERS = [("input", "INPUT", ["-24", "-12", "0", "+12"]),
            ("volume", "VOLUME", ["-24", "-12", "0", "+12"])]
 TUNE_POS = lambda st: (st + 12) / 19.0            # slider position of a tuning step (mirrors the VST mapping)
 SX0, SPITCH, BOXW, BOXH = 36, 114, 110, 408       # slider component boxes
-FW, FH = 76, 330                                  # fader filmstrip frame
+FW, FH = 76, 330                                  # fader artwork (slot + cap) inside each frame
+FS = FH                                           # MPC slices filmstrips into SQUARE frames (frame height = image
+                                                  # width), so each fader frame is FS x FS with the fader centred
+                                                  # and transparent sides; the control is FS square and centred on
+                                                  # its slider, and MPC clips it to the slider's own box
 FY = 28                                           # fader top inside the box
 TRAVEL0, TRAVEL1 = 26, FH - 26                    # cap centre travel (top, bottom) inside the frame
 SLIDER_Y = 104
@@ -94,8 +98,8 @@ def fader_frame(t):
     return im.resize((FW, FH), Image.LANCZOS)
 
 def fader_strip():
-    strip = Image.new("RGBA", (FW, FH * FRAMES), (0, 0, 0, 0))
-    for f in range(FRAMES): strip.paste(fader_frame(f / (FRAMES - 1)), (0, f * FH))
+    strip = Image.new("RGBA", (FS, FS * FRAMES), (0, 0, 0, 0))
+    for f in range(FRAMES): strip.paste(fader_frame(f / (FRAMES - 1)), ((FS - FW) // 2, f * FS + (FS - FH) // 2))
     return strip
 
 def pushbutton(on, w=96, h=40):
@@ -211,7 +215,7 @@ def build():
         [focus((0, 0, BOXW, BOXH)),
          label("Name", 15, NAME_COL, (0, 2, BOXW, 22), case="Upper Case"),
          comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "sp_fader.png", "numFrames": NUMFRAMES, "invert": False,
-              "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((BOXW - FW) / 2, FY, FW, FH))),
+              "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((BOXW - FS) // 2, FY, FS, FS))),
          label("Value", 20, VALUE_COL, (0, FY + FH + 8, BOXW, 28), case="Upper Case")])})
 
     pushbutton(True).save(os.path.join(OUT, "sp_btn_on.png")); pushbutton(False).save(os.path.join(OUT, "sp_btn_off.png"))
@@ -256,7 +260,7 @@ def build():
     for fn in ("Q-Links.json", "Q-Links - 8by1.json"): json.dump(q, open(os.path.join(OUT, fn), "w"), indent=4)
     open(os.path.join(SKIN_DIR, "version.xml"), "w").write(
         "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>gluebus.vst.sp1200</identifier>\n"
-        "\t<version>1.0.1.0</version>\n</plugincontent>\n")
+        "\t<version>1.0.2.0</version>\n</plugincontent>\n")
     print("skin written to", SKIN_DIR)
 
 # ---------- preview (typical values; MPC draws the live name/value labels itself) ----------
@@ -267,7 +271,8 @@ def preview(path):
     strip = Image.open(os.path.join(OUT, "sp_fader.png"))
     for i, (key, lab, _) in enumerate(SLIDERS):
         x = SX0 + i * SPITCH; fr = round(PREVIEW[key] * (FRAMES - 1))
-        im.alpha_composite(strip.crop((0, fr * FH, FW, (fr + 1) * FH)), (int(x + (BOXW - FW) / 2), SLIDER_Y + FY))
+        fx0 = (FS - FW) // 2                     # the fader column of the square frame
+        im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(x + (BOXW - FW) / 2), SLIDER_Y + FY))
         text_c(d, x + BOXW / 2, SLIDER_Y + 13, lab, font(14), (226, 226, 220))
         text_c(d, x + BOXW / 2, SLIDER_Y + FY + FH + 22, PREVIEW_TXT[key], font(17), (255, 70, 50))
     for i in range(len(MODE_OPTS)):

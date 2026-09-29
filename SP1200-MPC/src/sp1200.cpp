@@ -423,7 +423,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "SP1200", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1010;
+        case effGetVendorVersion: return 1020;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -458,6 +458,6 @@ SP_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('S' << 24) | ('P' << 16) | ('1' << 8) | '2';   // 'SP12' = 0x53503132
-    fx.version = 1010;
+    fx.version = 1020;
     return &fx;
 }
