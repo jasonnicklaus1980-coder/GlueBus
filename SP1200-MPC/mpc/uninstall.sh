@@ -3,7 +3,7 @@
 # Stops MPC, removes sp1200.so and its MPC.settings entry (after a backup), starts MPC again.
 set -e
 cd "$(dirname "$0")"
-NAME='SP1200'; SO_DIR='/sdcard/vst'; SO='sp1200.so'; SKIN='SP1200 - VST - SP1200'
+NAME='SP1200'; SO_DIR='/sdcard/vst'; SO='sp1200.so'; SKIN='GlueBus - VST - SP1200'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -34,6 +34,6 @@ if command -v python3 >/dev/null; then
 fi
 mv "$SETTINGS.new" "$SETTINGS"
 rm -f "$PFX$SO_DIR/$SO"
-rm -rf "$PFX/sdcard/Synths/$SKIN"
+rm -rf "$PFX/sdcard/Synths/$SKIN" "$PFX/sdcard/Synths/SP1200 - VST - SP1200"
 sync
 echo "Removed $NAME. Settings backup: $BAK"

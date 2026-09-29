@@ -2,7 +2,7 @@
 """Generate the SP1200 MPC screen skin: the SP-1200 front panel as eight vertical sliders (no pads).
 
 Built with the GlueBus skin pipeline (same TUI.json schema, filmstrip controls, Q-Link maps).
-Output: mpc/skin/SP1200 - VST - SP1200/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
+Output: mpc/skin/GlueBus - VST - SP1200/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
 Each slider is a filmstrip control dragged vertically and bound to "Parameter N" = VST parameter index
 (see src/sp1200.cpp). Requires Pillow.
 Usage: python3 tools/make_skin.py [preview.png]
@@ -11,7 +11,7 @@ import json, math, os, random, shutil, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "SP1200 - VST - SP1200")
+SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "GlueBus - VST - SP1200")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 4     # filmstrip frames; value written to TUI.json (JV-880 convention); supersampling

@@ -5,7 +5,7 @@
 # (MPC is stopped for the edit - save your project first). Safe to re-run: it upgrades in place.
 set -e
 cd "$(dirname "$0")"
-NAME='SP1200'; VERSION='1.0.0'; SO_DIR='/sdcard/vst'; SO='sp1200.so'; SKIN='SP1200 - VST - SP1200'
+NAME='SP1200'; VERSION='1.0.0'; SO_DIR='/sdcard/vst'; SO='sp1200.so'; SKIN='GlueBus - VST - SP1200'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -41,6 +41,8 @@ mkdir -p "$PFX$SO_DIR"
 cp payload/vst/"$SO" "$PFX$SO_DIR/$SO.new" && mv "$PFX$SO_DIR/$SO.new" "$PFX$SO_DIR/$SO"
 mkdir -p "$PFX/sdcard/Synths"
 rm -rf "$PFX/sdcard/Synths/$SKIN"; cp -a "payload/Synths/$SKIN" "$PFX/sdcard/Synths/$SKIN"
+# 1.0.0 put the skin under the wrong name (MPC looks for "<manufacturer> - VST - <plugin>"); remove it
+rm -rf "$PFX/sdcard/Synths/SP1200 - VST - SP1200"
 
 BAK="$SETTINGS.bak-sp1200-$(date +%Y%m%d-%H%M%S)"
 cp "$SETTINGS" "$BAK"

@@ -14,7 +14,7 @@ pipeline.
 - 13 factory presets as VST programs (Init Out 5-6, Clean Out 7-8, Dusty Out 3-4, Tom Dyn Out 1, Kick Dyn Thump,
   45 to 33 Break, Pitch Down -4, Chop Decay, Tight Hat Decay, Crunch -12, Up +7 Pitch, Hot Input Clip, Parallel Dirt)
 - Links only libc + libm (highest glibc symbol 2.27). Installs to `/sdcard/vst/sp1200.so`, skin to
-  `/sdcard/Synths/SP1200 - VST - SP1200/`
+  `/sdcard/Synths/GlueBus - VST - SP1200/`
 
 ## Build + install
     make test                         # native x86 build + offline VST2 host test (clock, 12-bit, tuning, filters, decay)

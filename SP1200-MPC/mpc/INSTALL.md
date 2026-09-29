@@ -12,7 +12,7 @@ VST2 insert effect, with an eight-slider screen. Loaded by MPC's built-in plugin
 2. Run it: `ssh root@<device-ip> sh /tmp/SP1200-1.0.0/install.sh`
 
 The installer checks the device, copies `sp1200.so` to `/sdcard/vst/` and the skin to
-`/sdcard/Synths/SP1200 - VST - SP1200/`, **stops MPC** (save your project first),
+`/sdcard/Synths/GlueBus - VST - SP1200/`, **stops MPC** (save your project first),
 backs up `MPC.settings`, adds the plugin to MPC's plugin list and starts MPC again. Re-running upgrades in place.
 Add `-y` to skip the confirmation prompt. It can sit next to GlueBus; the two don't share any files.
 
@@ -39,7 +39,7 @@ The 13 factory presets are the plugin's programs.
 
 ## Install by hand
 1. Copy `payload/vst/sp1200.so` to `/sdcard/vst/sp1200.so` and
-   `payload/Synths/SP1200 - VST - SP1200/` to `/sdcard/Synths/SP1200 - VST - SP1200/`.
+   `payload/Synths/GlueBus - VST - SP1200/` to `/sdcard/Synths/GlueBus - VST - SP1200/`.
 2. `systemctl stop acvs`
 3. Back up `MPC.settings` (`/media/az01-internal/Settings/*/MPC.settings`).
 4. Inside `<VALUE name="pluginList-arm"><KNOWNPLUGINS>` add the line from `plugin.xml`
@@ -49,5 +49,6 @@ The 13 factory presets are the plugin's programs.
 ## Troubleshooting
 - Plugin doesn't appear: it is not in the list until MPC restarts; check `grep sp1200 /media/az01-internal/Settings/*/MPC.settings`.
 - MPC crashes on load: run `uninstall.sh`, or restore the `MPC.settings.bak-sp1200-*` backup and delete `/sdcard/vst/sp1200.so`.
-- Skin doesn't show (plain parameter list instead): check `/sdcard/Synths` is in MPC's SynthContentLocations; a skin-only
+- Skin doesn't show (plain parameter list instead): MPC looks for the skin at `/sdcard/Synths/<manufacturer> - VST - <plugin>`,
+  here `GlueBus - VST - SP1200` (`ls /sdcard/Synths` to check). Also check `/sdcard/Synths` is in MPC's SynthContentLocations; a skin-only
   change needs no restart, just remove and re-insert the plugin.

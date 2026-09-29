@@ -24,7 +24,7 @@ if command -v "$RE" >/dev/null; then
   [ "$(printf '%s\n' "$maxg" GLIBC_2.34 | sort -V | tail -1)" = GLIBC_2.34 ] || { echo "ERROR: needs $maxg, newer than the JV-880 (GLIBC_2.34): build on an older distro"; exit 1; }
 fi
 
-SKIN="mpc/skin/SP1200 - VST - SP1200"
+SKIN="mpc/skin/GlueBus - VST - SP1200"
 [ -f "$SKIN/Plugin Skins/TUI.json" ] || python3 tools/make_skin.py
 rm -rf "dist/$NAME"; mkdir -p "dist/$NAME/payload/vst" "dist/$NAME/payload/Synths"
 cp -a "$SKIN" "dist/$NAME/payload/Synths/"
