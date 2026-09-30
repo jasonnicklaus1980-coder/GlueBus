@@ -23,10 +23,16 @@ namespace
 enum ParamId
 {
     P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX, P_VOLUME, P_RATE, P_FMODE, P_TMODE, P_BYPASS,
+    // ASR-10 style editing: the Edit buttons choose a parameter and the single Data Entry slider moves it
+    P_DATA, P_EDIT,
     P_COUNT
 };
 enum Kind { K_FLOAT, K_CHOICE, K_BOOL, K_LOG };
-enum Fmt  { F_NUM, F_TUNE, F_FC1, F_FC2 };
+enum Fmt  { F_NUM, F_TUNE, F_FC1, F_FC2, F_DATA };
+
+// the parameters the Edit buttons select for the Data Entry slider, in button order
+constexpr int kEditTargets[] { P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX, P_VOLUME };
+constexpr int kNumEdit = (int) (sizeof (kEditTargets) / sizeof (kEditTargets[0]));
 
 // ---- hardware constants ----
 constexpr double kRate30    = 29761.9;   // ASR-10 sampling rates (Hz): "30k" and 44.1k
@@ -44,6 +50,7 @@ const char* const kRateNames[]  { "30 kHz", "44.1 kHz" };
 // OTTO filter modes (ES5505 LP3/LP4 bits): poles 1-2 are always low-pass on FC1, poles 3-4 are chosen here
 const char* const kFModeNames[] { "LP2 / HP2", "LP3 / HP1", "LP2 / LP2", "LP3 / LP1" };
 const char* const kTModeNames[] { "Pitch", "Rate" };
+const char* const kEditNames[]  { "Input", "Tune", "Fine", "Filter 1", "Filter 2", "Mix", "Volume" };
 
 struct ParamDef
 {
@@ -66,6 +73,8 @@ const ParamDef kParams[P_COUNT] =
     { "Filter Mode", "",   K_CHOICE,  0.f,  3.f, 1.f,   0.f,    CH (kFModeNames), F_NUM, "" },
     { "Tune Mode",   "",   K_CHOICE,  0.f,  1.f, 1.f,   0.f,    CH (kTModeNames), F_NUM, "" },
     { "Bypass",      "",   K_BOOL,    0.f,  1.f, 1.f,   0.f,    nullptr, 0, F_NUM,  "" },
+    { "Data Entry",  "",   K_FLOAT,   0.f,  1.f, 0.f,   0.f,    nullptr, 0, F_DATA, "" },   // proxy, holds no value
+    { "Edit",        "",   K_CHOICE,  0.f,  6.f, 1.f,   1.f,    CH (kEditNames),  F_NUM, "" },
 };
 
 // ---- factory presets: defaults + overrides ----
@@ -86,6 +95,33 @@ PRESET (pUp5,       { P_RATE, 0 }, { P_TUNE, 5.f }, { P_TMODE, 0 })
 PRESET (pSub,       { P_RATE, 0 }, { P_FC1, 500.f }, { P_FC2, 500.f }, { P_FMODE, 2 })
 PRESET (pHot,       { P_RATE, 0 }, { P_INPUT, 9.f }, { P_VOLUME, -6.f })
 PRESET (pParallel,  { P_RATE, 0 }, { P_TUNE, -7.f }, { P_TMODE, 1 }, { P_MIX, 50.f })
+// drums
+PRESET (pBoomBap,   { P_RATE, 0 }, { P_INPUT, 4.f }, { P_FMODE, 1 }, { P_FC1, 12000.f }, { P_FC2, 50.f })
+PRESET (pKick,      { P_RATE, 0 }, { P_INPUT, 3.f }, { P_FC1, 8000.f }, { P_FC2, 35.f })
+PRESET (pSnare,     { P_RATE, 0 }, { P_INPUT, 2.f }, { P_FC2, 150.f })
+PRESET (pThinHats,  { P_RATE, 1 }, { P_FC2, 2000.f })
+PRESET (pHotClip,   { P_RATE, 0 }, { P_INPUT, 12.f }, { P_VOLUME, -8.f })
+PRESET (pDrumsDn2,  { P_RATE, 0 }, { P_TUNE, -2.f }, { P_TMODE, 0 }, { P_INPUT, 2.f })
+// loops and samples
+PRESET (pSoul,      { P_RATE, 0 }, { P_FC1, 9000.f }, { P_FC2, 90.f })
+PRESET (pVinyl,     { P_RATE, 0 }, { P_INPUT, 2.f }, { P_FC1, 7500.f }, { P_FC2, 120.f })
+PRESET (pRadio,     { P_RATE, 0 }, { P_INPUT, 3.f }, { P_FC1, 5000.f }, { P_FC2, 300.f })
+PRESET (pPhone,     { P_RATE, 0 }, { P_FC1, 3000.f }, { P_FC2, 500.f })
+PRESET (pSlowed,    { P_RATE, 0 }, { P_TUNE, -7.f }, { P_TMODE, 0 })
+PRESET (pOctDown,   { P_RATE, 0 }, { P_TUNE, -12.f }, { P_TMODE, 0 })
+PRESET (pRate12,    { P_RATE, 0 }, { P_TUNE, -12.f }, { P_TMODE, 1 })
+PRESET (pRate3,     { P_RATE, 1 }, { P_TUNE, -3.f }, { P_TMODE, 1 })
+// keys, bass, vocals
+PRESET (pRhodes,    { P_RATE, 1 }, { P_FMODE, 3 }, { P_FC1, 3000.f }, { P_FC2, 5000.f })
+PRESET (pLoFiKeys,  { P_RATE, 0 }, { P_TUNE, -3.f }, { P_TMODE, 1 }, { P_FC1, 6000.f })
+PRESET (pPad,       { P_RATE, 1 }, { P_FMODE, 1 }, { P_FC1, 5000.f }, { P_FC2, 60.f })
+PRESET (pMuffBass,  { P_RATE, 0 }, { P_FMODE, 2 }, { P_FC1, 20000.f }, { P_FC2, 800.f })
+PRESET (p808,       { P_RATE, 0 }, { P_FMODE, 3 }, { P_FC1, 250.f }, { P_FC2, 400.f })
+PRESET (pVox7,      { P_RATE, 1 }, { P_TUNE, 7.f }, { P_TMODE, 0 })
+PRESET (pChipmunk,  { P_RATE, 1 }, { P_TUNE, 12.f }, { P_TMODE, 0 })
+PRESET (pDetune,    { P_RATE, 1 }, { P_FINE, 12.f }, { P_TMODE, 0 }, { P_MIX, 50.f })
+PRESET (pDetuneDk,  { P_RATE, 0 }, { P_FINE, -8.f }, { P_TMODE, 0 }, { P_MIX, 50.f }, { P_FC1, 9000.f })
+PRESET (pParCrunch, { P_RATE, 0 }, { P_TUNE, -9.f }, { P_TMODE, 1 }, { P_MIX, 40.f })
 
 const Preset kPresets[] =
 {
@@ -93,6 +129,14 @@ const Preset kPresets[] =
     ENTRY ("Dusty Loop", pDusty),        ENTRY ("Pitch Down -3", pPitchDn),   ENTRY ("Rate -5 Crunch", pRate5),
     ENTRY ("Warm Keys", pKeys),          ENTRY ("Thin Break", pThin),         ENTRY ("Up +5 Chop", pUp5),
     ENTRY ("Sub Filter", pSub),          ENTRY ("Hot Input", pHot),           ENTRY ("Parallel 30k", pParallel),
+    ENTRY ("Boom Bap Drums 30k", pBoomBap), ENTRY ("Kick Focus", pKick),      ENTRY ("Snare Crack 30k", pSnare),
+    ENTRY ("Thin Hats", pThinHats),      ENTRY ("Hot 30k Clip", pHotClip),    ENTRY ("Drums Down -2", pDrumsDn2),
+    ENTRY ("Soul Loop 30k", pSoul),      ENTRY ("Vinyl Chop 30k", pVinyl),    ENTRY ("Radio Break", pRadio),
+    ENTRY ("Telephone", pPhone),         ENTRY ("Slowed -7", pSlowed),        ENTRY ("Octave Down -12", pOctDown),
+    ENTRY ("Rate -12 Crush", pRate12),   ENTRY ("Rate -3 Warm", pRate3),      ENTRY ("Dark Rhodes", pRhodes),
+    ENTRY ("Lo-Fi Keys 30k", pLoFiKeys), ENTRY ("Pad Warmth", pPad),          ENTRY ("Muffled Bass", pMuffBass),
+    ENTRY ("Sub 808", p808),             ENTRY ("Vocal Up +7", pVox7),        ENTRY ("Chipmunk +12", pChipmunk),
+    ENTRY ("Detune Chorus", pDetune),    ENTRY ("Dark Detune", pDetuneDk),    ENTRY ("Parallel Crunch", pParCrunch),
 };
 constexpr int kNumPresets = (int) (sizeof (kPresets) / sizeof (kPresets[0]));
 
@@ -220,11 +264,39 @@ struct Plugin
         nv[i].store (norm); v[i].store (toPlain (kParams[i], norm));
     }
 
+    // ---- Data Entry: a proxy for the parameter the Edit buttons selected ----
+    bool notifying = false;                                        // guards against re-entry from the host
+    int editTarget() const { return kEditTargets[(int) clampf (v[P_EDIT].load(), 0.f, (float) (kNumEdit - 1))]; }
+    float normOf (int i) const { return i == P_DATA ? nv[editTarget()].load() : nv[i].load(); }
+    void automate (int i)
+    {
+        if (master == nullptr || notifying) return;
+        notifying = true;
+        master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, normOf (i));
+        notifying = false;
+    }
+    void hostSet (int i, float norm)                               // a parameter change coming from the host
+    {
+        if (i == P_DATA)
+        {
+            const int t = editTarget();
+            setNorm (t, norm); automate (t);                       // the real parameter's Q-Link / label follows
+        }
+        else
+        {
+            setNorm (i, norm);
+            if (i == P_EDIT) automate (P_DATA);                    // Data Entry jumps to the newly selected value
+            else if (i == editTarget()) automate (P_DATA);         // e.g. a Q-Link moved the selected parameter
+        }
+        if ((i == P_EDIT || i == P_DATA) && master != nullptr && ! notifying)
+            master (&fx, 42 /* audioMasterUpdateDisplay */, 0, 0, nullptr, 0.f);
+    }
+
     void applyPreset (int i)
     {
         if (i < 0 || i >= kNumPresets) return;
         program = i;
-        for (int p = 0; p < P_COUNT; ++p) if (p != P_BYPASS) setPlain (p, kParams[p].def);
+        for (int p = 0; p < P_COUNT; ++p) if (p != P_BYPASS && p != P_EDIT && p != P_DATA) setPlain (p, kParams[p].def);
         for (int k = 0; k < kPresets[i].n; ++k) setPlain (kPresets[i].ov[k].id, kPresets[i].ov[k].v);
     }
 
@@ -233,7 +305,7 @@ struct Plugin
     {
         if (master == nullptr) return;
         for (int i = 0; i < P_COUNT; ++i)
-            master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, nv[i].load());
+            master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, normOf (i));
         master (&fx, 42 /* audioMasterUpdateDisplay */, 0, 0, nullptr, 0.f);
     }
 
@@ -251,6 +323,15 @@ struct Plugin
 
     void display (int idx, char* out, size_t max) const
     {
+        if (idx == P_DATA)          // the fluorescent display line: "TUNE +3", "FILTER 1 6.0 kHz"
+        {
+            const int t = editTarget();
+            char val[16]; display (t, val, sizeof val);                      // longest: "20.0 kHz"
+            char name[12]; std::snprintf (name, sizeof name, "%s", kParams[t].name);   // longest: "Filter 1"
+            for (char* c = name; *c; ++c) if (*c >= 'a' && *c <= 'z') *c = (char) (*c - 32);
+            std::snprintf (out, max, "%s %s", name, val);
+            return;
+        }
         const ParamDef& d = kParams[idx];
         const float p = v[idx].load();
         if (d.kind == K_CHOICE) { std::snprintf (out, max, "%s", d.choices[(int) clampf (p, 0.f, (float) (d.n - 1))]); return; }
@@ -395,13 +476,13 @@ void processAccumulating (AEffect* e, float** in, float** out, int32_t n)   // l
 void setParameter (AEffect* e, int32_t i, float norm)
 {
     if (i < 0 || i >= P_COUNT) return;
-    static_cast<Plugin*> (e->object)->setNorm (i, norm);
+    static_cast<Plugin*> (e->object)->hostSet (i, norm);
 }
 
 float getParameter (AEffect* e, int32_t i)
 {
     if (i < 0 || i >= P_COUNT) return 0.f;
-    return static_cast<Plugin*> (e->object)->nv[i].load();
+    return static_cast<Plugin*> (e->object)->normOf (i);
 }
 
 intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* ptr, float opt)
@@ -428,7 +509,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "ASR10", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1100;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -463,6 +544,6 @@ ASR_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('A' << 24) | ('S' << 16) | ('R' << 8) | '1';   // 'ASR1' = 0x41535231
-    fx.version = 1000;
+    fx.version = 1100;
     return &fx;
 }

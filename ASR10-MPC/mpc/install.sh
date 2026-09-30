@@ -5,7 +5,7 @@
 # (MPC is stopped for the edit - save your project first). Safe to re-run: it upgrades in place.
 set -e
 cd "$(dirname "$0")"
-NAME='ASR10'; VERSION='1.0.0'; SO_DIR='/sdcard/vst'; SO='asr10.so'; SKIN='GlueBus - VST - ASR10'
+NAME='ASR10'; VERSION='1.1.0'; SO_DIR='/sdcard/vst'; SO='asr10.so'; SKIN='GlueBus - VST - ASR10'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 

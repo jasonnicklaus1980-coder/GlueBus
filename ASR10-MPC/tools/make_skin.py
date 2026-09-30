@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""Generate the ASR10 MPC screen skin: an ASR-10 style panel with seven vertical sliders and mode switches (no pads).
+"""Generate the ASR10 MPC screen skin in the style of the Ensoniq ASR-10's front panel: floppy drive, ONE Data Entry
+slider, a blue-green fluorescent display with the Edit buttons under it, grey keys with red LEDs, and the keyboard
+with pitch / mod wheels along the bottom (no pads).
 
-Built with the GlueBus / SP1200 skin pipeline (same TUI.json schema, filmstrip controls, Q-Link maps). Proven on an
-MPC X with SP1200: MPC slices filmstrips into square frames, so the fader strip uses square frames with the fader
-centred. The skin folder is "<manufacturer> - VST - <plugin>" = "GlueBus - VST - ASR10".
+Editing works like the ASR-10: press an Edit button to choose a parameter, then move the Data Entry slider (the
+plugin's Data Entry parameter is a proxy for the selected one; the display shows e.g. "TUNE +3"). Q-Links still
+reach every parameter directly.
+
+Built with the GlueBus / SP1200 skin pipeline. Rules proven on an MPC X with SP1200: MPC slices filmstrips into
+square frames (so the fader strip uses square frames with the fader centred), and the skin folder is
+"<manufacturer> - VST - <plugin>" = "GlueBus - VST - ASR10".
 Output: mpc/skin/GlueBus - VST - ASR10/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
 Controls bind to "Parameter N" = VST parameter index (see src/asr10.cpp). Requires Pillow.
 Usage: python3 tools/make_skin.py [preview.png]
@@ -16,7 +22,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "GlueBus - VST - ASR10")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 4     # filmstrip frames; numFrames = last frame index (stock MPC strips); supersampling
-VERSION = "1.0.0.0"
+VERSION = "1.1.0.0"
 
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 def font(size, name="DejaVuSans-Bold.ttf"):
@@ -24,88 +30,78 @@ def font(size, name="DejaVuSans-Bold.ttf"):
         p = os.path.join(d, name)
         if os.path.exists(p): return ImageFont.truetype(p, size)
     return ImageFont.load_default()
+def mono(size): return font(size, "DejaVuSansMono-Bold.ttf")
 def rgba(c, a=255): return (c[0], c[1], c[2], a)
 def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 def text_c(d, cx, cy, s, f, fill):
     b = d.textbbox((0, 0), s, font=f); d.text((cx - (b[2] - b[0]) / 2 - b[0], cy - (b[3] - b[1]) / 2 - b[1]), s, font=f, fill=fill)
 def spaced(s, n=1): return (" " * n).join(s)
-def italic_text(im, xy, s, size, fill, slant=0.22):
-    """Bold text sheared into an italic (no oblique font file needed)."""
-    f = font(size); b = ImageDraw.Draw(im).textbbox((0, 0), s, font=f)
-    w, h = b[2] + int(size * slant) + 4, b[3] + 4
+def slanted(im, xy, s, f, fill, slant=0.18):
+    """Text sheared into an italic (no oblique font file needed)."""
+    b = ImageDraw.Draw(im).textbbox((0, 0), s, font=f)
+    w, h = b[2] + b[3] // 3 + 8, b[3] + 6
     t = Image.new("RGBA", (w, h), (0, 0, 0, 0)); ImageDraw.Draw(t).text((0, 0), s, font=f, fill=rgba(fill))
     t = t.transform((w, h), Image.AFFINE, (1, slant, -slant * h, 0, 1, 0), resample=Image.BICUBIC)
     im.paste(t, xy, t)
 
-# ---------- palette (ASR-10: charcoal body, black panel, grey keys, red LEDs, blue-green fluorescent display) ----------
-BODY    = (52, 53, 56)
-PANEL   = (30, 31, 33)
-PANEL_HI = (44, 45, 48)
-SLOT    = (10, 10, 11)
-PRINT   = (224, 225, 222)
-PRINT_DIM = (140, 142, 142)
-VFD_BG, VFD_TXT = (8, 22, 22), (92, 236, 214)
-LED     = (255, 52, 40)
-KEY     = (178, 180, 178)
-NAME_COL, VALUE_COL, FOCUS_COL = "ffe0e1de", "ff5cecd6", "ff5cecd6"
+# ---------- palette (ASR-10: black panel, white print, grey keys with red LEDs, blue-green fluorescent display) ----------
+PANEL   = (24, 24, 26)
+PANEL_EDGE = (8, 8, 9)
+PRINT   = (226, 227, 224)
+PRINT_DIM = (136, 138, 138)
+VFD_BG, VFD_TXT, VFD_DIM = (6, 18, 18), (96, 238, 216), (40, 110, 100)
+LED, LED_OFF = (255, 50, 38), (84, 26, 22)
+KEY     = (176, 178, 176)
+NAME_COL, VFD_COL, FOCUS_COL = "ffe2e3e0", "ff60eed8", "ff60eed8"
 
 # ---------- parameter indices (must match src/asr10.cpp) ----------
-P = dict(input=0, tune=1, fine=2, fc1=3, fc2=4, mix=5, volume=6, rate=7, fmode=8, tmode=9, bypass=10)
+P = dict(input=0, tune=1, fine=2, fc1=3, fc2=4, mix=5, volume=6, rate=7, fmode=8, tmode=9, bypass=10, data=11, edit=12)
 
-def lpos(f, lo, hi): return math.log(f / lo) / math.log(hi / lo)
-DB = [(0, "-24"), (12 / 36, "-12"), (24 / 36, "0"), (1, "+12")]
-# the seven sliders, left to right: (param, panel label, [(position 0..1, scale label)], number of fine ticks)
-SLIDERS = [("input", "INPUT", DB, 12),
-           ("tune", "TUNE", [((st + 12) / 24, f"{st:+d}" if st else "0") for st in (-12, -6, 0, 6, 12)], 24),
-           ("fine", "FINE", [(0, "-50"), (.25, "-25"), (.5, "0"), (.75, "+25"), (1, "+50")], 20),
-           ("fc1", "FILTER 1", [(0, "100"), (lpos(1000, 100, 20000), "1k"), (lpos(10000, 100, 20000), "10k"), (1, "OPEN")], 10),
-           ("fc2", "FILTER 2", [(0, "20"), (lpos(100, 20, 20000), "100"), (lpos(1000, 20, 20000), "1k"),
-                                (lpos(10000, 20, 20000), "10k"), (1, "OPEN")], 10),
-           ("mix", "MIX", [(0, "0"), (.5, "50"), (1, "100")], 10),
-           ("volume", "VOLUME", DB, 12)]
-SX0, SPITCH, BOXW, BOXH = 30, 114, 110, 408       # slider component boxes
-FW, FH = 76, 330                                  # fader artwork (slot + cap) inside each frame
-FS = FH                                           # square frames (MPC slices filmstrips by the image width), fader centred
-FY = 28                                           # fader top inside the box
-TRAVEL0, TRAVEL1 = 26, FH - 26                    # cap centre travel (top, bottom) inside the frame
-SLIDER_Y = 104
-PLATE_X1 = SX0 + len(SLIDERS) * SPITCH + 4
-RIGHT_X = PLATE_X1 + 26
+# ---------- layout ----------
+PANEL_BOTTOM = 440                       # keyboard below
+FW, FH = 76, 330                          # fader artwork (slot + cap) inside each frame
+FS = FH                                   # square frames (MPC slices filmstrips by the image width), fader centred
+TRAVEL0, TRAVEL1 = 26, FH - 26            # cap centre travel inside the frame
+SLIDER_BOX = (232, 22, 110, 408)          # Data Entry slider component: x, y, w, h
+FY = 34                                   # fader top inside the box
+VFD = (372, 34, 540, 116)                 # fluorescent display: x, y, w, h
+KEY_W, KEY_H = 70, 34                     # small ASR keys
+EDIT_X, EDIT_Y, EDIT_GAP = 372, 214, 8.3  # Edit buttons row (under the display)
+EDIT_LABELS = ["INPUT", "TUNE", "FINE", "FILTER 1", "FILTER 2", "MIX", "VOLUME"]
+# option groups: (param, title, [option labels], x, y, key width, gap)
+GROUPS = [("fmode", "FILTER  MODE", ["LP2/HP2", "LP3/HP1", "LP2/LP2", "LP3/LP1"], 372, 330, 96, 18),
+          ("rate", "SAMPLE  RATE", ["30 kHz", "44.1 kHz"], 950, 76, 96, 24),
+          ("tmode", "TUNE  MODE", ["PITCH", "RATE"], 950, 170, 96, 24)]
+BYPASS = (950, 264, 96)                   # x, y, key width
+QLINKS = ["data", "edit", "input", "tune", "fine", "fc1", "fc2", "mix", "volume", "rate", "fmode", "tmode", "bypass"]
 
-# switch groups on the right: (param, title, options, x, y, button width, columns)
-SEG_W = 188
-GROUPS = [("rate", "SAMPLE  RATE", ["30 kHz", "44.1 kHz"], RIGHT_X + 10, 92, SEG_W, 2),
-          ("tmode", "TUNE  MODE", ["PITCH", "RATE"], RIGHT_X + 10, 176, SEG_W, 2),
-          ("fmode", "FILTER  MODE", ["LP2 / HP2", "LP3 / HP1", "LP2 / LP2", "LP3 / LP1"], RIGHT_X + 10, 260, SEG_W, 2)]
-BYPASS_XY = (RIGHT_X + 4, 392)
-QLINKS = ["input", "tune", "fine", "fc1", "fc2", "mix", "volume", "rate", "fmode", "tmode", "bypass"]
-
-def seg_xy(g, i):
-    key, title, opts, x, y, w, cols = g
-    return x + (i % cols) * (w + 6), y + 24 + (i // cols) * 46
+def edit_x(i): return EDIT_X + i * (KEY_W + EDIT_GAP)
+def group_x(g, i): return g[3] + i * (g[5] + g[6])
 
 # ---------- drawing ----------
 def fader_frame(t):
-    """One fader drawing (FW x FH): slot + grey ASR-style cap at position t (0 = bottom, 1 = top)."""
+    """The Data Entry slider (FW x FH): slot + black ridged cap with a white line at position t (0 = bottom)."""
     s = SS; w, h = FW * s, FH * s
     im = Image.new("RGBA", (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
     cx = w / 2
-    d.rounded_rectangle([cx - 5 * s, TRAVEL0 * s - 12 * s, cx + 5 * s, TRAVEL1 * s + 12 * s], radius=5 * s, fill=rgba(SLOT))
-    d.line([cx, TRAVEL0 * s - 8 * s, cx, TRAVEL1 * s + 8 * s], fill=rgba((36, 36, 38)), width=2 * s)
+    d.rounded_rectangle([cx - 5 * s, TRAVEL0 * s - 12 * s, cx + 5 * s, TRAVEL1 * s + 12 * s], radius=5 * s, fill=rgba((4, 4, 5)))
+    d.line([cx, TRAVEL0 * s - 8 * s, cx, TRAVEL1 * s + 8 * s], fill=rgba((40, 40, 42)), width=2 * s)
     cy = (TRAVEL1 + (TRAVEL0 - TRAVEL1) * t) * s
-    cw, ch = 30 * s, 20 * s
+    cw, ch = 28 * s, 22 * s
     sh = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(sh).rounded_rectangle([cx - cw + 2 * s, cy - ch + 6 * s, cx + cw + 2 * s, cy + ch + 6 * s], radius=4 * s, fill=(0, 0, 0, 160))
+    ImageDraw.Draw(sh).rounded_rectangle([cx - cw + 2 * s, cy - ch + 6 * s, cx + cw + 2 * s, cy + ch + 6 * s], radius=4 * s, fill=(0, 0, 0, 170))
     im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(4 * s))); d = ImageDraw.Draw(im)
     cap = Image.new("RGBA", (w, h), (0, 0, 0, 0)); cd = ImageDraw.Draw(cap)
-    for yy in range(int(cy - ch), int(cy + ch) + 1):           # light grey cap, lit from above
+    for yy in range(int(cy - ch), int(cy + ch) + 1):
         k = (yy - (cy - ch)) / (2 * ch)
-        cd.line([cx - cw, yy, cx + cw, yy], fill=rgba(mix((214, 216, 214), (132, 134, 134), k)))
+        col = mix((78, 78, 82), (14, 14, 16), k)
+        if int((yy - (cy - ch)) / (4 * s)) % 2 == 1: col = mix(col, (0, 0, 0), 0.25)
+        cd.line([cx - cw, yy, cx + cw, yy], fill=rgba(col))
     mask = Image.new("L", (w, h), 0)
     ImageDraw.Draw(mask).rounded_rectangle([cx - cw, cy - ch, cx + cw, cy + ch], radius=4 * s, fill=255)
     im.paste(cap, (0, 0), mask); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([cx - cw, cy - ch, cx + cw, cy + ch], radius=4 * s, outline=rgba((70, 70, 72)), width=s)
-    d.rectangle([cx - cw + 3 * s, cy - 1.5 * s, cx + cw - 3 * s, cy + 1.5 * s], fill=rgba((24, 24, 26)))   # dark index line
+    d.rounded_rectangle([cx - cw, cy - ch, cx + cw, cy + ch], radius=4 * s, outline=rgba((96, 96, 100)), width=s)
+    d.rectangle([cx - cw + 3 * s, cy - 1.5 * s, cx + cw - 3 * s, cy + 1.5 * s], fill=rgba(PRINT))
     return im.resize((FW, FH), Image.LANCZOS)
 
 def fader_strip():
@@ -113,69 +109,93 @@ def fader_strip():
     for f in range(FRAMES): strip.paste(fader_frame(f / (FRAMES - 1)), ((FS - FW) // 2, f * FS + (FS - FH) // 2))
     return strip
 
-def key_button(on, w=110, h=40):
-    """ASR-10 style grey key with a red LED."""
-    s = SS; im = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([0, 0, w * s - 1, h * s - 1], radius=4 * s, fill=rgba((16, 16, 18)))
-    off = 2 * s if on else 0
-    d.rounded_rectangle([3 * s, 3 * s + off, (w - 3) * s, (h - 5) * s + off], radius=3 * s, fill=rgba(mix(KEY, (0, 0, 0), .12) if on else KEY))
-    cx, cy, r = w * s / 2, h * s / 2 + off / 2, 5 * s
+def asr_key(on, w=KEY_W, h=KEY_H):
+    """Small grey ASR-10 key with a red LED at its top edge; label is printed on the panel above it."""
+    s = SS; im = Image.new("RGBA", (w * s, (h + 10) * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    lx, ly, r = w * s / 2, 4 * s, 3.2 * s                          # LED above the key
     if on:
         g = Image.new("RGBA", im.size, (0, 0, 0, 0))
-        ImageDraw.Draw(g).ellipse([cx - 3 * r, cy - 3 * r, cx + 3 * r, cy + 3 * r], fill=(255, 60, 40, 170))
-        im.alpha_composite(g.filter(ImageFilter.GaussianBlur(3 * s))); d = ImageDraw.Draw(im)
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=rgba(LED if on else (90, 30, 26)))
-    return im.resize((w, h), Image.LANCZOS)
+        ImageDraw.Draw(g).ellipse([lx - 3 * r, ly - 3 * r, lx + 3 * r, ly + 3 * r], fill=(255, 60, 40, 160))
+        im.alpha_composite(g.filter(ImageFilter.GaussianBlur(2 * s))); d = ImageDraw.Draw(im)
+    d.ellipse([lx - r, ly - r, lx + r, ly + r], fill=rgba(LED if on else LED_OFF))
+    y0 = 10 * s; off = 2 * s if on else 0
+    d.rounded_rectangle([0, y0, w * s - 1, (h + 10) * s - 1], radius=3 * s, fill=rgba((8, 8, 9)))
+    top = mix(KEY, (0, 0, 0), 0.10) if on else KEY
+    d.rounded_rectangle([2 * s, y0 + 2 * s + off, (w - 2) * s, (h + 10 - 4) * s + off], radius=2 * s, fill=rgba(top))
+    d.line([4 * s, y0 + 4 * s + off, (w - 4) * s, y0 + 4 * s + off], fill=rgba(mix(top, (255, 255, 255), .35)), width=s)
+    return im.resize((w, h + 10), Image.LANCZOS)
 
-def seg(label, on, w, h=40):
-    s = SS; im = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    fill, txt = ((16, 16, 18), PRINT) if on else (KEY, (30, 30, 32))
-    d.rounded_rectangle([0, 0, w * s - 1, h * s - 1], radius=4 * s, fill=rgba(fill), outline=rgba((12, 12, 14)), width=s)
-    if on: d.ellipse([10 * s, h * s / 2 - 4 * s, 18 * s, h * s / 2 + 4 * s], fill=rgba(LED))
-    text_c(d, w * s / 2 + (6 * s if on else 0), h * s / 2, label, font(14 * s), rgba(txt))
-    return im.resize((w, h), Image.LANCZOS)
+def floppy(d, x, y):
+    d.rounded_rectangle([x, y, x + 178, y + 96], radius=4, fill=(14, 14, 15), outline=(40, 40, 42), width=2)
+    d.rounded_rectangle([x + 16, y + 30, x + 162, y + 44], radius=3, fill=(2, 2, 2), outline=(52, 52, 54))
+    d.rectangle([x + 126, y + 64, x + 158, y + 78], fill=(60, 60, 62), outline=(90, 90, 92))       # eject button
+    d.ellipse([x + 20, y + 68, x + 28, y + 76], fill=(70, 28, 24))                               # drive LED
+    d.text((x + 36, y + 66), "DISK", font=font(11), fill=PRINT_DIM)
+
+def keyboard(im):
+    d = ImageDraw.Draw(im)
+    y0 = PANEL_BOTTOM
+    d.rectangle([0, y0, W, H], fill=(16, 16, 17))
+    d.rectangle([0, y0, W, y0 + 6], fill=(40, 40, 42))
+    # pitch and mod wheels in the left cheek
+    for k, wx in enumerate((58, 128)):
+        d.rounded_rectangle([wx, y0 + 34, wx + 44, y0 + 164], radius=6, fill=(6, 6, 7), outline=(46, 46, 48), width=2)
+        for j in range(14):
+            yy = y0 + 42 + j * 8.6
+            d.line([wx + 6, yy, wx + 38, yy], fill=(34 + (j % 2) * 10,) * 3, width=3)
+        d.text((wx + 2, y0 + 16), ("PITCH", "MOD")[k], font=font(10), fill=PRINT_DIM)
+    # 3 octaves of keys
+    kx0, kx1, ky0, ky1 = 214, W - 14, y0 + 16, H - 10
+    whites = 21; ww = (kx1 - kx0) / whites
+    for i in range(whites):
+        x = kx0 + i * ww
+        d.rectangle([x, ky0, x + ww - 2, ky1], fill=(236, 234, 226), outline=(120, 118, 112))
+        d.rectangle([x + 1, ky1 - 8, x + ww - 3, ky1 - 1], fill=(206, 204, 196))
+    for i in range(whites - 1):
+        if i % 7 in (2, 6): continue                                  # no black key between E-F and B-C
+        x = kx0 + (i + 1) * ww - ww * 0.3
+        d.rectangle([x, ky0, x + ww * 0.6, ky0 + (ky1 - ky0) * 0.62], fill=(12, 12, 13))
+        d.rectangle([x + 3, ky0, x + ww * 0.6 - 3, ky0 + 6], fill=(46, 46, 48))
 
 def background():
-    random.seed(10)
-    im = Image.new("RGB", (W, H), BODY); px = im.load()
-    for y in range(H):
+    random.seed(9)
+    im = Image.new("RGB", (W, H), PANEL); px = im.load()
+    for y in range(PANEL_BOTTOM):
         for x in range(W):
-            n = random.randint(-2, 2); px[x, y] = (BODY[0] + n, BODY[1] + n, BODY[2] + n)
+            n = random.randint(-2, 2); px[x, y] = (PANEL[0] + n, PANEL[1] + n, PANEL[2] + n)
     d = ImageDraw.Draw(im)
-    # header: name plate
-    d.rectangle([0, 0, W, 64], fill=(18, 18, 20)); d.rectangle([0, 64, W, 66], fill=VFD_TXT)
-    italic_text(im, (26, 8), "ASR-10", 40, PRINT)
-    d.text((222, 14), spaced("ADVANCED  SAMPLING  RECORDER"), font=font(13), fill=PRINT_DIM)
-    d.text((222, 34), spaced("16-BIT  ·  30 / 44.1 kHz  ·  OTTO"), font=font(13), fill=VFD_TXT)
-    tw = d.textlength(spaced("SLIDERS"), font=font(16)); d.text((W - 28 - tw, 22), spaced("SLIDERS"), font=font(16), fill=PRINT)
-    # slider panel
-    d.rounded_rectangle([14, 80, PLATE_X1, 610], radius=6, fill=PANEL, outline=(12, 12, 14), width=2)
-    d.rectangle([14, 80, PLATE_X1, 84], fill=PANEL_HI)
-    f_mark = font(10)
-    for i, (key, lab, marks, ticks) in enumerate(SLIDERS):
-        x = SX0 + i * SPITCH; cx = x + BOXW / 2
-        y0, y1 = SLIDER_Y + FY + TRAVEL0, SLIDER_Y + FY + TRAVEL1
-        for j in range(ticks + 1):
-            y = y1 + (y0 - y1) * j / ticks
-            d.line([cx - 34, y, cx - 30, y], fill=PRINT_DIM, width=1); d.line([cx + 30, y, cx + 34, y], fill=PRINT_DIM, width=1)
-        for pos, m in marks:
-            y = y1 + (y0 - y1) * pos
-            d.line([cx - 38, y, cx - 30, y], fill=PRINT, width=1); d.line([cx + 30, y, cx + 38, y], fill=PRINT, width=1)
-            d.text((cx + 42, y - 6), m, font=f_mark, fill=PRINT)
-    d.line([26, 572, PLATE_X1 - 12, 572], fill=(12, 12, 14), width=2)
-    d.text((34, 582), spaced("DATA  ENTRY"), font=font(12), fill=PRINT_DIM)
-    # right panel: switch groups, bypass, fluorescent display
-    d.rounded_rectangle([RIGHT_X - 10, 80, 1266, 610], radius=6, fill=PANEL, outline=(12, 12, 14), width=2)
-    for key, title, opts, x, y, w, cols in GROUPS: d.text((x, y), spaced(title), font=font(13), fill=PRINT)
-    d.text((BYPASS_XY[0] + 130, BYPASS_XY[1] + 14), spaced("BYPASS"), font=font(13), fill=PRINT)
-    vx0, vy0 = RIGHT_X + 4, 452
-    d.rounded_rectangle([vx0, vy0, 1252, 596], radius=4, fill=VFD_BG, outline=(4, 4, 6), width=3)
-    lf = font(14, "DejaVuSansMono-Bold.ttf")
-    lines = ["30k : BAND-LIMITED 13.4 kHz", "44.1: FULL RANGE", "OTTO: LINEAR INTERPOLATION",
-             "FILTER: 4 POLES, NO RESONANCE", "TUNE -12..+12 ST, FINE CENTS"]
-    for k, t in enumerate(lines): d.text((vx0 + 14, vy0 + 12 + k * 26), t, font=lf, fill=VFD_TXT)
-    for sx, sy in [(4, 72), (W - 16, 72), (4, H - 16), (W - 16, H - 16)]:
-        d.ellipse([sx, sy, sx + 11, sy + 11], fill=(120, 122, 122), outline=(40, 40, 42)); d.line([sx + 2, sy + 5, sx + 9, sy + 5], fill=(40, 40, 42), width=2)
+    d.rectangle([0, 0, W, 4], fill=(44, 44, 46))
+    floppy(d, 24, 110)
+    d.text((26, 226), spaced("3.5\"  DISK  DRIVE"), font=font(11), fill=PRINT_DIM)
+    # Data Entry slider scale
+    sx, sy, sw, sh = SLIDER_BOX; cx = sx + sw / 2
+    y0, y1 = sy + FY + TRAVEL0, sy + FY + TRAVEL1
+    for j in range(21):
+        y = y1 + (y0 - y1) * j / 20; long_ = j % 5 == 0
+        d.line([cx - 34 - (6 if long_ else 0), y, cx - 30, y], fill=PRINT if long_ else PRINT_DIM, width=1)
+        d.line([cx + 30, y, cx + 34 + (6 if long_ else 0), y], fill=PRINT if long_ else PRINT_DIM, width=1)
+    # fluorescent display with a bezel; live text is drawn by MPC (labels bound to the plugin)
+    vx, vy, vw, vh = VFD
+    d.rounded_rectangle([vx - 10, vy - 10, vx + vw + 10, vy + vh + 10], radius=6, fill=(4, 4, 5), outline=(52, 52, 54), width=2)
+    d.rectangle([vx, vy, vx + vw, vy + vh], fill=VFD_BG)
+    for yy in range(vy, vy + vh, 3): d.line([vx, yy, vx + vw, yy], fill=(8, 22, 22))              # faint VFD grid
+    d.line([vx + 12, vy + 68, vx + vw - 12, vy + 68], fill=VFD_DIM, width=1)
+    # Edit buttons: labels printed above
+    f_lab = font(11)
+    d.text((EDIT_X, EDIT_Y - 38), spaced("EDIT") + "   ·   " + "select, then move DATA ENTRY", font=f_lab, fill=PRINT_DIM)
+    for i, lab in enumerate(EDIT_LABELS): text_c(d, edit_x(i) + KEY_W / 2, EDIT_Y - 12, lab, f_lab, PRINT)
+    # option groups
+    for g in GROUPS:
+        key, title, opts, x, y, kw, gap = g
+        d.text((x, y - 44), spaced(title), font=font(12), fill=PRINT)
+        for i, o in enumerate(opts): text_c(d, group_x(g, i) + kw / 2, y - 12, o, f_lab, PRINT)
+    bx, by, bw = BYPASS
+    d.text((bx, by - 44), spaced("BYPASS"), font=font(12), fill=PRINT)
+    # name plate (drawn, not the Ensoniq logo)
+    slanted(im, (948, 330), "ASR-10", font(54, "DejaVuSans.ttf"), PRINT)
+    d.text((952, 404), spaced("ADVANCED  SAMPLING  RECORDER"), font=font(10), fill=PRINT_DIM)
+    d.line([372, 270, 912, 270], fill=(46, 46, 48), width=1)
+    keyboard(im)
     return im
 
 # ---------- TUI.json (GlueBus schema) ----------
@@ -194,12 +214,23 @@ def bgdata(col="0"): return {"version": 1, "focussed": {"version": 1, "colour": 
 def definition(actions, parts, bgcol="0", ignore=False):
     return {"version": 4, "actions": actions, "backgroundData": bgdata(bgcol), "ignoreMousePresses": ignore,
             "disableCoarseDataWheel": False, "repeats": 1, "hideQLinkBounds": True, "componentsData": parts}
-def label(kind, h, colour, b, case="Original", name=None):
+def label(kind, h, colour, b, case="Original", name=None, just="horizontallyCentred verticallyCentred"):
     return comp(name or kind, "Label", {"version": 1, "textStyle": {"version": 1, "font": {"version": 1, "name": "Titillium Web", "style": "SemiBold", "height": float(h)},
-                "colour": colour, "justification": "horizontallyCentred verticallyCentred", "case": case}, "type": kind, "handleName": "Data"}, bounds(b))
+                "colour": colour, "justification": just, "case": case}, "type": kind, "handleName": "Data"}, bounds(b))
+def bound_label(name, param, h, colour, b, kind="Value", case="Upper Case", just="horizontallyCentred verticallyCentred"):
+    c = label(kind, h, colour, b, case=case, name=name, just=just); c["handle remapping"] = bind(param); return c
 def focus(b):
     return comp("Focus", "Focus", {"version": 1, "backgroundColour": "00000000", "outlineColour": FOCUS_COL, "backgroundInset": 2.0, "outlineThickness": 2.0},
                 bounds(b, visible="WhenFocussed"))
+def key_group_defs(key, n, w, defs):
+    """One ASR key per option of a choice parameter (buttonId = option index), on/off images per key width."""
+    on, off = f"asr_key_{w}_on.png", f"asr_key_{w}_off.png"
+    if not os.path.exists(os.path.join(OUT, on)):
+        asr_key(True, w).save(os.path.join(OUT, on)); asr_key(False, w).save(os.path.join(OUT, off))
+    for i in range(n):
+        defs.append({"key": f"asrKey_{key}_{i}", "value": definition([action("Mouse Down", "Q-Link")], [
+            comp("Button", "Button", {"version": 2, "onImage": on, "offImage": off, "buttonId": i, "numButtonsInGroup": n,
+                 "handleName": "Data", "gestureBehaviour": "Instant"}, bounds((0, 0, w, KEY_H + 10)))])})
 
 def build():
     if os.path.isdir(SKIN_DIR): shutil.rmtree(SKIN_DIR)
@@ -207,44 +238,43 @@ def build():
     defs = []
 
     fader_strip().save(os.path.join(OUT, "asr_fader.png"), optimize=True)
-    defs.append({"key": "asrSlider", "value": definition(
+    sx, sy, sw, sh = SLIDER_BOX
+    defs.append({"key": "asrDataEntry", "value": definition(
         [action("Mouse Down", "Q-Link"), action("Double Click", "Show Overlay", "knob overlay"), action("Enter Pressed", "Show Overlay", "knob overlay")],
-        [focus((0, 0, BOXW, BOXH)),
-         label("Name", 15, NAME_COL, (0, 2, BOXW, 22), case="Upper Case"),
+        [focus((0, 0, sw, sh)),
+         label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case"),
          comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": False,
-              "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((BOXW - FS) // 2, FY, FS, FS))),
-         label("Value", 20, VALUE_COL, (0, FY + FH + 8, BOXW, 28), case="Upper Case")])})
+              "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((sw - FS) // 2, FY, FS, FS)))])})
 
-    key_button(True).save(os.path.join(OUT, "asr_btn_on.png")); key_button(False).save(os.path.join(OUT, "asr_btn_off.png"))
-    defs.append({"key": "asrToggle", "value": definition([action("Mouse Down", "Q-Link"), action("Enter Pressed", "Toggle Switch")], [
-        focus((0, 0, 122, 52)),
-        comp("Button", "Button", {"version": 2, "onImage": "asr_btn_on.png", "offImage": "asr_btn_off.png", "buttonId": 1,
-             "numButtonsInGroup": 1, "handleName": "Data", "gestureBehaviour": "Instant"}, bounds((6, 6, 110, 40)))])})
-
-    for g in GROUPS:
-        key, title, opts, x, y, w, cols = g
-        for i, o in enumerate(opts):
-            typ, on, off = f"asrSeg_{key}_{i}", f"asr_seg_{key}_{i}_on.png", f"asr_seg_{key}_{i}_off.png"
-            seg(o, True, w).save(os.path.join(OUT, on)); seg(o, False, w).save(os.path.join(OUT, off))
-            defs.append({"key": typ, "value": definition([action("Mouse Down", "Q-Link")], [
-                comp("Button", "Button", {"version": 2, "onImage": on, "offImage": off, "buttonId": i, "numButtonsInGroup": len(opts),
-                     "handleName": "Data", "gestureBehaviour": "Instant"}, bounds((0, 0, w, 40)))])})
+    key_group_defs("edit", len(EDIT_LABELS), KEY_W, defs)
+    for g in GROUPS: key_group_defs(g[0], len(g[2]), g[5], defs)
+    asr_key(True, BYPASS[2]).save(os.path.join(OUT, "asr_bypass_on.png")); asr_key(False, BYPASS[2]).save(os.path.join(OUT, "asr_bypass_off.png"))
+    defs.append({"key": "asrBypass", "value": definition([action("Mouse Down", "Q-Link"), action("Enter Pressed", "Toggle Switch")], [
+        comp("Button", "Button", {"version": 2, "onImage": "asr_bypass_on.png", "offImage": "asr_bypass_off.png", "buttonId": 1,
+             "numButtonsInGroup": 1, "handleName": "Data", "gestureBehaviour": "Instant"}, bounds((0, 0, BYPASS[2], KEY_H + 10)))])})
 
     background().save(os.path.join(OUT, "asr_bg.png"), optimize=True)
     comps = [comp("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": "asr_bg.png"}, bounds((0, 0, W, H)))]
-    for i, (key, lab, _, _) in enumerate(SLIDERS):
-        comps.append(comp(lab, "asrSlider", {"version": 1, "handleName": "Data"},
-                          bounds((SX0 + i * SPITCH, SLIDER_Y, BOXW, BOXH), focus="Yes", show="Hide"), bind(key)))
+    comps.append(comp("Data Entry", "asrDataEntry", {"version": 1, "handleName": "Data"}, bounds(SLIDER_BOX, focus="Yes", show="Hide"), bind("data")))
+    # the fluorescent display: selected parameter + value, then the modes
+    vx, vy, vw, vh = VFD
+    comps.append(bound_label("Display", "data", 34, VFD_COL, (vx + 14, vy + 10, vw - 28, 52)))
+    third = (vw - 28) // 3
+    for k, prm in enumerate(("rate", "fmode", "tmode")):
+        comps.append(bound_label(f"Display {prm}", prm, 17, VFD_COL, (vx + 14 + k * third, vy + 76, third, 30)))
+    for i in range(len(EDIT_LABELS)):
+        comps.append(comp(f"Edit {EDIT_LABELS[i]}", f"asrKey_edit_{i}", {"version": 1, "handleName": "Data"},
+                          bounds((edit_x(i), EDIT_Y - 10, KEY_W, KEY_H + 10), focus="Yes" if i == 0 else "No", show="Hide"), bind("edit")))
     for g in GROUPS:
-        key, title, opts, x, y, w, cols = g
+        key, title, opts, x, y, kw, gap = g
         for i, o in enumerate(opts):
-            sx, sy = seg_xy(g, i)
-            comps.append(comp(f"{title} {o}", f"asrSeg_{key}_{i}", {"version": 1, "handleName": "Data"},
-                              bounds((sx, sy, w, 40), focus="Yes" if i == 0 else "No", show="Hide"), bind(key)))
-    comps.append(comp("Bypass", "asrToggle", {"version": 1, "handleName": "Data"}, bounds((*BYPASS_XY, 122, 52), focus="Yes", show="Hide"), bind("bypass")))
-    defs.append({"key": "ASR|Sliders", "value": definition([], comps, "ff343538")})
-    tabs = [{"version": 3, "tabName": "Sliders", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
-             "componentName": "ASR|Sliders", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
+            comps.append(comp(f"{title} {o}", f"asrKey_{key}_{i}", {"version": 1, "handleName": "Data"},
+                              bounds((group_x(g, i), y - 10, kw, KEY_H + 10), focus="Yes" if i == 0 else "No", show="Hide"), bind(key)))
+    bx, by, bw = BYPASS
+    comps.append(comp("Bypass", "asrBypass", {"version": 1, "handleName": "Data"}, bounds((bx, by - 10, bw, KEY_H + 10), focus="Yes", show="Hide"), bind("bypass")))
+    defs.append({"key": "ASR|Panel", "value": definition([], comps, "ff18181a")})
+    tabs = [{"version": 3, "tabName": "ASR-10", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
+             "componentName": "ASR|Panel", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
 
     tui = {"pageData": {"version": 1,
         "componentDefinitions": {"version": 2, "importFiles": ["/usr/share/Akai/Content/Synths/Generic/Generic Knob Overlay.json",
@@ -263,23 +293,23 @@ def build():
         f"\t<version>{VERSION}</version>\n</plugincontent>\n")
     print("skin written to", SKIN_DIR)
 
-# ---------- preview (typical values; MPC draws the live name/value labels itself) ----------
-PREVIEW = dict(input=24 / 36, tune=12 / 24, fine=.5, fc1=lpos(6000, 100, 20000), fc2=lpos(80, 20, 20000), mix=1.0, volume=24 / 36)
-PREVIEW_TXT = dict(input="+0.0", tune="0", fine="+0", fc1="6.0 KHZ", fc2="80 HZ", mix="100", volume="+0.0")
-PREVIEW_ON = dict(rate=0, tmode=0, fmode=0)
+# ---------- preview (typical state; MPC draws the live labels itself) ----------
 def preview(path):
     im = Image.open(os.path.join(OUT, "asr_bg.png")).convert("RGBA"); d = ImageDraw.Draw(im)
     strip = Image.open(os.path.join(OUT, "asr_fader.png"))
-    for i, (key, lab, _, _) in enumerate(SLIDERS):
-        x = SX0 + i * SPITCH; fr = round(PREVIEW[key] * (FRAMES - 1)); fx0 = (FS - FW) // 2
-        im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(x + (BOXW - FW) / 2), SLIDER_Y + FY))
-        text_c(d, x + BOXW / 2, SLIDER_Y + 13, lab, font(14), PRINT)
-        text_c(d, x + BOXW / 2, SLIDER_Y + FY + FH + 22, PREVIEW_TXT[key], font(17), VFD_TXT)
+    sx, sy, sw, sh = SLIDER_BOX; fr = round(0.5 * (FRAMES - 1)); fx0 = (FS - FW) // 2
+    im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(sx + (sw - FW) / 2), sy + FY))
+    text_c(d, sx + sw / 2, sy + 15, "DATA ENTRY", font(13), PRINT)
+    vx, vy, vw, vh = VFD
+    text_c(d, vx + vw / 2, vy + 36, "TUNE 0", font(30), VFD_TXT)
+    third = (vw - 28) // 3
+    for k, t in enumerate(("30 KHZ", "LP2 / HP2", "PITCH")): text_c(d, vx + 14 + k * third + third / 2, vy + 91, t, font(15), VFD_TXT)
+    on = lambda w, a: Image.open(os.path.join(OUT, f"asr_key_{w}_{'on' if a else 'off'}.png"))
+    for i in range(len(EDIT_LABELS)): im.alpha_composite(on(KEY_W, i == 1), (int(edit_x(i)), EDIT_Y - 10))
+    sel = dict(fmode=0, rate=0, tmode=0)
     for g in GROUPS:
-        key = g[0]
-        for i in range(len(g[2])):
-            im.alpha_composite(Image.open(os.path.join(OUT, f"asr_seg_{key}_{i}_{'on' if i == PREVIEW_ON[key] else 'off'}.png")), seg_xy(g, i))
-    im.alpha_composite(Image.open(os.path.join(OUT, "asr_btn_off.png")), (BYPASS_XY[0] + 6, BYPASS_XY[1] + 6))
+        for i in range(len(g[2])): im.alpha_composite(on(g[5], i == sel[g[0]]), (int(group_x(g, i)), g[4] - 10))
+    im.alpha_composite(Image.open(os.path.join(OUT, "asr_bypass_off.png")), (BYPASS[0], BYPASS[1] - 10))
     im.convert("RGB").save(path)
 
 if __name__ == "__main__":

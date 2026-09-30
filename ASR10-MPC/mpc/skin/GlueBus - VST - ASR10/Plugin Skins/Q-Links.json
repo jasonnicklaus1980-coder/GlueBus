@@ -12,32 +12,36 @@
                 "SubTab": 1,
                 "Bank Direction": "Column",
                 "Q-Links": {
-                    "Q-Link 1": 0,
-                    "Q-Link 2": 1,
-                    "Q-Link 3": 2,
-                    "Q-Link 4": 3,
-                    "Q-Link 5": 4,
-                    "Q-Link 6": 5,
-                    "Q-Link 7": 6,
-                    "Q-Link 8": 7,
-                    "Q-Link 9": 8,
-                    "Q-Link 10": 9,
-                    "Q-Link 11": 10
+                    "Q-Link 1": 11,
+                    "Q-Link 2": 12,
+                    "Q-Link 3": 0,
+                    "Q-Link 4": 1,
+                    "Q-Link 5": 2,
+                    "Q-Link 6": 3,
+                    "Q-Link 7": 4,
+                    "Q-Link 8": 5,
+                    "Q-Link 9": 6,
+                    "Q-Link 10": 7,
+                    "Q-Link 11": 8,
+                    "Q-Link 12": 9,
+                    "Q-Link 13": 10
                 }
             }
         ]
     },
     "Program Mode Q-Links": {
-        "Q-Link 1": 0,
-        "Q-Link 2": 1,
-        "Q-Link 3": 2,
-        "Q-Link 4": 3,
-        "Q-Link 5": 4,
-        "Q-Link 6": 5,
-        "Q-Link 7": 6,
-        "Q-Link 8": 7,
-        "Q-Link 9": 8,
-        "Q-Link 10": 9,
-        "Q-Link 11": 10
+        "Q-Link 1": 11,
+        "Q-Link 2": 12,
+        "Q-Link 3": 0,
+        "Q-Link 4": 1,
+        "Q-Link 5": 2,
+        "Q-Link 6": 3,
+        "Q-Link 7": 4,
+        "Q-Link 8": 5,
+        "Q-Link 9": 6,
+        "Q-Link 10": 7,
+        "Q-Link 11": 8,
+        "Q-Link 12": 9,
+        "Q-Link 13": 10
     }
 }

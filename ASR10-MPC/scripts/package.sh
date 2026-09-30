@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build asr10.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  ASR10-1.0.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/asr10.so,...}
+# in the same layout as the JV-880 package:  ASR10-1.1.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/asr10.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.0; NAME="ASR10-$VERSION"; SO=build/arm/asr10.so
+VERSION=1.1.0; NAME="ASR10-$VERSION"; SO=build/arm/asr10.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker

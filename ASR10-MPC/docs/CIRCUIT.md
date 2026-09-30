@@ -40,6 +40,13 @@ changes, the re-purposed poles start by passing their input and settle from ther
 16-bit DAC rounding, then **Mix** (dry / ASR, exact at both ends) and **Volume**. Not modelled: the ESP effects
 chip (reverbs, delays; the MPC has its own), the analogue output stage.
 
+## 5. Editing like the ASR-10
+The ASR-10 has one Data Entry slider: you pick a parameter with a button and move the slider. MPC skins bind each
+control to one fixed parameter, so the plugin has a **Data Entry** parameter that is a proxy: reading or writing it
+reads or writes whichever parameter the **Edit** parameter selects. When Edit changes, or a Q-Link moves the selected
+parameter, the plugin tells MPC the new Data Entry value (audioMasterAutomate) and asks it to redraw
+(audioMasterUpdateDisplay), so the slider jumps and the display text updates. Presets keep the current selection.
+
 ## Sources
 - Specs (16-bit, 29.7619 / 44.1 kHz, 64x sigma-delta, 2 digital filters in series up to 4-pole, 6-24 dB/oct):
   Wikipedia "Ensoniq ASR-10", Vintage Synth Explorer, Sonicstate.
@@ -59,5 +66,8 @@ chip (reverbs, delays; the MPC has its own), the analogue output stage.
   droop) and cuts 8 kHz below -15 dB.
 - Filters at 1 kHz: 2, 3 and 4 poles each cut 4 kHz about 12 dB more; the 4-pole drops another 15+ dB by 8 kHz;
   no gain above 0 dB around the cutoff (no resonance); high-pass 500 Hz cuts 100 Hz below -20 dB.
-- Mix 0 and Bypass bit-exact dry; all presets finite and bounded at 44.1 and 48 kHz; slow Q-Link turns step through
+- Data Entry: moves the selected parameter, reads it back, tells MPC about both; changing Edit moves the slider
+  to the new value; a Q-Link on the selected parameter moves it too, an unselected one doesn't; 24 semitone steps
+  on a slow turn; the display fits ("FILTER 1 6.0 kHz"); presets keep the selection.
+- Mix 0 and Bypass bit-exact dry; all 36 presets finite and bounded at 44.1 and 48 kHz; slow Q-Link turns step through
   every Tune and Fine value; changing Tune off 0 or the filter mode mid-note doesn't click.

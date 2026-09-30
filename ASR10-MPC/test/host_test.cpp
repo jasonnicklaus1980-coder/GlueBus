@@ -14,11 +14,11 @@
 static int fails = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { ++fails; std::printf("FAIL: "); std::printf(__VA_ARGS__); std::printf("\n"); } } while (0)
 
-enum { P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX, P_VOLUME, P_RATE, P_FMODE, P_TMODE, P_BYPASS, P_COUNT };
+enum { P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX, P_VOLUME, P_RATE, P_FMODE, P_TMODE, P_BYPASS, P_DATA, P_EDIT, P_COUNT };
 
-static int automateCalls = 0, displayCalls = 0;
-static intptr_t host(AEffect*, int32_t op, int32_t, intptr_t, void*, float) {
-    if (op == 0) ++automateCalls;
+static int automateCalls = 0, displayCalls = 0; static float lastAutomate[64]; static int automated[64];
+static intptr_t host(AEffect*, int32_t op, int32_t idx, intptr_t, void*, float opt) {
+    if (op == 0) { ++automateCalls; if (idx >= 0 && idx < 64) { lastAutomate[idx] = opt; ++automated[idx]; } }
     if (op == 42) ++displayCalls;
     return 2400;
 }
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     CHECK(fx->numInputs == 2 && fx->numOutputs == 2, "io");
     CHECK(fx->flags & effFlagsCanReplacing, "replacing flag");
     CHECK(fx->uniqueID == 0x41535231, "uid %08x", fx->uniqueID);
-    CHECK(fx->numParams == P_COUNT && fx->numPrograms == 12, "counts %d/%d", fx->numParams, fx->numPrograms);
+    CHECK(fx->numParams == P_COUNT && fx->numPrograms == 36, "counts %d/%d", fx->numParams, fx->numPrograms);
     CHECK(D(effGetPlugCategory) == kPlugCategEffect, "category");
     D(effOpen); D(effSetSampleRate, 0, 0, nullptr, SR); D(effSetBlockSize, 0, 512); D(effMainsChanged, 0, 1);
 
@@ -267,6 +267,37 @@ int main(int argc, char** argv) {
         j = switchRun(P_FMODE, 0.f, 1 / 3.f, 0, 2000.f);
         std::printf("Filter mode change: steady max step %.3f, at switch %.3f\n", j.first, j.second);
         CHECK(j.second < 2.f * j.first + 0.02f, "filter mode switch click (%.3f vs %.3f)", j.second, j.first);
+    }
+
+    // 14) ASR-10 style editing: Edit buttons pick a parameter, the one Data Entry slider moves it
+    {
+        auto edit = [](int k) { setNorm(P_EDIT, k / 6.f); };           // 0 Input, 1 Tune, 2 Fine, 3 Filter 1 ...
+        auto disp = [](int p) { static char d[64]; std::memset(d, 0, sizeof d); D(effGetParamDisplay, p, 0, d); return d; };
+        fresh(); edit(1); setNorm(P_DATA, 18 / 24.f);
+        std::printf("\nData Entry on Tune: display '%s'", disp(P_DATA)); std::printf(", tune '%s'\n", disp(P_TUNE));
+        CHECK(!std::strcmp(disp(P_TUNE), "+6") && !std::strcmp(disp(P_DATA), "TUNE +6"), "data entry moves Tune");
+        CHECK(std::fabs(getNorm(P_DATA) - getNorm(P_TUNE)) < 1e-6f, "data entry reads the selected parameter");
+        CHECK(std::fabs(lastAutomate[P_TUNE] - getNorm(P_TUNE)) < 1e-6f, "host told about the real parameter");
+        fc1(6000.f); automated[P_DATA] = 0; displayCalls = 0; edit(3);
+        std::printf("Edit -> Filter 1: display '%s', host told %d time(s), Data Entry now %.3f (Filter 1 %.3f)\n",
+                    disp(P_DATA), automated[P_DATA], lastAutomate[P_DATA], getNorm(P_FC1));
+        CHECK(!std::strcmp(disp(P_DATA), "FILTER 1 6.0 kHz"), "display follows the selection");
+        CHECK(automated[P_DATA] == 1 && std::fabs(lastAutomate[P_DATA] - getNorm(P_FC1)) < 1e-6f && displayCalls >= 1,
+              "slider jumps to the newly selected value");
+        automated[P_DATA] = 0; fc1(2000.f);                         // a Q-Link moves Filter 1 directly
+        CHECK(automated[P_DATA] == 1 && std::fabs(lastAutomate[P_DATA] - getNorm(P_FC1)) < 1e-6f, "Data Entry follows a Q-Link");
+        automated[P_DATA] = 0; setNorm(P_MIX, 0.3f);                // a parameter that isn't selected
+        CHECK(automated[P_DATA] == 0, "unselected parameter doesn't move Data Entry");
+        edit(1); setNorm(P_DATA, 0.f); int steps = 0; char last[64]; std::strcpy(last, disp(P_TUNE));
+        for (int k = 0; k < 127; ++k) {
+            setNorm(P_DATA, std::fmin(1.f, getNorm(P_DATA) + 1.f / 127.f));
+            if (std::strcmp(disp(P_TUNE), last)) { ++steps; std::strcpy(last, disp(P_TUNE)); }
+        }
+        std::printf("slow Q-Link on Data Entry (Tune): %d steps, ends at '%s'\n", steps, last);
+        CHECK(steps == 24, "data entry steps through every semitone (%d)", steps);
+        edit(4); D(effSetProgram, 0, 3);
+        CHECK(!std::strncmp(disp(P_DATA), "FILTER 2", 8), "presets keep the Edit selection ('%s')", disp(P_DATA));
+        for (int k = 0; k < 7; ++k) { edit(k); std::printf("  edit %d: '%s'\n", k, disp(P_DATA)); CHECK(std::strlen(disp(P_DATA)) < 24, "display fits"); }
     }
 
     char s[64] = {}; D(effGetEffectName, 0, 0, s); CHECK(!std::strcmp(s, "ASR10"), "effect name");

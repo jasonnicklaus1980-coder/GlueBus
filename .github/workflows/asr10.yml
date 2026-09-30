@@ -39,7 +39,7 @@ jobs:
         run: |
           chmod +x scripts/*.sh mpc/*.sh
           READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
-          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/ASR10-1.0.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/ASR10-1.1.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -51,10 +51,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: asr10-build-${{ github.run_number }}
-          name: ASR10 1.0.0 (build ${{ github.run_number }})
+          name: ASR10 1.1.0 (build ${{ github.run_number }})
           make_latest: false
-          files: out/ASR10-1.0.0-mpc-armv7.zip
+          files: out/ASR10-1.1.0-mpc-armv7.zip
           body: |
             Install from Terminus (SSH into the MPC as root):
-            1. Upload ASR10-1.0.0-mpc-armv7.zip to /tmp
-            2. cd /tmp && unzip -o ASR10-1.0.0-mpc-armv7.zip && sh ASR10-1.0.0/install.sh
+            1. Upload ASR10-1.1.0-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o ASR10-1.1.0-mpc-armv7.zip && sh ASR10-1.1.0/install.sh
