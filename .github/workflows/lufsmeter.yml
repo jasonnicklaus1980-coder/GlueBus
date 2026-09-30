@@ -1,0 +1,60 @@
+# Builds the RadioReady LUFS Meter MPC plugin, runs the offline host test and publishes the install zip as a release.
+# Works whether the repo holds the LUFS-MPC/ folder or just LUFS-MPC-source.zip (phone-friendly upload).
+name: lufsmeter
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write     # needed to publish the release
+
+jobs:
+  build:
+    # 22.04 on purpose: its armhf glibc keeps the plugin within GLIBC_2.34, like the JV-880, GlueBus and SP1200 packages
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate project (unpack the source zip if that's what was uploaded)
+        run: |
+          if [ -f LUFS-MPC/Makefile ]; then echo "PROJ=LUFS-MPC" >> "$GITHUB_ENV"
+          elif [ -f LUFS-MPC-source.zip ]; then
+            unzip -q -o LUFS-MPC-source.zip -d lufs_src
+            echo "PROJ=lufs_src/LUFS-MPC" >> "$GITHUB_ENV"
+          else echo "Can't find LUFS-MPC/ or LUFS-MPC-source.zip"; exit 1; fi
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf file zip
+          pip install --quiet pillow
+
+      - name: Offline host test (x86)
+        working-directory: ${{ env.PROJ }}
+        run: make test
+
+      - name: Build ARM plugin + package (verifies ARM/32-bit/hard-float/glibc)
+        working-directory: ${{ env.PROJ }}
+        run: |
+          chmod +x scripts/*.sh mpc/*.sh
+          READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/RadioReadyLUFS-1.0.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RadioReadyLUFS-mpc-armv7
+          path: out/*.zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lufsmeter-build-${{ github.run_number }}
+          name: RadioReady LUFS Meter 1.0.0 (build ${{ github.run_number }})
+          make_latest: false
+          files: out/RadioReadyLUFS-1.0.0-mpc-armv7.zip
+          body: |
+            Install from Terminus (SSH into the MPC as root):
+            1. Upload RadioReadyLUFS-1.0.0-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o RadioReadyLUFS-1.0.0-mpc-armv7.zip && sh RadioReadyLUFS-1.0.0/install.sh
