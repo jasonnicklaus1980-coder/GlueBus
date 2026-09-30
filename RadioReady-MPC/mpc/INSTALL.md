@@ -2,7 +2,7 @@
 
 A professional 8-band EQ with a QUICK RADIO READY section, live analyzer, EQ curve, meters and 55 presets, built as a
 native MPC OS VST2 insert effect and loaded by MPC's built-in plugin host. In the plugin browser it's
-**RadioReady EQ** by **RadioReady Audio**. The skin's gold title reads **Marcus and Moni Radio Ready EQ**.
+**RadioReady EQ** by **RadioReady Audio**. The skin's gold title reads **Marcus And Moni Radio Ready EQ**.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
@@ -24,7 +24,7 @@ EQ7, ASR10, SP1200 and GlueBus plugins; none of them share files.
 
 ## Screens (tabs)
 **All tabs:**
-- The gold title bar reads Marcus and Moni Radio Ready EQ.
+- The gold title bar reads Marcus And Moni Radio Ready EQ.
 - The graph shows the EQ curve (±18 dB, including the Quick section) over the live analyzer.
 - On the right are the IN and OUT peak meters and **LEVEL COMP**, the automatic level compensation in use.
 
