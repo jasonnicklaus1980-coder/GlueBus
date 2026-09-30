@@ -39,7 +39,7 @@ These parameters report "not automatable", so MPC shouldn't record them.
 - The value boxes (a flat filmstrip with a value label on top, dragged vertically) and the two tabs sharing one screen.
 
 ## The title
-"Marcus Price Jr Radio Ready EQ" is drawn in Great Vibes (Robert Leuschke, SIL Open Font License 1.1, from Google Fonts)
+The title "Marcus and Moni Radio Ready EQ" is drawn in Great Vibes (Robert Leuschke, SIL Open Font License 1.1, from Google Fonts)
 with a gold gradient, shadow and glow, into the background image. The font file isn't part of the project; the
 generated images are. To regenerate the skin with the script title, download Great Vibes into `tools/fonts/`
 (`GreatVibes-Regular.ttf` or `.woff`); without it the generator uses a plain italic and says so.

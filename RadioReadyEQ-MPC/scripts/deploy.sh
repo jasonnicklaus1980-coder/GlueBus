@@ -5,7 +5,7 @@
 # Builds the release folder first if dist/ is missing. Needs root SSH access to the MPC.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-HOST="${1:?usage: deploy.sh <mpc-ip> [user]}"; USER_="${2:-root}"; NAME=RadioReadyEQ-1.0.0
+HOST="${1:?usage: deploy.sh <mpc-ip> [user]}"; USER_="${2:-root}"; NAME=RadioReadyEQ-1.0.1
 [[ -d dist/$NAME ]] || ./scripts/package.sh
 # tar over ssh: works even if the MPC has no scp/sftp-server
 tar -C dist -cf - "$NAME" | ssh "$USER_@$HOST" "rm -rf /tmp/$NAME && tar -C /tmp -xf -"

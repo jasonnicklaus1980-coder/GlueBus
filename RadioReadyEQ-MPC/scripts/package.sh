@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build radioreadyeq.so (Marcus Price Jr Radio Ready EQ) for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  RadioReadyEQ-1.0.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/radioreadyeq.so,...}
+# in the same layout as the JV-880 package:  RadioReadyEQ-1.0.1/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/radioreadyeq.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.0; NAME="RadioReadyEQ-$VERSION"; SO=build/arm/radioreadyeq.so
+VERSION=1.0.1; NAME="RadioReadyEQ-$VERSION"; SO=build/arm/radioreadyeq.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker

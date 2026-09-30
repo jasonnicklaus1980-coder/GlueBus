@@ -651,7 +651,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "Marcus Price Jr Radio Ready EQ", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "Marcus Price Jr", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1001;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -688,6 +688,6 @@ EQ_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('M' << 24) | ('P' << 16) | ('R' << 8) | 'R';   // 'MPRR' = 0x4d505252
-    fx.version = 1000;
+    fx.version = 1001;
     return &fx;
 }

@@ -22,12 +22,13 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "Marcus Price Jr - VST - Marcus Price Jr Radio Ready EQ")
-TITLE = "Marcus Price Jr Radio Ready EQ"
+TITLE = "Marcus Price Jr Radio Ready EQ"                 # plugin name (MPC plugin list, skin folder)
+SKIN_TITLE = "Marcus and Moni Radio Ready EQ"            # the gold cursive title on the screen
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3     # filmstrip frames; numFrames = last frame index (stock MPC strips); supersampling
-VERSION = "1.0.0.0"
+VERSION = "1.0.1.0"
 
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 def font(size, name="DejaVuSans-Bold.ttf"):
@@ -172,7 +173,7 @@ def title_bar(im):
     for y in range(TITLE_H):                                        # dark bar with a thin gold rule under it
         d.line([0, y, W, y], fill=mix((14, 16, 22), (24, 28, 36), y / TITLE_H))
     d.line([0, TITLE_H, W, TITLE_H], fill=(150, 108, 30)); d.line([0, TITLE_H + 1, W, TITLE_H + 1], fill=(70, 52, 18))
-    gold_text(im, W / 2, TITLE_H / 2 - 3, "   ".join(TITLE.split(" ")), 44)   # script fonts set words tight: widen the gaps
+    gold_text(im, W / 2, TITLE_H / 2 - 3, "   ".join(SKIN_TITLE.split(" ")), 44)   # script fonts set words tight: widen the gaps
 
 # ---------- background ----------
 def background():

@@ -1,17 +1,17 @@
-# Marcus Price Jr Radio Ready EQ 1.0.0
+# Marcus Price Jr Radio Ready EQ 1.0.1
 
 7-band parametric EQ with a live analyzer, an EQ curve and 50 radio-ready mix presets, as a native MPC OS VST2 insert
 effect. Loaded by MPC's built-in plugin host. In the plugin browser: **Marcus Price Jr Radio Ready EQ** by
-**Marcus Price Jr**.
+**Marcus Price Jr**. The screen's gold title reads "Marcus and Moni Radio Ready EQ".
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
 - **Root shell access** (SSH). Installing plugins this way is unofficial: back up first, use at your own risk.
 
 ## Install with Terminus
-1. Upload `RadioReadyEQ-1.0.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `RadioReadyEQ-1.0.1-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o RadioReadyEQ-1.0.0-mpc-armv7.zip && sh RadioReadyEQ-1.0.0/install.sh`
+   `cd /tmp && unzip -o RadioReadyEQ-1.0.1-mpc-armv7.zip && sh RadioReadyEQ-1.0.1/install.sh`
 3. Answer `y`. MPC restarts; add **Marcus Price Jr Radio Ready EQ** as an insert (track, program, bus or master).
 
 The installer copies `radioreadyeq.so` to `/sdcard/vst/` and the skin to
@@ -49,7 +49,7 @@ beat where "Radio Lead Vocal" / "Rap Lead Vocal" lift the voice; "808 Small Spea
 reads on phones and car doors.
 
 ## Uninstall
-`sh /tmp/RadioReadyEQ-1.0.0/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/RadioReadyEQ-1.0.1/uninstall.sh` (unzip the package to `/tmp` again first).
 
 ## Troubleshooting
 - Not in the plugin list: it appears after MPC restarts; check `grep radioreadyeq /media/az01-internal/Settings/*/MPC.settings`.
