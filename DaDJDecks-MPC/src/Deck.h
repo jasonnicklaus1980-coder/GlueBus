@@ -3,6 +3,9 @@
 // key move together), cue, beat loops, nudge, beat-grid sync, 3-band isolator EQ with kills (Linkwitz-Riley 24 dB
 // crossovers at 300 Hz and 4 kHz), one-knob DJ filter (low-pass left, high-pass right), gain and channel fader.
 // Every jump (cue, nudge, sync, loop wrap) crossfades over 3 ms, and play/stop ramp over 5 ms: no clicks.
+// Scratch: while the hand (a Q-Link or the platter on screen) moves, the play head follows it (forwards / backwards,
+// pitch following the speed); still = silent, like a held record. Transform: a beat-synced gate (1 ms edges).
+// SP-12 mode: playback through an SP-1200-style 26.04 kHz DAC clock with drop-sample reads and 12-bit words.
 #include "Wav.h"
 #include <atomic>
 #include <algorithm>
@@ -10,6 +13,8 @@
 
 namespace dj
 {
+constexpr double kSpRate = 26040.0;
+inline double q12 (double x) { x = x > 1.0 ? 1.0 : (x < -1.0 ? -1.0 : x); return std::floor (x * 2048.0) / 2048.0; }
 struct BQ
 {
     double b0 = 1, b1 = 0, b2 = 0, a1 = 0, a2 = 0, z1[2] {}, z2[2] {};
@@ -52,6 +57,10 @@ struct DeckControls                   // set from the plugin's parameters every 
     double gainDb = 0.0, hiDb = 0.0, midDb = 0.0, lowDb = 0.0;   // EQ at the minimum (-24) = kill
     double filter = 0.0;              // -1 .. +1
     double fader = 0.8;               // 0 .. 1
+    bool scratch = false;             // the hand is on the record
+    double scratchTarget = 0.0;       // where the hand has moved it (frames)
+    double transform = 0.0;           // gate length in beats (0.5 = 1/8 notes ...), 0 = off
+    bool sp12 = false;
 };
 
 class Deck
@@ -114,6 +123,9 @@ public:
         if (c.play && ! playing) playing = true;
         if (! c.play) playing = false;
         const double step = track->rate / hostRate * (1.0 + c.pitch);
+        const double kScr = 1.0 - std::exp (-1.0 / (0.008 * fs));             // the platter follows the hand (~8 ms)
+        const double gateStep = 1.0 / (0.001 * fs), spInc = kSpRate / hostRate;
+        const double beatF = beatFrames();
         // EQ / filter / gain targets (smoothed per block)
         auto g = [] (double db) { return db <= -23.9 ? 0.0 : std::pow (10.0, db / 20.0); };
         const double tLow = g (c.lowDb), tMid = g (c.midDb), tHigh = g (c.hiDb);
@@ -127,10 +139,24 @@ public:
             // play / stop ramp
             if (playing) ramp = std::fmin (1.0, ramp + rampStep); else ramp = std::fmax (0.0, ramp - rampStep);
             double sl = 0, sr = 0;
-            if (ramp > 0)
+            if (c.scratch)
             {
-                read (pos, sl, sr);
-                if (xfLeft > 0)
+                // the record moves with the hand; the sound follows its speed, a still record is silent
+                const double before = pos, target = std::fmax (0.0, std::fmin (c.scratchTarget, (double) track->frames - 4));
+                pos += (target - pos) * kScr;
+                if (std::fabs (target - pos) < 0.25) pos = target;                    // the hand has stopped: so has the record
+                const double speed = std::fabs (pos - before) / (track->rate / hostRate);   // 1 = normal speed
+                scrGain += ((speed > 0.01 ? std::fmin (1.0, speed * 8.0) : 0.0) - scrGain) * 0.02;
+                if (scrGain < 1e-5) scrGain = 0.0;
+                readSp (c.sp12, spInc, pos, sl, sr);
+                sl *= scrGain; sr *= scrGain;
+                ramp = playing ? 1.0 : 0.0; xfLeft = 0;
+            }
+            else if (ramp > 0)
+            {
+                scrGain = 1.0;
+                readSp (c.sp12, spInc, pos, sl, sr);
+                if (xfLeft > 0 && ! c.sp12)
                 {
                     double ol, orr; read (xfPos, ol, orr);
                     const double t = (double) xfLeft / xfLen;
@@ -142,6 +168,17 @@ public:
                 if (loopBeats > 0 && pos >= loopEnd) jump (pos - (loopEnd - loopStart));
                 if (pos >= track->frames - 4) { pos = track->frames - 4; playing = false; ramp = 0; endReached = true; }
             }
+            // transform: open for the first half of each step of the beat grid
+            double gateT = 1.0;
+            if (c.transform > 0)
+            {
+                // on the track's beat grid; a take without a detectable beat uses 120 BPM from its start
+                const double bf = beatF > 0 ? beatF : track->rate * 0.5, off = beatF > 0 ? track->offset : 0.0;
+                double ph = (pos - off) / (bf * c.transform); ph -= std::floor (ph);
+                gateT = ph < 0.5 ? 1.0 : 0.0;
+            }
+            gate = gate < gateT ? std::fmin (gateT, gate + gateStep) : std::fmax (gateT, gate - gateStep);
+            sl *= gate; sr *= gate;
             double out[2] = { sl, sr };
             for (int ch = 0; ch < 2; ++ch)
             {
@@ -160,6 +197,19 @@ public:
     bool takeEndReached() { const bool e = endReached; endReached = false; return e; }
 
 private:
+    // SP-12: a new 12-bit word only on each tick of the 26.04 kHz DAC clock, read without interpolation (held between)
+    inline void readSp (bool sp, double inc, double p, double& l, double& r)
+    {
+        if (! sp) { read (p, l, r); return; }
+        spPhase += inc;
+        if (spPhase >= 1.0 || ! spPrimed)
+        {
+            spPhase -= std::floor (spPhase); spPrimed = true;
+            long i = (long) p; i = i < 0 ? 0 : (i >= track->frames ? track->frames - 1 : i);
+            spL = q12 (track->pcm[2 * i] / 32768.0); spR = q12 (track->pcm[2 * i + 1] / 32768.0);
+        }
+        l = spL; r = spR;
+    }
     inline void read (double p, double& l, double& r) const          // 4-point Hermite
     {
         const long i = (long) p; const double t = p - i;
@@ -190,5 +240,7 @@ private:
     double ramp = 0, rampStep = 0.005;
     double xfPos = 0; int xfLeft = 0, xfLen = 132;
     bool endReached = false;
+    double scrGain = 1.0, gate = 1.0;
+    double spPhase = 0, spL = 0, spR = 0; bool spPrimed = false;
 };
 } // namespace dj

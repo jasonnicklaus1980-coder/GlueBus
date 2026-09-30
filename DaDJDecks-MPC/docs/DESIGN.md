@@ -40,6 +40,34 @@ the master or an audio track gives a DJ mixer that sits alongside the sequencer.
   centre.
 - **Gains** are smoothed over 10 ms, and the fader law is a square curve.
 
+## Scratch, transform, REC, SP-12 (1.1.0)
+- **Scratch:**
+  - The SCRATCH parameter is the hand. The first movement anchors it to the play head; full travel is ±1 s of the
+    record.
+  - The play head follows the hand with an 8 ms one-pole response. Output gain follows the record's speed, so a
+    still record is silent.
+  - After 150 ms without movement the hand lets go: the parameter goes back to 0.5, MPC is told, and playback
+    resumes if PLAY is on.
+- **Transform:** a gate on the deck's own beat grid, open for the first half of each 1/8, 1/16 or 1/32 step, with
+  1 ms edges. A take without a detectable beat uses a 120 BPM grid from its start.
+- **Crossfader:** a per-sample linear ramp, 1 ms in CUT and 10 ms in SMOOTH.
+- **REC:**
+  - The UI thread allocates the take (2 minutes at the host rate, or 26.04 kHz in SP-12 mode).
+  - The audio thread writes the raw MPC input into it. In SP-12 mode that is drop-sample at 26.04 kHz with no
+    anti-alias filter and 12-bit words.
+  - The loader trims the take, writes `Samples/Sample NNN.wav`, rescans, analyses and loads it, so it can be
+    restored with the project.
+- **SP-12 playback:** a 26.04 kHz clock latches a 12-bit word from the nearest sample at the play head (no
+  interpolation) and holds it until the next tick. Pitch is in equal-tempered semitones, and SYNC in SP-12 mode
+  picks the nearest semitone.
+- **Tests:**
+  - A 440 Hz take plays back at 440 Hz, and at 404.8 Hz at −8%.
+  - At −5 st in SP-12 mode it plays at 329.6 Hz.
+  - An SP-12 take is 26040 Hz with at most 4096 values.
+  - Scratch goes forward and back to within 20 ms, is silent when held, and recentres.
+  - Transform mutes about half of each step.
+  - The cut crossfader closes within 2.5 ms.
+
 ## Mixer and restore
 - **Crossfader:** smooth is constant-power with both decks at full level in the centre; cut is a fast cut at the
   ends.
@@ -52,10 +80,10 @@ The ARM toolchain's `fmod` binds to GLIBC_2.38, but MPC OS has 2.34, so the code
 symbols bind to GLIBC_2.34, where libpthread is part of libc.
 
 ## Skin
-- **Layout:** one tab with deck A, the mixer and deck B.
+- **Layout:** deck A, the mixer and deck B on one screen, with two tabs (DECKS and SCRATCH) for the two Q-Link maps.
 - **Filmstrips:** platters (150 px, 128 rotation frames), pitch and channel faders, a crossfader (horizontal drag)
   and knobs.
 - **LED parts:** 44-segment progress bars, beat lights and meters are one solid colour per frame, so they are right
   whatever frame offset MPC uses.
 - **Value boxes** (track, loop, range) are drawn in the background, with transparent drag strips.
-- **Memory:** about 78 MB of images when decoded.
+- **Memory:** about 80 MB of images when decoded.

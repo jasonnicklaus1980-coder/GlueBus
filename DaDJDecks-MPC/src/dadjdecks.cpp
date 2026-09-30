@@ -6,7 +6,10 @@
 // Tracks are WAV files in /sdcard/DJ (and one level of sub-folders). A loader thread scans the folder, reads the
 // files and finds each track's tempo and beat grid, so the audio thread never touches the SD card.
 // Per deck: track select + LOAD, PLAY/PAUSE, CUE, pitch (+-8/16/50 %), SYNC (tempo + beat), nudge, beat loops,
-// gain, 3-band kill EQ, filter, channel fader. Mixer: crossfader (smooth / cut), master, MPC input level.
+// gain, 3-band kill EQ, filter, channel fader, SCRATCH (Q-Link or platter), TRANSFORM (beat-synced gate),
+// REC (samples the MPC input into the deck and saves it to /sdcard/DJ/Samples) and SP-12 mode (26.04 kHz / 12-bit
+// drop-sample playback, pitch in semitones: the SP-1200 45 -> 33 trick).
+// Mixer: crossfader (smooth / cut with 1 ms edges), master, MPC input level.
 // The screen's times, BPM, spinning platters, progress bars, beat lights and meters are read-only parameters
 // that the plugin sends to MPC (audioMasterAutomate) when they change.
 #include "Deck.h"
@@ -21,6 +24,7 @@
 #include <new>
 #include <pthread.h>
 #include <strings.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #define DJ_EXPORT extern "C" __attribute__((visibility("default")))
@@ -32,12 +36,13 @@ enum DeckParam
 {
     D_TRACK, D_LOAD, D_PLAY, D_CUE, D_PITCH, D_RANGE, D_SYNC, D_NUDGE_DN, D_NUDGE_UP, D_LOOP,
     D_GAIN, D_HIGH, D_MID, D_LOW, D_FILTER, D_FADER, D_LOADED,
-    D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT,       // read-only
-    D_COUNT                                                                         // 25
+    D_SCRATCH, D_TRANS, D_TRANS_RATE, D_REC, D_SP12,
+    D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT, D_RECLIGHT,   // read-only
+    D_COUNT                                                                         // 31
 };
 constexpr int kDeckParams = D_COUNT;
 inline int dp (int deck, int what) { return deck * kDeckParams + what; }
-enum { M_XFADE = 2 * kDeckParams, M_CURVE, M_MASTER, M_INPUT, M_RESCAN, M_VU_L, M_VU_R, M_LIBRARY, P_COUNT };   // 50..57, 58
+enum { M_XFADE = 2 * kDeckParams, M_CURVE, M_MASTER, M_INPUT, M_RESCAN, M_VU_L, M_VU_R, M_LIBRARY, P_COUNT };   // 62..69, 70
 
 constexpr int kMaxTracks = 256;
 constexpr float kVuFloor = -40.f, kVuTop = 6.f;
@@ -46,9 +51,14 @@ const double kRanges[] { 0.08, 0.16, 0.50 };
 const char* const kLoopNames[] { "Off", "1 Beat", "2 Beats", "4 Beats", "8 Beats", "16 Beats" };
 const int kLoopBeats[] { 0, 1, 2, 4, 8, 16 };
 const char* const kCurveNames[] { "Smooth", "Cut" };
+const char* const kTransNames[] { "1/8", "1/16", "1/32" };
+const double kTransBeats[] { 0.5, 0.25, 0.125 };
+constexpr double kScratchSeconds = 2.0;       // full scratch travel (Q-Link end to end)
+constexpr double kRecSeconds = 120.0;         // REC: up to 2 minutes per take
+constexpr int kSpSemis = 12;                  // SP-12 mode: pitch fader = -12 .. +12 semitones
 
 enum Kind { K_FLOAT, K_CHOICE, K_BOOL, K_MOMENT, K_READ, K_TRACK };
-enum Fmt  { F_NUM, F_DB, F_EQ, F_PCT, F_PITCH, F_FILTER, F_TIME, F_REMAIN, F_BPM, F_VU, F_TEXT, F_XFADE, F_MASTER, F_LOADED };
+enum Fmt  { F_NUM, F_DB, F_EQ, F_PCT, F_PITCH, F_FILTER, F_TIME, F_REMAIN, F_BPM, F_VU, F_TEXT, F_XFADE, F_MASTER, F_LOADED, F_SCRATCH };
 struct ParamDef { char name[24]; const char* unit; Kind kind; float lo, hi, step, def; const char* const* choices; int n; Fmt fmt; };
 ParamDef kParams[P_COUNT];
 
@@ -82,6 +92,11 @@ void initParams()
         def (dp (d, D_FILTER), N ("Filter"), "", K_FLOAT, -1, 1, 0, 0, nullptr, 0, F_FILTER);
         def (dp (d, D_FADER), N ("Volume"), "", K_FLOAT, 0, 1, 0, 0.8f, nullptr, 0, F_PCT);
         def (dp (d, D_LOADED), N ("Loaded Track"), "", K_FLOAT, 0, kMaxTracks, 1, 0, nullptr, 0, F_LOADED);   // restores the track with a project
+        def (dp (d, D_SCRATCH), N ("Scratch"), "", K_FLOAT, 0, 1, 0, 0.5f, nullptr, 0, F_SCRATCH);
+        def (dp (d, D_TRANS), N ("Transform"), "", K_BOOL, 0, 1, 1, 0);
+        def (dp (d, D_TRANS_RATE), N ("Transform Rate"), "", K_CHOICE, 0, 2, 1, 1, kTransNames, 3);
+        def (dp (d, D_REC), N ("Rec"), "", K_MOMENT, 0, 1, 1, 0);
+        def (dp (d, D_SP12), N ("SP-12 Mode"), "", K_BOOL, 0, 1, 1, 0);
         def (dp (d, D_TIME), N ("Time"), "", K_READ, 0, 3600, 0, 0, nullptr, 0, F_TIME);
         def (dp (d, D_REMAIN), N ("Remaining"), "", K_READ, 0, 3600, 0, 0, nullptr, 0, F_REMAIN);
         def (dp (d, D_BPM), N ("BPM"), "", K_READ, 0, 400, 0, 0, nullptr, 0, F_BPM);
@@ -90,6 +105,7 @@ void initParams()
         def (dp (d, D_VU), N ("Meter"), "dB", K_READ, kVuFloor, kVuTop, 0, kVuFloor, nullptr, 0, F_VU);
         def (dp (d, D_STATUS), N ("Now Playing"), "", K_READ, 0, 1000, 0, 0, nullptr, 0, F_TEXT);
         def (dp (d, D_BEAT), N ("Beat"), "", K_READ, 0, 1, 0, 0);
+        def (dp (d, D_RECLIGHT), N ("Recording"), "", K_READ, 0, 1, 0, 0);
     }
     def (M_XFADE, "Crossfader", "", K_FLOAT, -1, 1, 0, 0, nullptr, 0, F_XFADE);
     def (M_CURVE, "Crossfader Curve", "", K_CHOICE, 0, 1, 1, 0, kCurveNames, 2);
@@ -209,6 +225,15 @@ struct Plugin
     std::atomic<bool> cueReq[2], syncReq[2];
     std::atomic<int> nudgeReq[2];
 
+    // REC: the UI thread allocates the take, the audio thread fills it, the loader saves + analyses it
+    std::atomic<dj::Track*> recBuf[2], recorded[2];
+    std::atomic<bool> recStopReq[2];
+    long recCapacity[2] {};
+    double spRecPhase[2] {};
+
+    // scratch: the "hand" (Q-Link or platter drag); it lets go after 150 ms without movement
+    bool scrActive[2] {}; double scrAnchor[2] {}; float scrLast[2] { 0.5f, 0.5f }; int scrIdle[2] {};
+
     // audio thread
     dj::Deck deck[2];
     int loadedIndex[2] { -1, -1 };
@@ -229,6 +254,7 @@ struct Plugin
         {
             loadReq[d].store (-1); pending[d].store (nullptr); retired[d].store (nullptr); pendingIndex[d].store (-1);
             loading[d].store (false); loadError[d].store (nullptr); cueReq[d].store (false); syncReq[d].store (false); nudgeReq[d].store (0);
+            recBuf[d].store (nullptr); recorded[d].store (nullptr); recStopReq[d].store (false);
             status[d].publish ("Empty: pick a track, press LOAD");
         }
         library.publish ("Scanning...");
@@ -244,12 +270,20 @@ struct Plugin
         {
             dj::freeTrack (deck[d].track); deck[d].track = nullptr;
             dj::freeTrack (pending[d].exchange (nullptr)); dj::freeTrack (retired[d].exchange (nullptr));
+            dj::freeTrack (recBuf[d].exchange (nullptr)); dj::freeTrack (recorded[d].exchange (nullptr));
         }
         std::free (lib); std::free (libSpare);
         pthread_mutex_destroy (&libLock);
     }
     void setPlain (int i, float plain) { v[i].store (plain); nv[i].store (toNorm (kParams[i], plain)); }
     float get (int i) const { return v[i].load(); }
+    bool sp12 (int d) const { return get (dp (d, D_SP12)) > 0.5f; }
+    int semis (int d) const { return (int) std::lround (get (dp (d, D_PITCH)) * kSpSemis); }
+    double pitchOf (int d) const               // speed change as a fraction (+0.08 = 8 % faster)
+    {
+        if (sp12 (d)) return std::pow (2.0, semis (d) / 12.0) - 1.0;       // SP-12: semitone steps
+        return kRanges[(int) get (dp (d, D_RANGE))] * get (dp (d, D_PITCH));
+    }
     void prepare (float rate) { sr = rate; for (auto& d : deck) d.prepare (rate); }
 
     // ---------------------------------------------------------------------------- loader thread
@@ -271,6 +305,19 @@ struct Plugin
                 libCount.store (lib->count);
                 pthread_mutex_unlock (&libLock);
             }
+            for (int d = 0; d < 2; ++d)
+                if (dj::Track* t = recorded[d].load())
+                {
+                    saveTake (t);                                                   // WAV in /sdcard/DJ/Samples + library
+                    dj::analyzeBeats (t);
+                    int idx = -1;
+                    pthread_mutex_lock (&libLock);
+                    for (int i = 0; i < lib->count; ++i) if (std::strcmp (lib->e[i].name, t->name) == 0) idx = i;
+                    pthread_mutex_unlock (&libLock);
+                    pendingIndex[d].store (idx);
+                    recorded[d].store (nullptr);
+                    dj::freeTrack (pending[d].exchange (t));
+                }
             for (int d = 0; d < 2; ++d)
             {
                 const int idx = loadReq[d].exchange (-1);
@@ -295,6 +342,39 @@ struct Plugin
             }
             usleep (10000);
         }
+    }
+
+    // loader thread: trim a take, write it as "Samples/Sample NNN.wav" and rescan so it's in the library
+    void saveTake (dj::Track* t)
+    {
+        if (int16_t* p = (int16_t*) std::realloc (t->pcm, (size_t) t->frames * 2 * sizeof (int16_t))) t->pcm = p;
+        char dir[512], path[600];
+        std::snprintf (dir, sizeof dir, "%s/Samples", djFolder());
+        mkdir (dir, 0755);
+        int n = 1;
+        for (; n < 1000; ++n)
+        {
+            std::snprintf (path, sizeof path, "%s/Sample %03d.wav", dir, n);
+            FILE* f = std::fopen (path, "rb"); if (f == nullptr) break; std::fclose (f);
+        }
+        std::snprintf (t->name, sizeof t->name, "Samples/Sample %03d", n);
+        FILE* f = std::fopen (path, "wb");
+        if (f == nullptr) return;                                                    // read-only card: still plays
+        auto w32 = [&] (uint32_t v) { unsigned char b[4] { (unsigned char) v, (unsigned char) (v >> 8), (unsigned char) (v >> 16), (unsigned char) (v >> 24) }; std::fwrite (b, 1, 4, f); };
+        auto w16 = [&] (uint16_t v) { unsigned char b[2] { (unsigned char) v, (unsigned char) (v >> 8) }; std::fwrite (b, 1, 2, f); };
+        const uint32_t bytes = (uint32_t) (t->frames * 4), rate = (uint32_t) t->rate;
+        std::fwrite ("RIFF", 1, 4, f); w32 (36 + bytes); std::fwrite ("WAVEfmt ", 1, 8, f);
+        w32 (16); w16 (1); w16 (2); w32 (rate); w32 (rate * 4); w16 (4); w16 (16);
+        std::fwrite ("data", 1, 4, f); w32 (bytes);
+        for (long i = 0; i < 2 * t->frames; ++i) w16 ((uint16_t) t->pcm[i]);        // little-endian on any CPU
+        std::fclose (f);
+        libSpare->count = 0;
+        scanFolder (*libSpare, djFolder(), "", 0);
+        std::qsort (libSpare->e, (size_t) libSpare->count, sizeof (Entry), cmpEntry);
+        pthread_mutex_lock (&libLock);
+        Library* tmp = lib; lib = libSpare; libSpare = tmp;
+        libCount.store (lib->count);
+        pthread_mutex_unlock (&libLock);
     }
 
     // ---------------------------------------------------------------------------- host side
@@ -330,6 +410,7 @@ struct Plugin
                 if (w == D_SYNC) syncReq[d].store (true);
                 if (w == D_NUDGE_DN) nudgeReq[d].fetch_sub (1);
                 if (w == D_NUDGE_UP) nudgeReq[d].fetch_add (1);
+                if (w == D_REC) toggleRec (d);
             }
             setPlain (i, 0.f);                          // spring back, and tell MPC so the next press is a press again
             if (master != nullptr && ! notifying) { notifying = true; master (&fx, 0, i, 0, nullptr, 0.f); notifying = false; }
@@ -340,6 +421,69 @@ struct Plugin
         {
             const int d = i / kDeckParams, idx = (int) plain - 1;
             if (idx >= 0 && idx != loadedIndex[d]) loadReq[d].store (idx);
+        }
+    }
+
+    void toggleRec (int d)                     // UI thread: start a take (allocate it here) or ask the audio thread to stop
+    {
+        if (recBuf[d].load() != nullptr) { recStopReq[d].store (true); return; }
+        if (recorded[d].load() != nullptr) return;                                  // the last take is still being saved
+        const double rate = sp12 (d) ? dj::kSpRate : (double) sr;
+        const long cap = (long) (kRecSeconds * rate);
+        dj::Track* t = (dj::Track*) std::calloc (1, sizeof (dj::Track));
+        if (t == nullptr) return;
+        t->pcm = (int16_t*) std::malloc ((size_t) cap * 2 * sizeof (int16_t));
+        if (t->pcm == nullptr) { std::free (t); return; }
+        t->rate = rate; t->frames = 0; recCapacity[d] = cap;
+        recStopReq[d].store (false);
+        recBuf[d].store (t);
+    }
+    // audio thread: write the raw MPC input into the take (SP-12: drop-sample at 26.04 kHz, 12-bit, no anti-alias filter)
+    void record (int d, const float* l, const float* r, int n)
+    {
+        dj::Track* t = recBuf[d].load();
+        if (t == nullptr) return;
+        auto s16 = [] (double x) { x = x > 1.0 ? 1.0 : (x < -1.0 ? -1.0 : x); return (int16_t) std::lround (x * 32767.0); };
+        const bool sp = t->rate == dj::kSpRate;
+        const double inc = dj::kSpRate / sr;
+        for (int i = 0; i < n && t->frames < recCapacity[d]; ++i)
+        {
+            if (sp)
+            {
+                spRecPhase[d] += inc;
+                if (spRecPhase[d] < 1.0) continue;
+                spRecPhase[d] -= 1.0;
+                t->pcm[2 * t->frames] = s16 (dj::q12 (l[i])); t->pcm[2 * t->frames + 1] = s16 (dj::q12 (r[i]));
+            }
+            else { t->pcm[2 * t->frames] = s16 (l[i]); t->pcm[2 * t->frames + 1] = s16 (r[i]); }
+            ++t->frames;
+        }
+        if (recStopReq[d].exchange (false) || t->frames >= recCapacity[d])
+        {
+            recBuf[d].store (nullptr);
+            if (t->frames < (long) (0.1 * t->rate)) dj::freeTrack (t);            // too short: drop it
+            else recorded[d].store (t);                                            // the loader saves and loads it
+        }
+    }
+    // audio thread: the scratch "hand"
+    void scratch (int d, int n)
+    {
+        const float val = get (dp (d, D_SCRATCH));
+        if (deck[d].track == nullptr) { scrActive[d] = false; scrLast[d] = val; return; }
+        if (std::fabs (val - scrLast[d]) > 1e-5f)
+        {
+            if (! scrActive[d])
+            {
+                scrActive[d] = true;
+                scrAnchor[d] = deck[d].pos - (scrLast[d] - 0.5) * kScratchSeconds * deck[d].track->rate;
+            }
+            scrIdle[d] = 0; scrLast[d] = val;
+        }
+        else if (scrActive[d] && (scrIdle[d] += n) > (int) (0.15f * sr))
+        {
+            scrActive[d] = false;                                                 // let go: the record plays on
+            setPlain (dp (d, D_SCRATCH), 0.5f); scrLast[d] = 0.5f;
+            if (master != nullptr) master (&fx, 0, dp (d, D_SCRATCH), 0, nullptr, 0.5f);
         }
     }
 
@@ -365,7 +509,7 @@ struct Plugin
         {
             dj::Deck& k = deck[d];
             const dj::Track* t = k.track;
-            const double pitch = kRanges[(int) get (dp (d, D_RANGE))] * get (dp (d, D_PITCH));
+            const double pitch = pitchOf (d);
             if (t != nullptr)
             {
                 const double posS = k.pos / t->rate;
@@ -380,7 +524,15 @@ struct Plugin
                 send (dp (d, D_BEAT), (float) bar, 0.03f);
             }
             send (dp (d, D_VU), vu[d], 1.f);
-            if (loading[d].load()) std::snprintf (s, sizeof s, "Loading...");
+            const dj::Track* rb = recBuf[d].load();
+            send (dp (d, D_RECLIGHT), rb != nullptr ? 1.f : 0.f, 0.5f);
+            if (rb != nullptr)
+            {
+                const int secs = (int) (rb->frames / rb->rate);
+                std::snprintf (s, sizeof s, "REC %d:%02d of 2:00%s", secs / 60, secs % 60, rb->rate == dj::kSpRate ? " (SP-12)" : "");
+            }
+            else if (recorded[d].load() != nullptr) std::snprintf (s, sizeof s, "Saving sample...");
+            else if (loading[d].load()) std::snprintf (s, sizeof s, "Loading...");
             else if (const char* e = loadError[d].load()) std::snprintf (s, sizeof s, "Can't load: %s", e);
             else if (t != nullptr) std::snprintf (s, sizeof s, "%s", t->name);
             else std::snprintf (s, sizeof s, "Empty: pick a track, press LOAD");
@@ -425,7 +577,7 @@ struct Plugin
     {
         dj::Deck& me = deck[d]; dj::Deck& other = deck[1 - d];
         if (me.track == nullptr || other.track == nullptr || me.track->bpm <= 0 || other.track->bpm <= 0) return;
-        const double otherPitch = kRanges[(int) get (dp (1 - d, D_RANGE))] * get (dp (1 - d, D_PITCH));
+        const double otherPitch = pitchOf (1 - d);
         const double target = other.effectiveBpm (otherPitch);
         double bestPitch = 1e9;
         for (double mul : { 1.0, 2.0, 0.5 })                                     // half / double time if closer
@@ -434,10 +586,19 @@ struct Plugin
             if (std::fabs (p) < std::fabs (bestPitch)) bestPitch = p;
         }
         if (std::fabs (bestPitch) > 0.5) return;                                  // out of reach even at +-50 %
-        int range = (int) get (dp (d, D_RANGE));
-        while (range < 2 && std::fabs (bestPitch) > kRanges[range]) ++range;
-        setPlain (dp (d, D_RANGE), (float) range);
-        setPlain (dp (d, D_PITCH), (float) (bestPitch / kRanges[range]));
+        if (sp12 (d))                                                            // SP-12: nearest semitone
+        {
+            const double st = 12.0 * std::log2 (1.0 + bestPitch);
+            if (std::fabs (st) > kSpSemis) return;
+            setPlain (dp (d, D_PITCH), (float) (std::round (st) / kSpSemis));
+        }
+        else
+        {
+            int range = (int) get (dp (d, D_RANGE));
+            while (range < 2 && std::fabs (bestPitch) > kRanges[range]) ++range;
+            setPlain (dp (d, D_RANGE), (float) range);
+            setPlain (dp (d, D_PITCH), (float) (bestPitch / kRanges[range]));
+        }
         if (me.playing) align (d); else me.alignOnStart = true;                   // line the beats up now, or on PLAY
         notifyHost (dp (d, D_PITCH), dp (d, D_RANGE) + 1);
     }
@@ -455,7 +616,11 @@ struct Plugin
     {
         dj::DeckControls c;
         c.play = get (dp (d, D_PLAY)) > 0.5f;
-        c.pitch = kRanges[(int) get (dp (d, D_RANGE))] * get (dp (d, D_PITCH));
+        c.pitch = pitchOf (d);
+        c.scratch = scrActive[d];
+        c.scratchTarget = scrAnchor[d] + (get (dp (d, D_SCRATCH)) - 0.5) * kScratchSeconds * (deck[d].track ? deck[d].track->rate : 44100.0);
+        c.transform = get (dp (d, D_TRANS)) > 0.5f ? kTransBeats[(int) get (dp (d, D_TRANS_RATE))] : 0.0;
+        c.sp12 = sp12 (d);
         c.gainDb = get (dp (d, D_GAIN)); c.hiDb = get (dp (d, D_HIGH)); c.midDb = get (dp (d, D_MID)); c.lowDb = get (dp (d, D_LOW));
         c.filter = get (dp (d, D_FILTER)); c.fader = get (dp (d, D_FADER));
         return c;
@@ -465,7 +630,7 @@ struct Plugin
         for (int pos = 0; pos < n; pos += kChunk)
         {
             const int m = (n - pos) < kChunk ? (n - pos) : kChunk;
-            for (int d = 0; d < 2; ++d) serveRequests (d);
+            for (int d = 0; d < 2; ++d) { serveRequests (d); record (d, inL + pos, inR + pos, m); scratch (d, m); }
             // crossfader, master, input
             const double x = (get (M_XFADE) + 1.0) * 0.5;
             double ta, tb;
@@ -475,9 +640,8 @@ struct Plugin
             const float mdb = get (M_MASTER);
             const double tm = mdb <= -59.9f ? 0.0 : std::pow (10.0, mdb / 20.0), ti = get (M_INPUT);
             const double k = 1.0 - std::exp (-(double) m / (0.01 * sr));
-            xfA += (ta - xfA) * k; xfB += (tb - xfB) * k; gMaster += (tm - gMaster) * k; gInput += (ti - gInput) * k;
-            if (std::fabs (xfA - ta) < 1e-6) { xfA = ta; }
-            if (std::fabs (xfB - tb) < 1e-6) { xfB = tb; }
+            gMaster += (tm - gMaster) * k; gInput += (ti - gInput) * k;
+            const double xfStep = 1.0 / (((int) get (M_CURVE) == 1 ? 0.001 : 0.01) * sr);   // cut: 1 ms edges for transforms
             if (std::fabs (gMaster - tm) < 1e-6) { gMaster = tm; }
             if (std::fabs (gInput - ti) < 1e-6) { gInput = ti; }
             const bool live[2] { deck[0].track != nullptr, deck[1].track != nullptr };
@@ -489,6 +653,8 @@ struct Plugin
                 const float il = inL[pos + i], ir = inR[pos + i];
                 float l = il, r = ir;
                 if (gInput != 1.0) { l = (float) (il * gInput); r = (float) (ir * gInput); }
+                xfA = xfA < ta ? std::fmin (ta, xfA + xfStep) : std::fmax (ta, xfA - xfStep);
+                xfB = xfB < tb ? std::fmin (tb, xfB + xfStep) : std::fmax (tb, xfB - xfStep);
                 double dl = 0, dr = 0;
                 if (live[0]) { dl += bufA[0][i] * xfA; dr += bufA[1][i] * xfA; }
                 if (live[1]) { dl += bufB[0][i] * xfB; dr += bufB[1][i] * xfB; }
@@ -528,7 +694,13 @@ struct Plugin
             }
             if (w == D_STATUS) { std::snprintf (out, max, "%s", status[d].get()); return; }
             if (w == D_PLAY) { std::snprintf (out, max, "%s", x > 0.5f ? "Playing" : "Paused"); return; }
-            if (w == D_PITCH) { std::snprintf (out, max, "%+.2f %%", (double) (x * kRanges[(int) get (dp (d, D_RANGE))] * 100.0)); return; }
+            if (w == D_PITCH)
+            {
+                if (sp12 (d)) std::snprintf (out, max, "%+d st", semis (d));
+                else std::snprintf (out, max, "%+.2f %%", (double) (x * kRanges[(int) get (dp (d, D_RANGE))] * 100.0));
+                return;
+            }
+            if (w == D_RECLIGHT) { std::snprintf (out, max, "%s", x > 0.5f ? "REC" : "-"); return; }
         }
         if (idx == M_LIBRARY) { std::snprintf (out, max, "%s", library.get()); return; }
         if (p.kind == K_CHOICE) { std::snprintf (out, max, "%s", p.choices[(int) clampf (x, 0.f, (float) (p.n - 1))]); return; }
@@ -546,6 +718,7 @@ struct Plugin
             case F_VU:     if (x <= kVuFloor) std::snprintf (out, max, "-inf"); else std::snprintf (out, max, "%.1f dB", (double) x); return;
             case F_XFADE:  if (std::fabs (x) < 0.02f) std::snprintf (out, max, "Center"); else std::snprintf (out, max, "%s %.0f %%", x < 0 ? "A" : "B", (double) (std::fabs (x) * 100.f)); return;
             case F_MASTER: if (x <= -59.9f) std::snprintf (out, max, "Off"); else std::snprintf (out, max, "%+.1f dB", (double) x); return;
+            case F_SCRATCH: std::snprintf (out, max, "%+.2f s", (double) ((x - 0.5f) * kScratchSeconds)); return;
             case F_LOADED: if (x < 0.5f) std::snprintf (out, max, "None"); else std::snprintf (out, max, "#%d", (int) x); return;
             default:       std::snprintf (out, max, "%.2f", (double) x); return;
         }
@@ -595,7 +768,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "Da DJ Decks", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1100;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effSetProcessPrecision: return val == 0 ? 1 : 0;
@@ -628,6 +801,6 @@ DJ_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('D' << 24) | ('J' << 16) | ('D' << 8) | 'K';   // 'DJDK' = 0x444a444b
-    fx.version = 1000;
+    fx.version = 1100;
     return &fx;
 }

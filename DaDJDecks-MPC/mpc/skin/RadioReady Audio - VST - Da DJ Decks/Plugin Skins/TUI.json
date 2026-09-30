@@ -9504,6 +9504,978 @@
                     }
                 },
                 {
+                    "key": "djBtn_rec0",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_rec0_on.png",
+                                        "offImage": "dj_rec0_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djBtn_sp0",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_sp0_on.png",
+                                        "offImage": "dj_sp0_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djBtn_tr0",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_tr0_on.png",
+                                        "offImage": "dj_tr0_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djBtn_rec1",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_rec1_on.png",
+                                        "offImage": "dj_rec1_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djBtn_sp1",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_sp1_on.png",
+                                        "offImage": "dj_sp1_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djBtn_tr1",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "dj_tr1_on.png",
+                                        "offImage": "dj_tr1_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djRecLight",
+                    "value": {
+                        "version": 4,
+                        "actions": [],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": true,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Knob",
+                                    "type": "Knob",
+                                    "data": {
+                                        "version": 5,
+                                        "knobType": "FilmStrip",
+                                        "filmStrip": "dj_reclight.png",
+                                        "numFrames": 127,
+                                        "invert": false,
+                                        "dragOrientation": "Vertical",
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 14 14",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djRate",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Double Click",
+                                "handler": "Show Overlay",
+                                "handleName": "",
+                                "additionalData": "knob overlay",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Show Overlay",
+                                "handleName": "",
+                                "additionalData": "knob overlay",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Knob",
+                                    "type": "Knob",
+                                    "data": {
+                                        "version": 5,
+                                        "knobType": "FilmStrip",
+                                        "filmStrip": "dj_drag.png",
+                                        "numFrames": 127,
+                                        "invert": false,
+                                        "dragOrientation": "Vertical",
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Value",
+                                    "type": "Label",
+                                    "data": {
+                                        "version": 1,
+                                        "textStyle": {
+                                            "version": 1,
+                                            "font": {
+                                                "version": 1,
+                                                "name": "Titillium Web",
+                                                "style": "SemiBold",
+                                                "height": 14.0
+                                            },
+                                            "colour": "ffdcdee4",
+                                            "justification": "horizontallyCentred verticallyCentred",
+                                            "case": "Upper Case"
+                                        },
+                                        "type": "Value",
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "djScratch",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Double Click",
+                                "handler": "Show Overlay",
+                                "handleName": "",
+                                "additionalData": "knob overlay",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Show Overlay",
+                                "handleName": "",
+                                "additionalData": "knob overlay",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Knob",
+                                    "type": "Knob",
+                                    "data": {
+                                        "version": 5,
+                                        "knobType": "FilmStrip",
+                                        "filmStrip": "dj_drag.png",
+                                        "numFrames": 127,
+                                        "invert": false,
+                                        "dragOrientation": "Vertical",
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 150 150",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "ffe6b84c",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 2.0
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 150 150",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
                     "key": "djCurve",
                     "value": {
                         "version": 4,
@@ -9774,7 +10746,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 23"
+                                            "value": "Parameter 28"
                                         }
                                     ]
                                 },
@@ -9804,7 +10776,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 19"
+                                            "value": "Parameter 24"
                                         }
                                     ]
                                 },
@@ -9864,7 +10836,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 17"
+                                            "value": "Parameter 22"
                                         }
                                     ]
                                 },
@@ -9894,7 +10866,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 18"
+                                            "value": "Parameter 23"
                                         }
                                     ]
                                 },
@@ -9924,7 +10896,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -9954,7 +10926,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -9984,7 +10956,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10014,7 +10986,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10044,7 +11016,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10074,7 +11046,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10104,7 +11076,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10134,7 +11106,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10164,7 +11136,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10194,7 +11166,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10224,7 +11196,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10254,7 +11226,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10284,7 +11256,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10314,7 +11286,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10344,7 +11316,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10374,7 +11346,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10404,7 +11376,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10434,7 +11406,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10464,7 +11436,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10494,7 +11466,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10524,7 +11496,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10554,7 +11526,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10584,7 +11556,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10614,7 +11586,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10644,7 +11616,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10674,7 +11646,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10704,7 +11676,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10734,7 +11706,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10764,7 +11736,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10794,7 +11766,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10824,7 +11796,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10854,7 +11826,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10884,7 +11856,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10914,7 +11886,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10944,7 +11916,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -10974,7 +11946,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11004,7 +11976,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11034,7 +12006,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11064,7 +12036,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11094,7 +12066,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11124,7 +12096,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11154,7 +12126,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11184,7 +12156,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11214,7 +12186,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 21"
+                                            "value": "Parameter 26"
                                         }
                                     ]
                                 },
@@ -11244,7 +12216,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 20"
+                                            "value": "Parameter 25"
                                         }
                                     ]
                                 },
@@ -11274,7 +12246,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 24"
+                                            "value": "Parameter 29"
                                         }
                                     ]
                                 },
@@ -11304,7 +12276,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 24"
+                                            "value": "Parameter 29"
                                         }
                                     ]
                                 },
@@ -11334,7 +12306,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 24"
+                                            "value": "Parameter 29"
                                         }
                                     ]
                                 },
@@ -11364,7 +12336,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 24"
+                                            "value": "Parameter 29"
                                         }
                                     ]
                                 },
@@ -11622,6 +12594,186 @@
                                 "version": 2,
                                 "componentData": {
                                     "version": 1,
+                                    "name": "A Scratch",
+                                    "type": "djScratch",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 17"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "26 236 150 150",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A Rec",
+                                    "type": "djBtn_rec0",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 20"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "26 500 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A Rec Light",
+                                    "type": "djRecLight",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 30"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "116 513 14 14",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A SP-12",
+                                    "type": "djBtn_sp0",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 21"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "138 500 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A Transform",
+                                    "type": "djBtn_tr0",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 18"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "230 500 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A Transform Rate",
+                                    "type": "djRate",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 19"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "348 500 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
                                     "name": "B Track",
                                     "type": "djTrack",
                                     "data": {
@@ -11634,7 +12786,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 25"
+                                            "value": "Parameter 31"
                                         }
                                     ]
                                 },
@@ -11664,7 +12816,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 26"
+                                            "value": "Parameter 32"
                                         }
                                     ]
                                 },
@@ -11694,7 +12846,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 48"
+                                            "value": "Parameter 59"
                                         }
                                     ]
                                 },
@@ -11724,7 +12876,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 44"
+                                            "value": "Parameter 55"
                                         }
                                     ]
                                 },
@@ -11754,7 +12906,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 29"
+                                            "value": "Parameter 35"
                                         }
                                     ]
                                 },
@@ -11784,7 +12936,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 42"
+                                            "value": "Parameter 53"
                                         }
                                     ]
                                 },
@@ -11814,7 +12966,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 43"
+                                            "value": "Parameter 54"
                                         }
                                     ]
                                 },
@@ -11844,7 +12996,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -11874,7 +13026,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -11904,7 +13056,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -11934,7 +13086,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -11964,7 +13116,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -11994,7 +13146,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12024,7 +13176,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12054,7 +13206,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12084,7 +13236,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12114,7 +13266,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12144,7 +13296,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12174,7 +13326,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12204,7 +13356,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12234,7 +13386,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12264,7 +13416,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12294,7 +13446,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12324,7 +13476,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12354,7 +13506,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12384,7 +13536,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12414,7 +13566,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12444,7 +13596,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12474,7 +13626,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12504,7 +13656,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12534,7 +13686,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12564,7 +13716,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12594,7 +13746,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12624,7 +13776,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12654,7 +13806,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12684,7 +13836,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12714,7 +13866,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12744,7 +13896,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12774,7 +13926,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12804,7 +13956,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12834,7 +13986,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12864,7 +14016,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12894,7 +14046,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12924,7 +14076,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12954,7 +14106,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -12984,7 +14136,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13014,7 +14166,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13044,7 +14196,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13074,7 +14226,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13104,7 +14256,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13134,7 +14286,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 46"
+                                            "value": "Parameter 57"
                                         }
                                     ]
                                 },
@@ -13164,7 +14316,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 45"
+                                            "value": "Parameter 56"
                                         }
                                     ]
                                 },
@@ -13194,7 +14346,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 49"
+                                            "value": "Parameter 60"
                                         }
                                     ]
                                 },
@@ -13224,7 +14376,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 49"
+                                            "value": "Parameter 60"
                                         }
                                     ]
                                 },
@@ -13254,7 +14406,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 49"
+                                            "value": "Parameter 60"
                                         }
                                     ]
                                 },
@@ -13284,7 +14436,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 49"
+                                            "value": "Parameter 60"
                                         }
                                     ]
                                 },
@@ -13314,7 +14466,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 31"
+                                            "value": "Parameter 37"
                                         }
                                     ]
                                 },
@@ -13344,7 +14496,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 34"
+                                            "value": "Parameter 40"
                                         }
                                     ]
                                 },
@@ -13374,7 +14526,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 32"
+                                            "value": "Parameter 38"
                                         }
                                     ]
                                 },
@@ -13404,7 +14556,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 33"
+                                            "value": "Parameter 39"
                                         }
                                     ]
                                 },
@@ -13434,7 +14586,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 29"
+                                            "value": "Parameter 35"
                                         }
                                     ]
                                 },
@@ -13464,7 +14616,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 30"
+                                            "value": "Parameter 36"
                                         }
                                     ]
                                 },
@@ -13494,7 +14646,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 28"
+                                            "value": "Parameter 34"
                                         }
                                     ]
                                 },
@@ -13524,7 +14676,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 27"
+                                            "value": "Parameter 33"
                                         }
                                     ]
                                 },
@@ -13535,6 +14687,186 @@
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
                                     "bounds": "946 420 140 64",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B Scratch",
+                                    "type": "djScratch",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 48"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "794 236 150 150",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B Rec",
+                                    "type": "djBtn_rec1",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 51"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "794 500 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B Rec Light",
+                                    "type": "djRecLight",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 61"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "884 513 14 14",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B SP-12",
+                                    "type": "djBtn_sp1",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 52"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "906 500 84 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B Transform",
+                                    "type": "djBtn_tr1",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 49"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "998 500 110 40",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "B Transform Rate",
+                                    "type": "djRate",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 50"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1116 500 84 40",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -13554,7 +14886,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 57"
+                                            "value": "Parameter 69"
                                         }
                                     ]
                                 },
@@ -13584,7 +14916,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 54"
+                                            "value": "Parameter 66"
                                         }
                                     ]
                                 },
@@ -13614,7 +14946,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 53"
+                                            "value": "Parameter 65"
                                         }
                                     ]
                                 },
@@ -13644,7 +14976,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 52"
+                                            "value": "Parameter 64"
                                         }
                                     ]
                                 },
@@ -13674,7 +15006,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -13704,7 +15036,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -13734,7 +15066,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -13764,7 +15096,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -13794,7 +15126,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -13824,7 +15156,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -13854,7 +15186,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -13884,7 +15216,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -13914,7 +15246,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -13944,7 +15276,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -13974,7 +15306,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -14004,7 +15336,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -14034,7 +15366,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -14064,7 +15396,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -14094,7 +15426,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 55"
+                                            "value": "Parameter 67"
                                         }
                                     ]
                                 },
@@ -14124,7 +15456,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 56"
+                                            "value": "Parameter 68"
                                         }
                                     ]
                                 },
@@ -14304,7 +15636,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14334,7 +15666,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14364,7 +15696,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14394,7 +15726,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14424,7 +15756,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14454,7 +15786,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14484,7 +15816,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14514,7 +15846,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14544,7 +15876,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14574,7 +15906,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14604,7 +15936,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14634,7 +15966,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14664,7 +15996,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14694,7 +16026,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14724,7 +16056,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14754,7 +16086,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 22"
+                                            "value": "Parameter 27"
                                         }
                                     ]
                                 },
@@ -14814,7 +16146,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 35"
+                                            "value": "Parameter 41"
                                         }
                                     ]
                                 },
@@ -14844,7 +16176,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 36"
+                                            "value": "Parameter 42"
                                         }
                                     ]
                                 },
@@ -14874,7 +16206,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 37"
+                                            "value": "Parameter 43"
                                         }
                                     ]
                                 },
@@ -14904,7 +16236,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 38"
+                                            "value": "Parameter 44"
                                         }
                                     ]
                                 },
@@ -14934,7 +16266,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 39"
+                                            "value": "Parameter 45"
                                         }
                                     ]
                                 },
@@ -14964,7 +16296,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -14994,7 +16326,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15024,7 +16356,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15054,7 +16386,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15084,7 +16416,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15114,7 +16446,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15144,7 +16476,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15174,7 +16506,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15204,7 +16536,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15234,7 +16566,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15264,7 +16596,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15294,7 +16626,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15324,7 +16656,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15354,7 +16686,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15384,7 +16716,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15414,7 +16746,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 47"
+                                            "value": "Parameter 58"
                                         }
                                     ]
                                 },
@@ -15444,7 +16776,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 40"
+                                            "value": "Parameter 46"
                                         }
                                     ]
                                 },
@@ -15474,7 +16806,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 50"
+                                            "value": "Parameter 62"
                                         }
                                     ]
                                 },
@@ -15504,7 +16836,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 51"
+                                            "value": "Parameter 63"
                                         }
                                     ]
                                 },
@@ -15532,6 +16864,18 @@
                 "version": 3,
                 "tabName": "DECKS",
                 "fnKeyIndex": 0,
+                "fnKeySubIndex": 0,
+                "qlinkBoundsData": [
+                    "0 0 0 0"
+                ],
+                "componentName": "DJ|Main",
+                "initialSize": "0 0 1280 628",
+                "scale": 1.0
+            },
+            {
+                "version": 3,
+                "tabName": "SCRATCH",
+                "fnKeyIndex": 1,
                 "fnKeySubIndex": 0,
                 "qlinkBoundsData": [
                     "0 0 0 0"

@@ -18,7 +18,8 @@ static int fails = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { ++fails; std::printf("FAIL: "); std::printf(__VA_ARGS__); std::printf("\n"); } } while (0)
 
 enum { D_TRACK, D_LOAD, D_PLAY, D_CUE, D_PITCH, D_RANGE, D_SYNC, D_NUDGE_DN, D_NUDGE_UP, D_LOOP, D_GAIN, D_HIGH, D_MID, D_LOW,
-       D_FILTER, D_FADER, D_LOADED, D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT, D_COUNT };
+       D_FILTER, D_FADER, D_LOADED, D_SCRATCH, D_TRANS, D_TRANS_RATE, D_REC, D_SP12,
+       D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT, D_RECLIGHT, D_COUNT };
 static int dp(int d, int w) { return d * D_COUNT + w; }
 enum { M_XFADE = 2 * D_COUNT, M_CURVE, M_MASTER, M_INPUT, M_RESCAN, M_VU_L, M_VU_R, M_LIBRARY, P_COUNT };
 
@@ -44,6 +45,23 @@ static void run(float seconds, float inputLevel = 0.f) {
         float* in[2] = { &il[pos], &ir[pos] }; float* out[2] = { &lastL[pos], &lastR[pos] };
         fx->processReplacing(fx, in, out, m);
     }
+}
+static void runSine(float seconds, float hz, float amp) {
+    const int n = (int) (seconds * SR); lastL.assign(n, 0.f); lastR.assign(n, 0.f);
+    static double ph = 0; std::vector<float> il(n), ir(n);
+    for (int i = 0; i < n; ++i) { il[i] = ir[i] = (float) (amp * std::sin(ph)); ph += 2 * M_PI * hz / SR; }
+    for (int pos = 0; pos < n; pos += 512) {
+        const int m = std::min(512, n - pos);
+        float* in[2] = { &il[pos], &ir[pos] }; float* out[2] = { &lastL[pos], &lastR[pos] };
+        fx->processReplacing(fx, in, out, m);
+    }
+}
+static double freqOf(const std::vector<float>& in, size_t from) {       // zero-crossing frequency (after a 2 kHz low-pass)
+    std::vector<double> v(in.size()); double a = 0, b = 0; const double k = 1 - std::exp(-2 * M_PI * 2000 / SR);
+    for (size_t i = 0; i < in.size(); ++i) { a += (in[i] - a) * k; b += (a - b) * k; v[i] = b; }
+    int z = 0; size_t first = 0, last = 0;
+    for (size_t i = from + 200; i < v.size(); ++i) if (v[i - 1] < 0 && v[i] >= 0) { if (!z) first = i; last = i; ++z; }
+    return z > 1 ? (z - 1) * SR / (double) (last - first) : 0.0;
 }
 static double rms(const std::vector<float>& v) { double s = 0; for (float x : v) s += (double) x * x; return std::sqrt(s / std::max<size_t>(1, v.size())); }
 static double dbv(double x) { return 20 * std::log10(x + 1e-12); }
@@ -93,6 +111,8 @@ int main(int argc, char** argv) {
     const std::string dir = "build/native/djtest";
     mkdir(dir.c_str(), 0755); mkdir((dir + "/sub").c_str(), 0755);
     std::remove((dir + "/e_new 110.wav").c_str());                          // left over from an earlier run
+    for (int i = 1; i < 10; ++i) { char n[64]; std::snprintf(n, sizeof n, "/Samples/Sample %03d.wav", i); std::remove((dir + n).c_str()); }
+    rmdir((dir + "/Samples").c_str());
     writeWav(dir + "/a_track 120.wav", 120, 30, 44100, 16, 2, false, 0.25f);
     writeWav(dir + "/b_track 95.wav", 95, 20, 48000, 24, 1, false, 0.10f);
     writeWav(dir + "/c float 128.wav", 128, 12, 44100, 32, 2, true, 0.0f);
@@ -213,6 +233,78 @@ int main(int argc, char** argv) {
     writeWav(dir + "/e_new 110.wav", 110, 6, 44100, 16, 2, false, 0.f);
     press(M_RESCAN);
     CHECK(waitFor(M_LIBRARY, "6 tracks"), "rescan: '%s'", display(M_LIBRARY).c_str());
+
+    // ---- REC: sample the MPC input into deck B, play it back slower (varispeed) ----
+    setNorm(M_XFADE, 1.f); setNorm(M_CURVE, 0.f); setNorm(dp(0, D_PLAY), 0.f); setNorm(dp(1, D_PLAY), 0.f);
+    setNorm(dp(1, D_LOOP), 0.f); setNorm(dp(1, D_PITCH), 0.5f); setNorm(dp(1, D_RANGE), 0.f);
+    press(dp(1, D_REC)); runSine(0.1f, 440, 0.5f);
+    CHECK(getNorm(dp(1, D_RECLIGHT)) == 1.f && display(dp(1, D_STATUS)).find("REC 0:00") == 0, "recording: '%s'", display(dp(1, D_STATUS)).c_str());
+    runSine(3.0f, 440, 0.5f); press(dp(1, D_REC)); runSine(0.05f, 440, 0.5f);
+    CHECK(waitFor(dp(1, D_STATUS), "Samples/Sample 001"), "take saved + loaded: '%s'", display(dp(1, D_STATUS)).c_str());
+    { FILE* f = std::fopen((dir + "/Samples/Sample 001.wav").c_str(), "rb"); CHECK(f != nullptr, "Sample 001.wav written"); if (f) std::fclose(f); }
+    CHECK(display(M_LIBRARY).find("7 tracks") == 0, "take is in the library: '%s'", display(M_LIBRARY).c_str());
+    setNorm(M_INPUT, 0.f); press(dp(1, D_PLAY)); run(0.2f); run(1.0f);
+    CHECK(std::fabs(freqOf(lastL, 0) - 440) < 2, "take plays back at 440 Hz (%.1f)", freqOf(lastL, 0));
+    setNorm(dp(1, D_PITCH), 0.0f); run(0.2f); run(1.0f);                       // -8 %: slower and lower
+    CHECK(std::fabs(freqOf(lastL, 0) - 440 * 0.92) < 2, "-8 %% pitch: %.1f Hz", freqOf(lastL, 0));
+    // SP-12 mode: semitone steps, 26.04 kHz / 12-bit drop-sample playback (the 45 -> 33 trick: -5 st)
+    press(dp(1, D_CUE)); run(0.02f); press(dp(1, D_PLAY));                    // back to the start of the take
+    setNorm(dp(1, D_SP12), 1.f); setNorm(dp(1, D_PITCH), 0.5f - 5.f / 24.f); run(0.2f); run(1.0f);
+    CHECK(display(dp(1, D_PITCH)) == "-5 st", "SP-12 pitch display '%s'", display(dp(1, D_PITCH)).c_str());
+    CHECK(std::fabs(freqOf(lastL, 0) - 440 * std::pow(2.0, -5 / 12.0)) < 2, "SP-12 -5 st: %.1f Hz", freqOf(lastL, 0));
+    setNorm(dp(1, D_SP12), 0.f); setNorm(dp(1, D_PITCH), 0.5f); setNorm(dp(1, D_PLAY), 0.f); setNorm(M_INPUT, 1.f);
+    // SP-12 REC: the take is stored at 26.04 kHz
+    setNorm(dp(0, D_SP12), 1.f); press(dp(0, D_REC)); runSine(1.0f, 440, 0.5f); press(dp(0, D_REC)); runSine(0.05f, 440, 0.5f);
+    CHECK(waitFor(dp(0, D_STATUS), "Samples/Sample 002"), "SP-12 take: '%s'", display(dp(0, D_STATUS)).c_str());
+    { FILE* f = std::fopen((dir + "/Samples/Sample 002.wav").c_str(), "rb"); unsigned char h[28] = {};
+      if (f) { std::fread(h, 1, 28, f); std::fclose(f); }
+      const unsigned rate = h[24] | h[25] << 8 | h[26] << 16 | h[27] << 24;
+      CHECK(rate == 26040, "SP-12 take sample rate %u", rate);
+      // 12-bit words: at most 4096 different sample values in the take
+      FILE* g = std::fopen((dir + "/Samples/Sample 002.wav").c_str(), "rb"); std::vector<int16_t> pcm(26040 * 2);
+      size_t got = 0; if (g) { std::fseek(g, 44, SEEK_SET); got = std::fread(pcm.data(), 2, pcm.size(), g); std::fclose(g); }
+      std::vector<char> seen(65536, 0); int distinct = 0; for (size_t i = 0; i < got; ++i) if (!seen[pcm[i] + 32768]++) ++distinct;
+      CHECK(got > 20000 && distinct <= 4096 && distinct > 100, "SP-12 take is 12-bit (%d distinct values)", distinct); }
+    setNorm(dp(0, D_SP12), 0.f);
+
+    // ---- scratch: the record follows the hand, then plays on ----
+    select(0, 0); press(dp(0, D_LOAD)); CHECK(waitFor(dp(0, D_STATUS), "a_track 120"), "reload A");
+    setNorm(M_XFADE, 0.f); setNorm(M_INPUT, 0.f); setNorm(dp(0, D_PLAY), 1.f); run(1.0f); setNorm(dp(0, D_PLAY), 0.f); run(0.1f);
+    {
+        const float t0 = timeOf(0);
+        double loud = 0;
+        for (int i = 1; i <= 10; ++i) { setNorm(dp(0, D_SCRATCH), 0.5f + 0.01f * i); run(0.01f); loud = std::max(loud, rms(lastL)); }  // forward 0.2 s in 100 ms
+        run(0.05f);
+        CHECK(std::fabs(timeOf(0) - t0 - 0.2f) < 0.02f, "scratch forward: moved %.3f s", timeOf(0) - t0);
+        CHECK(loud > 0.005, "scratching makes sound");
+        for (int i = 9; i >= 0; --i) { setNorm(dp(0, D_SCRATCH), 0.5f + 0.01f * i); run(0.01f); }                        // and back
+        run(0.05f);
+        CHECK(std::fabs(timeOf(0) - t0) < 0.02f, "scratch back: %.3f s", timeOf(0) - t0);
+        run(0.05f); run(0.25f);
+        CHECK(rms(lastL) < 1e-4, "held still: silent (%.1f dB)", dbv(rms(lastL)));
+        CHECK(std::fabs(getNorm(dp(0, D_SCRATCH)) - 0.5f) < 1e-6, "hand lets go: scratch control recentres");
+        setNorm(dp(0, D_PLAY), 1.f); run(0.5f);
+        CHECK(timeOf(0) - t0 > 0.4f, "plays on after the scratch");
+    }
+    // ---- transform: beat-synced gate (1/16 = on for 1/32 of a bar, off for the next) ----
+    {
+        auto silentWindows = [](int& total) { int silent = 0; total = 0; const int win = (int) (0.004 * SR);
+            for (size_t i = 0; i + win < lastL.size(); i += win) { double e = 0; for (int k = 0; k < win; ++k) e += lastL[i + k] * lastL[i + k]; ++total; if (e < 1e-9) ++silent; }
+            return silent; };
+        // on deck B's recorded 440 Hz take (a steady tone, no beat: 120 BPM grid)
+        setNorm(dp(0, D_PLAY), 0.f); setNorm(M_XFADE, 1.f); setNorm(dp(1, D_SP12), 0.f); setNorm(dp(1, D_PITCH), 0.5f);
+        press(dp(1, D_CUE)); run(0.02f); press(dp(1, D_CUE)); setNorm(dp(1, D_PLAY), 1.f);
+        int total; run(0.2f); run(1.0f); const int base = silentWindows(total);
+        setNorm(dp(1, D_TRANS_RATE), 0.5f); setNorm(dp(1, D_TRANS), 1.f); run(0.1f); run(1.0f);
+        const int chopped = silentWindows(total);
+        CHECK(base < total / 20 && chopped > total * 0.35 && chopped < total * 0.6, "transform chops half: %d -> %d of %d windows silent", base, chopped, total);
+        setNorm(dp(1, D_TRANS), 0.f); setNorm(dp(1, D_PLAY), 0.f); setNorm(M_XFADE, 0.f); setNorm(dp(0, D_PLAY), 1.f);
+    }
+    setNorm(dp(0, D_TRANS), 0.f);
+    // ---- crossfader cut: 1 ms edges ----
+    setNorm(M_CURVE, 1.f); run(0.2f); setNorm(M_XFADE, 1.f); run(0.0025f);
+    CHECK(std::fabs(lastL.back()) < 1e-6, "cut crossfader closes within 2.5 ms");
+    setNorm(M_XFADE, 0.f); setNorm(M_CURVE, 0.f); setNorm(M_INPUT, 1.f); setNorm(dp(0, D_PLAY), 0.f);
 
     // ---- sample rate change keeps tempo ----
     D(effSetSampleRate, 0, 0, nullptr, 48000.f);

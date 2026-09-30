@@ -4,6 +4,7 @@
 Two decks and a mixer on one screen:
   deck (A left, B right): track selector + LOAD, now playing, BPM / pitch / elapsed / remaining, a progress bar,
     a spinning platter with 4 beat lights, pitch fader + range, SYNC, LOOP, NUDGE -/+, CUE and PLAY/PAUSE
+  deck row 2: REC (samples the MPC input into the deck) + light, SP-12 mode, TRANSFORM + rate; drag on the platter to SCRATCH
   mixer: MPC IN and MASTER, per channel GAIN / HIGH / MID / LOW / FILTER knobs, meters and faders, crossfader + curve
   library line + RESCAN under deck A.
 Readouts are plugin parameters the plugin updates; LED-style parts (progress, beat lights, meters) are one solid
@@ -24,7 +25,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da DJ Dec
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.0.0"
+VERSION = "1.1.0.0"
 TITLE = "Da DJ Decks"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -52,7 +53,8 @@ LINE = (6, 7, 9)
 
 # ---------- parameter indices (must match src/dadjdecks.cpp) ----------
 (D_TRACK, D_LOAD, D_PLAY, D_CUE, D_PITCH, D_RANGE, D_SYNC, D_NUDGE_DN, D_NUDGE_UP, D_LOOP, D_GAIN, D_HIGH, D_MID, D_LOW,
- D_FILTER, D_FADER, D_LOADED, D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT, D_COUNT) = range(26)
+ D_FILTER, D_FADER, D_LOADED, D_SCRATCH, D_TRANS, D_TRANS_RATE, D_REC, D_SP12,
+ D_TIME, D_REMAIN, D_BPM, D_PLATTER, D_PROGRESS, D_VU, D_STATUS, D_BEAT, D_RECLIGHT, D_COUNT) = range(32)
 def dp(d, w): return d * D_COUNT + w
 M_XFADE = 2 * D_COUNT
 M_CURVE, M_MASTER, M_INPUT, M_RESCAN, M_VU_L, M_VU_R, M_LIBRARY = range(M_XFADE + 1, M_XFADE + 8)
@@ -275,6 +277,16 @@ def build():
         btn(f"ndn{d}", "\u25C0 NUDGE", 100, 34, (190, 192, 200), 11)
         btn(f"nup{d}", "NUDGE \u25B6", 100, 34, (190, 192, 200), 11)
     btn("rescan", "RESCAN", 110, 26, GOLD, 11)
+    for d in range(2):
+        btn(f"rec{d}", "\u25CF REC", 84, 40, RED, 13, dark_on=False)
+        btn(f"sp{d}", "SP-12", 84, 40, (214, 196, 150), 13)
+        btn(f"tr{d}", "TRANSFORM", 110, 40, DECK_COL[d], 12)
+    save(solid_strip(14, RED, (60, 20, 18), lambda v: v >= 0.5), "dj_reclight.png")
+    defs.append({"key": "djRecLight", "value": definition([], [strip_part("dj_reclight.png", 14, 14, 14)], ignore=True)})
+    box("djRate", 84, 40, 14)
+    defs.append({"key": "djScratch", "value": definition(CTRL(), [
+        comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "dj_drag.png", "numFrames": NUMFRAMES, "invert": False,
+             "dragOrientation": "Vertical", "handleName": "Data"}, bounds((0, 0, PL, PL))), focus((0, 0, PL, PL))])})
     save(pill("", True, (104, 84, 40), 70, 24), "dj_curve_on.png"); save(pill("", False, GOLD, 70, 24), "dj_curve_off.png")
     defs.append({"key": "djCurve", "value": definition(TOGGLE(), [button_part("dj_curve_on.png", "dj_curve_off.png", 70, 24),
                  label(11, hexcol(PRINT), (0, 0, 70, 24), case="Upper Case"), focus((0, 0, 70, 24))])})
@@ -302,6 +314,12 @@ def build():
         place(comps, f"{'AB'[d]} Range", "djRange", dp(d, D_RANGE), X + 400, 372, 84, 26, "box", "djRange", touch=True); BOXES.append((X + 400, 372, 84, 26))
         place(comps, f"{'AB'[d]} Cue", f"djBtn_cue{d}", dp(d, D_CUE), X + 14, 420, 140, 64, "btn", f"cue{d}", touch=True)
         place(comps, f"{'AB'[d]} Play", f"djBtn_play{d}", dp(d, D_PLAY), X + 166, 420, 140, 64, "btn", f"play{d}", touch=True)
+        place(comps, f"{'AB'[d]} Scratch", "djScratch", dp(d, D_SCRATCH), X + 14, 236, PL, PL, "none", None, touch=True)   # drag the platter
+        place(comps, f"{'AB'[d]} Rec", f"djBtn_rec{d}", dp(d, D_REC), X + 14, 500, 84, 40, "btn", f"rec{d}", touch=True)
+        place(comps, f"{'AB'[d]} Rec Light", "djRecLight", dp(d, D_RECLIGHT), X + 104, 513, 14, 14, "seg", ("dj_reclight.png", 14))
+        place(comps, f"{'AB'[d]} SP-12", f"djBtn_sp{d}", dp(d, D_SP12), X + 126, 500, 84, 40, "btn", f"sp{d}", touch=True)
+        place(comps, f"{'AB'[d]} Transform", f"djBtn_tr{d}", dp(d, D_TRANS), X + 218, 500, 110, 40, "btn", f"tr{d}", touch=True)
+        place(comps, f"{'AB'[d]} Transform Rate", "djRate", dp(d, D_TRANS_RATE), X + 336, 500, 84, 40, "box", "djRate", touch=True); BOXES.append((X + 336, 500, 84, 40))
     place(comps, "Library", "djLib", M_LIBRARY, DECK_X[0] + 14, 574, 330, 22, "ro", "djLib")
     place(comps, "Rescan", "djBtn_rescan", M_RESCAN, DECK_X[0] + 360, 572, 110, 26, "btn", "rescan", touch=True)
     # mixer
@@ -323,8 +341,8 @@ def build():
 
     save(background(), "dj_bg.png")
     defs.append({"key": "DJ|Main", "value": definition([], comps, "ff101115")})
-    tabs = [{"version": 3, "tabName": "DECKS", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
-             "componentName": "DJ|Main", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
+    tabs = [{"version": 3, "tabName": name, "fnKeyIndex": i, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
+             "componentName": "DJ|Main", "initialSize": f"0 0 {W} {H}", "scale": 1.0} for i, name in enumerate(("DECKS", "SCRATCH"))]
     tui = {"pageData": {"version": 1,
         "componentDefinitions": {"version": 2, "importFiles": ["/usr/share/Akai/Content/Synths/Generic/Generic Knob Overlay.json",
                                                                 "/usr/share/Akai/Content/Synths/Generic/Generic Menu Overlay.json"],
@@ -333,10 +351,13 @@ def build():
     json.dump(tui, open(os.path.join(OUT, "TUI.json"), "w"), indent=4)
     ql = [dp(0, D_PITCH), dp(0, D_FADER), dp(0, D_FILTER), dp(0, D_LOW), dp(1, D_PITCH), dp(1, D_FADER), dp(1, D_FILTER), dp(1, D_LOW),
           M_XFADE, dp(0, D_MID), dp(0, D_HIGH), dp(0, D_TRACK), dp(1, D_MID), dp(1, D_HIGH), dp(1, D_TRACK), M_MASTER]
-    qmap = {f"Q-Link {i + 1}": p for i, p in enumerate(ql)}
+    ql2 = [dp(0, D_SCRATCH), dp(1, D_SCRATCH), M_XFADE, dp(0, D_FADER), dp(1, D_FADER), dp(0, D_PITCH), dp(1, D_PITCH), M_MASTER,
+           dp(0, D_FILTER), dp(1, D_FILTER), dp(0, D_TRANS), dp(1, D_TRANS), dp(0, D_TRANS_RATE), dp(1, D_TRANS_RATE), dp(0, D_SP12), dp(1, D_SP12)]
+    qmap = lambda ids: {f"Q-Link {i + 1}": p for i, p in enumerate(ids)}
     q = {"version": 4, "info": {"version": 1, "type": "CompleteDescription"},
-         "Screen Mode Q-Links": {"version": 4, "map": [{"Tab": 1, "SubTab": 1, "Bank Direction": "Column", "Q-Links": qmap}]},
-         "Program Mode Q-Links": qmap}
+         "Screen Mode Q-Links": {"version": 4, "map": [{"Tab": 1, "SubTab": 1, "Bank Direction": "Column", "Q-Links": qmap(ql)},
+                                                       {"Tab": 2, "SubTab": 1, "Bank Direction": "Column", "Q-Links": qmap(ql2)}]},
+         "Program Mode Q-Links": qmap(ql)}
     for fn in ("Q-Links.json", "Q-Links - 8by1.json"): json.dump(q, open(os.path.join(OUT, fn), "w"), indent=4)
     open(os.path.join(SKIN_DIR, "version.xml"), "w").write(
         "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>dadjdecks.vst.dadjdecks</identifier>\n"
@@ -363,6 +384,8 @@ def background():
         text_c(d, X + 442, 208, "PITCH  +", font(9), PRINT_DIM)
         text_c(d, X + 442, 216 + PL + 1, "-", font(12), PRINT_DIM)
         text_c(d, X + 340, 382, "RANGE", font(9), PRINT_DIM)
+        text_c(d, X + 378, 548, "RATE", font(8), PRINT_DIM)
+        text_c(d, X + 89, 392, "DRAG TO SCRATCH", font(8), PRINT_DIM)
     d.rounded_rectangle([MIX_X, 58, MIX_X + MIX_W, H - 8], radius=8, fill=(24, 26, 31), outline=LINE, width=2)
     d.rectangle([MIX_X + 1, 58, MIX_X + MIX_W - 1, 61], fill=GOLD_DARK)
     cxs = [MIX_X + 58, MIX_X + MIX_W - 58]
@@ -406,6 +429,8 @@ def plugin_state():
             if sleep: time.sleep(0.002)
     run(0.5, True)
     count = 6
+    try: count = len([1 for r, ds, fs in os.walk(os.environ["DJ_FOLDER"]) for f in fs if f.lower().endswith(".wav")])
+    except Exception: pass
     e.setParameter(fx, dp(0, D_TRACK), 0.5 / count); e.setParameter(fx, dp(0, D_LOAD), 1.0)
     e.setParameter(fx, dp(1, D_TRACK), 1.5 / count); e.setParameter(fx, dp(1, D_LOAD), 1.0)
     run(1.5, True)
@@ -413,6 +438,7 @@ def plugin_state():
     e.setParameter(fx, dp(1, D_SYNC), 1.0); run(0.05); e.setParameter(fx, dp(1, D_PLAY), 1.0)
     e.setParameter(fx, dp(0, D_LOW), 0.62); e.setParameter(fx, dp(1, D_HIGH), 0.7); e.setParameter(fx, dp(1, D_FILTER), 0.64)
     e.setParameter(fx, M_XFADE, 0.42); e.setParameter(fx, dp(1, D_LOOP), 0.6)
+    e.setParameter(fx, dp(1, D_TRANS), 1.0); e.setParameter(fx, dp(0, D_SP12), 1.0); e.setParameter(fx, dp(0, D_PITCH), 0.5 - 5 / 24)
     run(3.17)
     vals = [e.getParameter(fx, i) for i in range(P_COUNT)]
     txt = []

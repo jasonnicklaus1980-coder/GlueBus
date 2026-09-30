@@ -5,7 +5,7 @@
 # (MPC is stopped for the edit - save your project first). Safe to re-run: it upgrades in place.
 set -e
 cd "$(dirname "$0")"
-NAME='Da DJ Decks'; VERSION='1.0.0'; SO_DIR='/sdcard/vst'; SO='dadjdecks.so'; SKIN='RadioReady Audio - VST - Da DJ Decks'
+NAME='Da DJ Decks'; VERSION='1.1.0'; SO_DIR='/sdcard/vst'; SO='dadjdecks.so'; SKIN='RadioReady Audio - VST - Da DJ Decks'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
