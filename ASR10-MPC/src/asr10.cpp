@@ -30,8 +30,9 @@ enum ParamId
 enum Kind { K_FLOAT, K_CHOICE, K_BOOL, K_LOG };
 enum Fmt  { F_NUM, F_TUNE, F_FC1, F_FC2, F_DATA };
 
-// the parameters the Edit buttons select for the Data Entry slider, in button order
-constexpr int kEditTargets[] { P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX, P_VOLUME };
+// the parameters the Edit buttons select for the Data Entry slider, in button order (Volume has its own slider,
+// as on the ASR-10)
+constexpr int kEditTargets[] { P_INPUT, P_TUNE, P_FINE, P_FC1, P_FC2, P_MIX };
 constexpr int kNumEdit = (int) (sizeof (kEditTargets) / sizeof (kEditTargets[0]));
 
 // ---- hardware constants ----
@@ -50,7 +51,7 @@ const char* const kRateNames[]  { "30 kHz", "44.1 kHz" };
 // OTTO filter modes (ES5505 LP3/LP4 bits): poles 1-2 are always low-pass on FC1, poles 3-4 are chosen here
 const char* const kFModeNames[] { "LP2 / HP2", "LP3 / HP1", "LP2 / LP2", "LP3 / LP1" };
 const char* const kTModeNames[] { "Pitch", "Rate" };
-const char* const kEditNames[]  { "Input", "Tune", "Fine", "Filter 1", "Filter 2", "Mix", "Volume" };
+const char* const kEditNames[]  { "Input", "Tune", "Fine", "Filter 1", "Filter 2", "Mix" };
 
 struct ParamDef
 {
@@ -74,7 +75,7 @@ const ParamDef kParams[P_COUNT] =
     { "Tune Mode",   "",   K_CHOICE,  0.f,  1.f, 1.f,   0.f,    CH (kTModeNames), F_NUM, "" },
     { "Bypass",      "",   K_BOOL,    0.f,  1.f, 1.f,   0.f,    nullptr, 0, F_NUM,  "" },
     { "Data Entry",  "",   K_FLOAT,   0.f,  1.f, 0.f,   0.f,    nullptr, 0, F_DATA, "" },   // proxy, holds no value
-    { "Edit",        "",   K_CHOICE,  0.f,  6.f, 1.f,   1.f,    CH (kEditNames),  F_NUM, "" },
+    { "Edit",        "",   K_CHOICE,  0.f,  5.f, 1.f,   1.f,    CH (kEditNames),  F_NUM, "" },
 };
 
 // ---- factory presets: defaults + overrides ----
@@ -509,7 +510,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "ASR10", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1100;
+        case effGetVendorVersion: return 1200;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -544,6 +545,6 @@ ASR_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('A' << 24) | ('S' << 16) | ('R' << 8) | '1';   // 'ASR1' = 0x41535231
-    fx.version = 1100;
+    fx.version = 1200;
     return &fx;
 }

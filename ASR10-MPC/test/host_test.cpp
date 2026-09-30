@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
 
     // 14) ASR-10 style editing: Edit buttons pick a parameter, the one Data Entry slider moves it
     {
-        auto edit = [](int k) { setNorm(P_EDIT, k / 6.f); };           // 0 Input, 1 Tune, 2 Fine, 3 Filter 1 ...
+        auto edit = [](int k) { setNorm(P_EDIT, k / 5.f); };           // 0 Input, 1 Tune, 2 Fine, 3 Filter 1, 4 Filter 2, 5 Mix
         auto disp = [](int p) { static char d[64]; std::memset(d, 0, sizeof d); D(effGetParamDisplay, p, 0, d); return d; };
         fresh(); edit(1); setNorm(P_DATA, 18 / 24.f);
         std::printf("\nData Entry on Tune: display '%s'", disp(P_DATA)); std::printf(", tune '%s'\n", disp(P_TUNE));
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
               "slider jumps to the newly selected value");
         automated[P_DATA] = 0; fc1(2000.f);                         // a Q-Link moves Filter 1 directly
         CHECK(automated[P_DATA] == 1 && std::fabs(lastAutomate[P_DATA] - getNorm(P_FC1)) < 1e-6f, "Data Entry follows a Q-Link");
-        automated[P_DATA] = 0; setNorm(P_MIX, 0.3f);                // a parameter that isn't selected
+        automated[P_DATA] = 0; setNorm(P_MIX, 0.3f); setNorm(P_VOLUME, 0.4f);   // parameters that aren't selected
         CHECK(automated[P_DATA] == 0, "unselected parameter doesn't move Data Entry");
         edit(1); setNorm(P_DATA, 0.f); int steps = 0; char last[64]; std::strcpy(last, disp(P_TUNE));
         for (int k = 0; k < 127; ++k) {
@@ -297,7 +297,7 @@ int main(int argc, char** argv) {
         CHECK(steps == 24, "data entry steps through every semitone (%d)", steps);
         edit(4); D(effSetProgram, 0, 3);
         CHECK(!std::strncmp(disp(P_DATA), "FILTER 2", 8), "presets keep the Edit selection ('%s')", disp(P_DATA));
-        for (int k = 0; k < 7; ++k) { edit(k); std::printf("  edit %d: '%s'\n", k, disp(P_DATA)); CHECK(std::strlen(disp(P_DATA)) < 24, "display fits"); }
+        for (int k = 0; k < 6; ++k) { edit(k); std::printf("  edit %d: '%s'\n", k, disp(P_DATA)); CHECK(std::strlen(disp(P_DATA)) < 24, "display fits"); }
     }
 
     char s[64] = {}; D(effGetEffectName, 0, 0, s); CHECK(!std::strcmp(s, "ASR10"), "effect name");

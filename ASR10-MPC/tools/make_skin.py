@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the ASR10 MPC screen skin in the style of the Ensoniq ASR-10's front panel: floppy drive, ONE Data Entry
-slider, a blue-green fluorescent display with the Edit buttons under it, grey keys with red LEDs, and the keyboard
-with pitch / mod wheels along the bottom (no pads).
+"""Generate the ASR10 MPC screen skin in the style of the Ensoniq ASR-10's front panel: floppy drive, its TWO sliders
+(Volume and Data Entry), a blue-green fluorescent display with the Edit buttons under it, and grey keys with red
+LEDs. No keyboard or pads: this is an effect.
 
 Editing works like the ASR-10: press an Edit button to choose a parameter, then move the Data Entry slider (the
 plugin's Data Entry parameter is a proxy for the selected one; the display shows e.g. "TUNE +3"). Q-Links still
@@ -22,7 +22,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "GlueBus - VST - ASR10")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 4     # filmstrip frames; numFrames = last frame index (stock MPC strips); supersampling
-VERSION = "1.1.0.0"
+VERSION = "1.2.0.0"
 
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 def font(size, name="DejaVuSans-Bold.ttf"):
@@ -58,22 +58,24 @@ NAME_COL, VFD_COL, FOCUS_COL = "ffe2e3e0", "ff60eed8", "ff60eed8"
 P = dict(input=0, tune=1, fine=2, fc1=3, fc2=4, mix=5, volume=6, rate=7, fmode=8, tmode=9, bypass=10, data=11, edit=12)
 
 # ---------- layout ----------
-PANEL_BOTTOM = 440                       # keyboard below
+PANEL_BOTTOM = H                         # the panel fills the screen (no keyboard)
 FW, FH = 76, 330                          # fader artwork (slot + cap) inside each frame
 FS = FH                                   # square frames (MPC slices filmstrips by the image width), fader centred
 TRAVEL0, TRAVEL1 = 26, FH - 26            # cap centre travel inside the frame
-SLIDER_BOX = (232, 22, 110, 408)          # Data Entry slider component: x, y, w, h
+# the ASR-10's two sliders: (param, label, show value under it, x); component boxes are SLIDER_W x SLIDER_H
+SLIDERS = [("volume", "VOLUME", True, 222), ("data", "DATA ENTRY", False, 346)]
+SLIDER_Y, SLIDER_W, SLIDER_H = 100, 110, 408
 FY = 34                                   # fader top inside the box
-VFD = (372, 34, 540, 116)                 # fluorescent display: x, y, w, h
+VFD = (486, 100, 474, 116)                # fluorescent display: x, y, w, h
 KEY_W, KEY_H = 70, 34                     # small ASR keys
-EDIT_X, EDIT_Y, EDIT_GAP = 372, 214, 8.3  # Edit buttons row (under the display)
-EDIT_LABELS = ["INPUT", "TUNE", "FINE", "FILTER 1", "FILTER 2", "MIX", "VOLUME"]
+EDIT_X, EDIT_Y, EDIT_GAP = 486, 300, 10.8 # Edit buttons row (under the display)
+EDIT_LABELS = ["INPUT", "TUNE", "FINE", "FILTER 1", "FILTER 2", "MIX"]
 # option groups: (param, title, [option labels], x, y, key width, gap)
-GROUPS = [("fmode", "FILTER  MODE", ["LP2/HP2", "LP3/HP1", "LP2/LP2", "LP3/LP1"], 372, 330, 96, 18),
-          ("rate", "SAMPLE  RATE", ["30 kHz", "44.1 kHz"], 950, 76, 96, 24),
-          ("tmode", "TUNE  MODE", ["PITCH", "RATE"], 950, 170, 96, 24)]
-BYPASS = (950, 264, 96)                   # x, y, key width
-QLINKS = ["data", "edit", "input", "tune", "fine", "fc1", "fc2", "mix", "volume", "rate", "fmode", "tmode", "bypass"]
+GROUPS = [("fmode", "FILTER  MODE", ["LP2/HP2", "LP3/HP1", "LP2/LP2", "LP3/LP1"], 486, 440, 100, 24.7),
+          ("rate", "SAMPLE  RATE", ["30 kHz", "44.1 kHz"], 1000, 150, 108, 24),
+          ("tmode", "TUNE  MODE", ["PITCH", "RATE"], 1000, 250, 108, 24)]
+BYPASS = (1000, 350, 108)                 # x, y, key width
+QLINKS = ["data", "edit", "volume", "input", "tune", "fine", "fc1", "fc2", "mix", "rate", "fmode", "tmode", "bypass"]
 
 def edit_x(i): return EDIT_X + i * (KEY_W + EDIT_GAP)
 def group_x(g, i): return g[3] + i * (g[5] + g[6])
@@ -132,31 +134,6 @@ def floppy(d, x, y):
     d.ellipse([x + 20, y + 68, x + 28, y + 76], fill=(70, 28, 24))                               # drive LED
     d.text((x + 36, y + 66), "DISK", font=font(11), fill=PRINT_DIM)
 
-def keyboard(im):
-    d = ImageDraw.Draw(im)
-    y0 = PANEL_BOTTOM
-    d.rectangle([0, y0, W, H], fill=(16, 16, 17))
-    d.rectangle([0, y0, W, y0 + 6], fill=(40, 40, 42))
-    # pitch and mod wheels in the left cheek
-    for k, wx in enumerate((58, 128)):
-        d.rounded_rectangle([wx, y0 + 34, wx + 44, y0 + 164], radius=6, fill=(6, 6, 7), outline=(46, 46, 48), width=2)
-        for j in range(14):
-            yy = y0 + 42 + j * 8.6
-            d.line([wx + 6, yy, wx + 38, yy], fill=(34 + (j % 2) * 10,) * 3, width=3)
-        d.text((wx + 2, y0 + 16), ("PITCH", "MOD")[k], font=font(10), fill=PRINT_DIM)
-    # 3 octaves of keys
-    kx0, kx1, ky0, ky1 = 214, W - 14, y0 + 16, H - 10
-    whites = 21; ww = (kx1 - kx0) / whites
-    for i in range(whites):
-        x = kx0 + i * ww
-        d.rectangle([x, ky0, x + ww - 2, ky1], fill=(236, 234, 226), outline=(120, 118, 112))
-        d.rectangle([x + 1, ky1 - 8, x + ww - 3, ky1 - 1], fill=(206, 204, 196))
-    for i in range(whites - 1):
-        if i % 7 in (2, 6): continue                                  # no black key between E-F and B-C
-        x = kx0 + (i + 1) * ww - ww * 0.3
-        d.rectangle([x, ky0, x + ww * 0.6, ky0 + (ky1 - ky0) * 0.62], fill=(12, 12, 13))
-        d.rectangle([x + 3, ky0, x + ww * 0.6 - 3, ky0 + 6], fill=(46, 46, 48))
-
 def background():
     random.seed(9)
     im = Image.new("RGB", (W, H), PANEL); px = im.load()
@@ -165,15 +142,19 @@ def background():
             n = random.randint(-2, 2); px[x, y] = (PANEL[0] + n, PANEL[1] + n, PANEL[2] + n)
     d = ImageDraw.Draw(im)
     d.rectangle([0, 0, W, 4], fill=(44, 44, 46))
-    floppy(d, 24, 110)
-    d.text((26, 226), spaced("3.5\"  DISK  DRIVE"), font=font(11), fill=PRINT_DIM)
-    # Data Entry slider scale
-    sx, sy, sw, sh = SLIDER_BOX; cx = sx + sw / 2
-    y0, y1 = sy + FY + TRAVEL0, sy + FY + TRAVEL1
-    for j in range(21):
-        y = y1 + (y0 - y1) * j / 20; long_ = j % 5 == 0
-        d.line([cx - 34 - (6 if long_ else 0), y, cx - 30, y], fill=PRINT if long_ else PRINT_DIM, width=1)
-        d.line([cx + 30, y, cx + 34 + (6 if long_ else 0), y], fill=PRINT if long_ else PRINT_DIM, width=1)
+    floppy(d, 24, 210)
+    d.text((26, 326), spaced("3.5\"  DISK  DRIVE"), font=font(11), fill=PRINT_DIM)
+    # slider scales (Volume, Data Entry)
+    for key, lab, show, sx in SLIDERS:
+        cx = sx + SLIDER_W / 2
+        y0, y1 = SLIDER_Y + FY + TRAVEL0, SLIDER_Y + FY + TRAVEL1
+        for j in range(21):
+            y = y1 + (y0 - y1) * j / 20; long_ = j % 5 == 0
+            d.line([cx - 34 - (6 if long_ else 0), y, cx - 30, y], fill=PRINT if long_ else PRINT_DIM, width=1)
+            d.line([cx + 30, y, cx + 34 + (6 if long_ else 0), y], fill=PRINT if long_ else PRINT_DIM, width=1)
+        if key == "volume":
+            for pos, m in ((0, "-24"), (12 / 36, "-12"), (24 / 36, "0"), (1, "+12")):
+                d.text((cx + 42, y1 + (y0 - y1) * pos - 6), m, font=font(10), fill=PRINT)
     # fluorescent display with a bezel; live text is drawn by MPC (labels bound to the plugin)
     vx, vy, vw, vh = VFD
     d.rounded_rectangle([vx - 10, vy - 10, vx + vw + 10, vy + vh + 10], radius=6, fill=(4, 4, 5), outline=(52, 52, 54), width=2)
@@ -192,10 +173,10 @@ def background():
     bx, by, bw = BYPASS
     d.text((bx, by - 44), spaced("BYPASS"), font=font(12), fill=PRINT)
     # name plate (drawn, not the Ensoniq logo)
-    slanted(im, (948, 330), "ASR-10", font(54, "DejaVuSans.ttf"), PRINT)
-    d.text((952, 404), spaced("ADVANCED  SAMPLING  RECORDER"), font=font(10), fill=PRINT_DIM)
-    d.line([372, 270, 912, 270], fill=(46, 46, 48), width=1)
-    keyboard(im)
+    slanted(im, (996, 452), "ASR-10", font(54, "DejaVuSans.ttf"), PRINT)
+    sub = spaced("ADVANCED  SAMPLING  RECORDER"); tw = d.textlength(sub, font=font(10))
+    d.text((W - 24 - tw, 526), sub, font=font(10), fill=PRINT_DIM)
+    d.line([486, 366, 960, 366], fill=(46, 46, 48), width=1)
     return im
 
 # ---------- TUI.json (GlueBus schema) ----------
@@ -238,13 +219,16 @@ def build():
     defs = []
 
     fader_strip().save(os.path.join(OUT, "asr_fader.png"), optimize=True)
-    sx, sy, sw, sh = SLIDER_BOX
-    defs.append({"key": "asrDataEntry", "value": definition(
-        [action("Mouse Down", "Q-Link"), action("Double Click", "Show Overlay", "knob overlay"), action("Enter Pressed", "Show Overlay", "knob overlay")],
-        [focus((0, 0, sw, sh)),
-         label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case"),
-         comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": False,
-              "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((sw - FS) // 2, FY, FS, FS)))])})
+    sw, sh = SLIDER_W, SLIDER_H
+    for with_value in (False, True):          # Data Entry (the display shows its value) / Volume (value under it)
+        parts = [focus((0, 0, sw, sh)),
+                 label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case"),
+                 comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": False,
+                      "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((sw - FS) // 2, FY, FS, FS)))]
+        if with_value: parts.append(label("Value", 18, VFD_COL, (0, FY + FH + 6, sw, 28), case="Upper Case"))
+        defs.append({"key": "asrSliderV" if with_value else "asrSlider", "value": definition(
+            [action("Mouse Down", "Q-Link"), action("Double Click", "Show Overlay", "knob overlay"), action("Enter Pressed", "Show Overlay", "knob overlay")],
+            parts)})
 
     key_group_defs("edit", len(EDIT_LABELS), KEY_W, defs)
     for g in GROUPS: key_group_defs(g[0], len(g[2]), g[5], defs)
@@ -255,7 +239,9 @@ def build():
 
     background().save(os.path.join(OUT, "asr_bg.png"), optimize=True)
     comps = [comp("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": "asr_bg.png"}, bounds((0, 0, W, H)))]
-    comps.append(comp("Data Entry", "asrDataEntry", {"version": 1, "handleName": "Data"}, bounds(SLIDER_BOX, focus="Yes", show="Hide"), bind("data")))
+    for key, lab, show, sx in SLIDERS:
+        comps.append(comp(lab.title(), "asrSliderV" if show else "asrSlider", {"version": 1, "handleName": "Data"},
+                          bounds((sx, SLIDER_Y, SLIDER_W, SLIDER_H), focus="Yes", show="Hide"), bind(key)))
     # the fluorescent display: selected parameter + value, then the modes
     vx, vy, vw, vh = VFD
     comps.append(bound_label("Display", "data", 34, VFD_COL, (vx + 14, vy + 10, vw - 28, 52)))
@@ -297,9 +283,12 @@ def build():
 def preview(path):
     im = Image.open(os.path.join(OUT, "asr_bg.png")).convert("RGBA"); d = ImageDraw.Draw(im)
     strip = Image.open(os.path.join(OUT, "asr_fader.png"))
-    sx, sy, sw, sh = SLIDER_BOX; fr = round(0.5 * (FRAMES - 1)); fx0 = (FS - FW) // 2
-    im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(sx + (sw - FW) / 2), sy + FY))
-    text_c(d, sx + sw / 2, sy + 15, "DATA ENTRY", font(13), PRINT)
+    fx0 = (FS - FW) // 2
+    for key, lab, show, sx in SLIDERS:
+        fr = round((24 / 36 if key == "volume" else 0.5) * (FRAMES - 1))
+        im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(sx + (SLIDER_W - FW) / 2), SLIDER_Y + FY))
+        text_c(d, sx + SLIDER_W / 2, SLIDER_Y + 15, lab, font(13), PRINT)
+        if show: text_c(d, sx + SLIDER_W / 2, SLIDER_Y + FY + FH + 20, "+0.0", font(16), VFD_TXT)
     vx, vy, vw, vh = VFD
     text_c(d, vx + vw / 2, vy + 36, "TUNE 0", font(30), VFD_TXT)
     third = (vw - 28) // 3

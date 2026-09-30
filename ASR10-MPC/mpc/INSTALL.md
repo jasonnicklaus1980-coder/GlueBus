@@ -1,8 +1,8 @@
-# ASR10 1.1.0
+# ASR10 1.2.0
 
 Ensoniq ASR-10 sampler character (16-bit sigma-delta converters at 30 kHz or 44.1 kHz, OTTO interpolated playback,
-4-pole digital filters) as a native MPC OS VST2 insert effect, with an ASR-10 style screen: one Data Entry
-slider, Edit buttons and a fluorescent display. Loaded by MPC's built-in
+4-pole digital filters) as a native MPC OS VST2 insert effect, with an ASR-10 style screen: its two sliders
+(Volume and Data Entry), Edit buttons and a fluorescent display. Loaded by MPC's built-in
 plugin host.
 
 ## Requirements
@@ -10,8 +10,8 @@ plugin host.
 - **Root shell access** (SSH). Installing plugins this way is unofficial: back up first, use at your own risk.
 
 ## Install with Terminus
-1. Upload `ASR10-1.1.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
-2. Save your MPC project, then run: `cd /tmp && unzip -o ASR10-1.1.0-mpc-armv7.zip && sh ASR10-1.1.0/install.sh`
+1. Upload `ASR10-1.2.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+2. Save your MPC project, then run: `cd /tmp && unzip -o ASR10-1.2.0-mpc-armv7.zip && sh ASR10-1.2.0/install.sh`
 3. Answer `y`. MPC restarts; add **ASR10** as an insert (drum program, pad, track or bus).
 
 The installer checks the device, copies `asr10.so` to `/sdcard/vst/` and the skin to
@@ -20,21 +20,21 @@ list and starts MPC again. Re-running upgrades in place; `-y` skips the prompt. 
 they share no files.
 
 ## Controls (one screen page, "ASR-10")
-Edit like the ASR-10: press an **Edit** button (Input, Tune, Fine, Filter 1, Filter 2, Mix, Volume), then move the
-**Data Entry** slider. The display shows the selected parameter and its value ("TUNE +3", "FILTER 1 6.0 kHz") and,
+Edit like the ASR-10: press an **Edit** button (Input, Tune, Fine, Filter 1, Filter 2, Mix), then move the
+**Data Entry** slider. **Volume** has its own slider, as on the hardware. The display shows the selected parameter and its value ("TUNE +3", "FILTER 1 6.0 kHz") and,
 on the second line, the sample rate, filter mode and tune mode. The keys on the right switch those modes.
 
 | Q-Link | Control | Range |
 |---|---|---|
 | 1 | Data Entry | moves the parameter selected with the Edit buttons |
 | 2 | Edit | which parameter Data Entry moves |
-| 3 | Input | -24 .. +12 dB into the 16-bit ADC (clips hard at full scale) |
-| 4 | Tune | -12 .. +12 semitones |
-| 5 | Fine | -50 .. +50 cents |
-| 6 | Filter 1 | low-pass cutoff (poles 1-2, and pole 3 in the LP3 modes), 100 Hz .. Open |
-| 7 | Filter 2 | high-pass (Off .. 20 kHz) in the HP modes, low-pass (20 Hz .. Open) in the LP modes |
-| 8 | Mix | dry / ASR |
-| 9 | Volume | -24 .. +12 dB output |
+| 3 | Volume | -24 .. +12 dB output (its own slider) |
+| 4 | Input | -24 .. +12 dB into the 16-bit ADC (clips hard at full scale) |
+| 5 | Tune | -12 .. +12 semitones |
+| 6 | Fine | -50 .. +50 cents |
+| 7 | Filter 1 | low-pass cutoff (poles 1-2, and pole 3 in the LP3 modes), 100 Hz .. Open |
+| 8 | Filter 2 | high-pass (Off .. 20 kHz) in the HP modes, low-pass (20 Hz .. Open) in the LP modes |
+| 9 | Mix | dry / ASR |
 | 10 | Sample Rate | 30 kHz (29.76 kHz, band-limited ~13.4 kHz: the dark ASR sound) / 44.1 kHz |
 | 11 | Filter Mode | LP2/HP2, LP3/HP1, LP2/LP2, LP3/LP1 (the OTTO chip's four modes; 6-24 dB/oct, no resonance) |
 | 12 | Tune Mode | Pitch (interpolated pitch shift) / Rate (tune changes the sampling rate, pitch stays) |
@@ -56,7 +56,7 @@ Push it up (to Open) when you switch to LP2/LP2 or LP3/LP1.
   Detune Chorus, Dark Detune
 
 ## Uninstall
-`sh /tmp/ASR10-1.1.0/uninstall.sh` (unzip the package to `/tmp` again first) removes the plugin, its skin and the
+`sh /tmp/ASR10-1.2.0/uninstall.sh` (unzip the package to `/tmp` again first) removes the plugin, its skin and the
 plugin-list entry.
 
 ## Troubleshooting
