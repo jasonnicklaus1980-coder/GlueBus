@@ -39,7 +39,7 @@ jobs:
         run: |
           chmod +x scripts/*.sh mpc/*.sh
           READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
-          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/DaSpace-1.0.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/DaSpace-1.0.1-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -51,10 +51,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: daspace-build-${{ github.run_number }}
-          name: Da Space 1.0.0 (build ${{ github.run_number }})
+          name: Da Space 1.0.1 (build ${{ github.run_number }})
           make_latest: false
-          files: out/DaSpace-1.0.0-mpc-armv7.zip
+          files: out/DaSpace-1.0.1-mpc-armv7.zip
           body: |
             Install from Terminus (SSH into the MPC as root):
-            1. Upload DaSpace-1.0.0-mpc-armv7.zip to /tmp
-            2. cd /tmp && unzip -o DaSpace-1.0.0-mpc-armv7.zip && sh DaSpace-1.0.0/install.sh
+            1. Upload DaSpace-1.0.1-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o DaSpace-1.0.1-mpc-armv7.zip && sh DaSpace-1.0.1/install.sh

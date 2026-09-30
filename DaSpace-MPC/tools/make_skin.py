@@ -17,8 +17,8 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da Space"
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.0.0"
-TITLE = "Da Space"
+VERSION = "1.0.1.0"
+TITLE = "Velvet Space"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
@@ -51,23 +51,24 @@ KX0, KDX = 44, 162
 KY1, KY2 = 196, 408
 NSEG = 18
 
-GOLD_STOPS = [(255, 238, 160), (236, 190, 70), (168, 116, 22), (240, 204, 96), (196, 146, 40)]
+# title letters: polished blue (light top, deep band, bright bottom)
+TITLE_STOPS = [(200, 235, 255), (110, 190, 255), (30, 90, 200), (90, 170, 255), (60, 130, 235)]
 def script_font(size):
     for p in SCRIPT_FONTS:
         if os.path.exists(p): return ImageFont.truetype(p, size), True
     return font(int(size * 0.62), "DejaVuSerif-Bold.ttf"), False
-def gold_text(im, cx, cy, text, size):
+def title_text(im, cx, cy, text, size):
     f, script = script_font(size)
     b = ImageDraw.Draw(im).textbbox((0, 0), text, font=f); w, h = b[2] - b[0], b[3] - b[1]
     pad = 14; mask = Image.new("L", (w + 2 * pad, h + 2 * pad), 0)
     ImageDraw.Draw(mask).text((pad - b[0], pad - b[1]), text, font=f, fill=255)
     grad = Image.new("RGB", mask.size); gd = ImageDraw.Draw(grad)
     for y in range(mask.size[1]):
-        k = y / max(1, mask.size[1] - 1) * (len(GOLD_STOPS) - 1); i = min(len(GOLD_STOPS) - 2, int(k)); u = k - i
-        gd.line([0, y, mask.size[0], y], fill=tuple(int(GOLD_STOPS[i][j] + (GOLD_STOPS[i + 1][j] - GOLD_STOPS[i][j]) * u) for j in range(3)))
+        k = y / max(1, mask.size[1] - 1) * (len(TITLE_STOPS) - 1); i = min(len(TITLE_STOPS) - 2, int(k)); u = k - i
+        gd.line([0, y, mask.size[0], y], fill=tuple(int(TITLE_STOPS[i][j] + (TITLE_STOPS[i + 1][j] - TITLE_STOPS[i][j]) * u) for j in range(3)))
     x0, y0 = int(cx - mask.size[0] / 2), int(cy - mask.size[1] / 2)
     im.paste(Image.new("RGB", mask.size, (0, 0, 0)), (x0 + 2, y0 + 3), mask.filter(ImageFilter.GaussianBlur(2.5)))
-    im.paste(Image.new("RGB", mask.size, (120, 84, 16)), (x0, y0), mask.filter(ImageFilter.GaussianBlur(6)).point(lambda v: v // 3))
+    im.paste(Image.new("RGB", mask.size, (30, 80, 170)), (x0, y0), mask.filter(ImageFilter.GaussianBlur(6)).point(lambda v: v // 2))
     im.paste(grad, (x0, y0), mask)
 
 def knob_strip(size):
@@ -140,8 +141,8 @@ def background():
     im.paste(Image.new("RGB", (W, H), (90, 130, 200)), (0, 0), glow.filter(ImageFilter.GaussianBlur(40)))
     d = ImageDraw.Draw(im)
     for y in range(TITLE_H): d.line([0, y, W, y], fill=mix((6, 8, 18), (16, 20, 38), y / TITLE_H))
-    d.line([0, TITLE_H, W, TITLE_H], fill=GOLD_DARK); d.line([0, TITLE_H + 1, W, TITLE_H + 1], fill=(70, 52, 18))
-    gold_text(im, W / 2, TITLE_H / 2 + 2, "   ".join(TITLE.split(" ")), 40)
+    d.line([0, TITLE_H, W, TITLE_H], fill=(60, 120, 210)); d.line([0, TITLE_H + 1, W, TITLE_H + 1], fill=(20, 40, 90))
+    title_text(im, W / 2, TITLE_H / 2 + 2, "   ".join(TITLE.split(" ")), 40)
     d = ImageDraw.Draw(im)
     d.rounded_rectangle([12, 60, W - 12, 146], radius=10, fill=PANEL, outline=LINE, width=2)
     text_c(d, 262, 72, "PRESET", font(9), PRINT_DIM); text_c(d, 648, 72, "ALGORITHM", font(9), PRINT_DIM)

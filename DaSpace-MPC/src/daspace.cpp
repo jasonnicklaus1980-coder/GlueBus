@@ -258,7 +258,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "Da Space", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1001;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return (intptr_t) (p->sr * 20);
@@ -292,6 +292,6 @@ SPACE_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('D' << 24) | ('S' << 16) | ('P' << 8) | 'C';   // 'DSPC' = 0x44535043
-    fx.version = 1000;
+    fx.version = 1001;
     return &fx;
 }
