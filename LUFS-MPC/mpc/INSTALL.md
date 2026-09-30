@@ -1,18 +1,18 @@
-# RadioReady LUFS Meter 1.0.0
+# RadioReady LUFS Meter 1.0.1
 
 A loudness meter for MPC, in the style of classic hardware loudness meters. It shows Momentary, Short Term,
 Integrated, Loudness Range, True Peak and elapsed time, and has presets for streaming platforms (Spotify, Apple Music,
 YouTube and more). It's a native MPC OS VST2 insert effect. In the plugin browser it's **RadioReady LUFS Meter** by
-**RadioReady Audio**, and the screen's gold title reads **Marcus And Moni LUFS Meter**. Audio passes through untouched.
+**RadioReady Audio**, and the screen's gold title reads **Da Lufs Plug**. Audio passes through untouched.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `RadioReadyLUFS-1.0.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `RadioReadyLUFS-1.0.1-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o RadioReadyLUFS-1.0.0-mpc-armv7.zip && sh RadioReadyLUFS-1.0.0/install.sh`
+   `cd /tmp && unzip -o RadioReadyLUFS-1.0.1-mpc-armv7.zip && sh RadioReadyLUFS-1.0.1/install.sh`
 3. Answer `y`. MPC restarts. Add **RadioReady LUFS Meter** as the **last insert on the master**, after your limiter,
    so it measures what listeners will hear.
 
@@ -66,7 +66,7 @@ below the ceiling, and a negative value means your peaks are over it.
 1 Platform, 2 Target, 3 Peak Ceiling, 4 Pause.
 
 ## Uninstall
-`sh /tmp/RadioReadyLUFS-1.0.0/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/RadioReadyLUFS-1.0.1/uninstall.sh` (unzip the package to `/tmp` again first).
 
 ## Troubleshooting
 - **Not in the plugin list:** it appears after MPC restarts. Check with

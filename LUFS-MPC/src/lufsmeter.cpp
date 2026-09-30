@@ -357,7 +357,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "RadioReady LUFS Meter", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1000;
+        case effGetVendorVersion: return 1001;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effSetProcessPrecision: return val == 0 ? 1 : 0;
@@ -390,6 +390,6 @@ LM_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('R' << 24) | ('R' << 16) | ('L' << 8) | 'M';   // 'RRLM' = 0x52524c4d
-    fx.version = 1000;
+    fx.version = 1001;
     return &fx;
 }
