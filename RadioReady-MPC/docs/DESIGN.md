@@ -69,7 +69,8 @@ out, because a mono-compatible mix carries its energy in the Mid. Quick settings
 Measured on band-limited pink noise, the worst case is 0.14 dB.
 
 ## Skin
+- **Title:** a gold script "Marcus and Moni Radio Ready EQ" bar across the top of every tab.
 - **Tabs:** EQ GAIN/FREQ and EQ Q/TYPE share one band screen with different Q-Link maps; RADIO READY has its own.
 - **Graph:** 64 curve columns and 32 analyzer bars, each a filmstrip bound to a read-only parameter.
-- **Memory:** about 80 MB decoded, similar to EQ7. The value boxes are drawn in the backgrounds, and their drag
+- **Memory:** about 64 MB decoded, less than EQ7. The value boxes are drawn in the backgrounds, and their drag
   controls use a transparent 16 px strip.

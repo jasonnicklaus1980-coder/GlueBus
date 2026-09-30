@@ -33,7 +33,7 @@ Install and usage: [mpc/INSTALL.md](mpc/INSTALL.md). Design notes: [docs/DESIGN.
 ```
 make test        # native build + offline VST2 host test (no MPC needed)
 make arm         # build/arm/radioready.so (needs g++-arm-linux-gnueabihf), or: make docker
-./scripts/package.sh                 # dist/RadioReady-1.0.0-mpc-armv7.zip (ARM/glibc checks, skin, installer)
+./scripts/package.sh                 # dist/RadioReady-1.0.1-mpc-armv7.zip (ARM/glibc checks, skin, installer)
 ./scripts/deploy.sh <mpc-ip>         # copy + install over SSH
 python3 tools/make_skin.py docs      # regenerate the skin (+ previews rendered from build/native)
 make presets                         # presets/factory.json -> src/presets.inc (with gain staging)

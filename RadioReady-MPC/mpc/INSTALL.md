@@ -1,17 +1,17 @@
-# RadioReady EQ 1.0.0
+# RadioReady EQ 1.0.1
 
 A professional 8-band EQ with a QUICK RADIO READY section, live analyzer, EQ curve, meters and 55 presets, built as a
 native MPC OS VST2 insert effect and loaded by MPC's built-in plugin host. In the plugin browser it's
-**RadioReady EQ** by **RadioReady Audio**.
+**RadioReady EQ** by **RadioReady Audio**. The skin's gold title reads **Marcus and Moni Radio Ready EQ**.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `RadioReady-1.0.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `RadioReady-1.0.1-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o RadioReady-1.0.0-mpc-armv7.zip && sh RadioReady-1.0.0/install.sh`
+   `cd /tmp && unzip -o RadioReady-1.0.1-mpc-armv7.zip && sh RadioReady-1.0.1/install.sh`
 3. Answer `y`. MPC restarts. Add **RadioReady EQ** as an insert on a track, program, bus or the master.
 
 What the installer does:
@@ -24,6 +24,7 @@ EQ7, ASR10, SP1200 and GlueBus plugins; none of them share files.
 
 ## Screens (tabs)
 **All tabs:**
+- The gold title bar reads Marcus and Moni Radio Ready EQ.
 - The graph shows the EQ curve (±18 dB, including the Quick section) over the live analyzer.
 - On the right are the IN and OUT peak meters and **LEVEL COMP**, the automatic level compensation in use.
 
@@ -91,7 +92,7 @@ Presets are starting points; every voice, beat and room is different. EQ is one 
 arrangement, balance, compression and mastering still matter, and nothing replaces checking on several systems.
 
 ## Uninstall
-Unzip the package to `/tmp` again first, then run `sh /tmp/RadioReady-1.0.0/uninstall.sh`. Favourites are kept in
+Unzip the package to `/tmp` again first, then run `sh /tmp/RadioReady-1.0.1/uninstall.sh`. Favourites are kept in
 `/sdcard/vst/radioready.favorites`; delete that file to clear them.
 
 ## Troubleshooting

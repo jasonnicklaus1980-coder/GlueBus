@@ -23,8 +23,9 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - RadioRead
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.0.0"
-TITLE = "RadioReady EQ"
+VERSION = "1.0.1.0"
+TITLE = "Marcus and Moni Radio Ready EQ"          # the gold script title across the top of every tab
+TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 
@@ -56,13 +57,13 @@ def bp(b, w): return P_BAND0 + b * 7 + w          # b = 0..7; w: 0 on, 1 type, 2
 NCURVE, P_SPEC0, NSPEC, P_METER0, P_LEVEL, P_COUNT = 64, 143, 32, 175, 179, 180
 
 # ---------- layout ----------
-COLW, GX, GY, GH = 16, 24, 12, 224                 # graph: 64 columns of 16 px; square frames of GH
+COLW, GX, GY, GH = 16, 24, TITLE_H + 10, 190       # graph: 64 columns of 16 px; square frames of GH
 GW = COLW * NCURVE                                 # 1024
 CURVE_DB, SPEC_FLOOR = 18.0, -84.0
 RX0, RX1 = GX + GW + 20, W - 12                    # right column: title + meters
 MH, MW = 140, 12                                   # meter drawing (square frames of MH)
-MET_Y = GY + 40
-BOT = GY + GH + 34                                 # bottom area starts (y 270)
+MET_Y = GY + 6
+BOT = GY + GH + 34                                 # bottom area starts (y 284)
 PANEL_W, PANEL_X0, PANEL_H = 152, 16, H - 8 - BOT
 BOX_W, BOX_H, SQ_BOX = 104, 30, 104
 KB, KS = 118, 78                                   # big / small knob sizes (square frames)
@@ -181,7 +182,14 @@ def pill(text, on, col, w, h, size=12):
     return im.resize((w, h), Image.LANCZOS)
 
 # ---------- backgrounds ----------
+def title_bar(im):
+    d = ImageDraw.Draw(im)
+    for y in range(TITLE_H):                                        # dark bar with a thin gold rule under it
+        d.line([0, y, W, y], fill=mix((12, 13, 18), (24, 26, 33), y / TITLE_H))
+    d.line([0, TITLE_H, W, TITLE_H], fill=GOLD_DARK); d.line([0, TITLE_H + 1, W, TITLE_H + 1], fill=(70, 52, 18))
+    gold_text(im, W / 2, TITLE_H / 2 + 2, "   ".join(TITLE.split(" ")), 37)   # script fonts set words tight: widen the gaps
 def graph_and_meters(im):
+    title_bar(im)
     d = ImageDraw.Draw(im)
     d.rounded_rectangle([GX - 8, GY - 4, GX + GW + 8, GY + GH + 20], radius=6, fill=GRAPH, outline=LINE, width=2)
     for v in (-12, -6, 6, 12):
@@ -194,7 +202,6 @@ def graph_and_meters(im):
         if 20 < hz < 20000: d.line([x, GY, x, GY + GH], fill=GRID, width=1)
         text_c(d, min(max(x, GX + 10), GX + GW - 12), GY + GH + 8, lab, font(9), PRINT_DIM)
     d.rounded_rectangle([RX0 - 8, GY - 4, RX1, GY + GH + 20], radius=6, fill=PANEL, outline=LINE, width=2)
-    gold_text(im, (RX0 + RX1) / 2 - 4, GY + 18, TITLE, 29)
     d = ImageDraw.Draw(im)
     for k, x in enumerate(meter_x()):
         text_c(d, x + MW / 2, MET_Y + MH + 10, "LR"[k % 2], font(9), PRINT_DIM)
