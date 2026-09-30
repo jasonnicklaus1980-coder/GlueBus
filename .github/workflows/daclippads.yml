@@ -1,0 +1,60 @@
+# Builds the Da Clip Pads MPC plugin, runs the offline host test and publishes the install zip as a release.
+# Works whether the repo holds the DaClipPads-MPC/ folder or just DaClipPads-MPC-source.zip (phone-friendly upload).
+name: daclippads
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write     # needed to publish the release
+
+jobs:
+  build:
+    # 22.04 on purpose: its armhf glibc keeps the plugin within GLIBC_2.34, like the JV-880, GlueBus and SP1200 packages
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate project (unpack the source zip if that's what was uploaded)
+        run: |
+          if [ -f DaClipPads-MPC/Makefile ]; then echo "PROJ=DaClipPads-MPC" >> "$GITHUB_ENV"
+          elif [ -f DaClipPads-MPC-source.zip ]; then
+            unzip -q -o DaClipPads-MPC-source.zip -d dcp_src
+            echo "PROJ=dcp_src/DaClipPads-MPC" >> "$GITHUB_ENV"
+          else echo "Can't find DaClipPads-MPC/ or DaClipPads-MPC-source.zip"; exit 1; fi
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf file zip
+          pip install --quiet pillow
+
+      - name: Offline host test (x86)
+        working-directory: ${{ env.PROJ }}
+        run: make test
+
+      - name: Build ARM plugin + package (verifies ARM/32-bit/hard-float/glibc)
+        working-directory: ${{ env.PROJ }}
+        run: |
+          chmod +x scripts/*.sh mpc/*.sh
+          READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/DaClipPads-1.0.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DaClipPads-mpc-armv7
+          path: out/*.zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: daclippads-build-${{ github.run_number }}
+          name: Da Clip Pads 1.0.0 (build ${{ github.run_number }})
+          make_latest: false
+          files: out/DaClipPads-1.0.0-mpc-armv7.zip
+          body: |
+            Install from Terminus (SSH into the MPC as root):
+            1. Upload DaClipPads-1.0.0-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o DaClipPads-1.0.0-mpc-armv7.zip && sh DaClipPads-1.0.0/install.sh
