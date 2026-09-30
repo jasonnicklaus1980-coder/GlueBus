@@ -1,0 +1,60 @@
+# Builds the EQ7 MPC plugin, runs the offline host test and publishes the install zip as a release.
+# Works whether the repo holds the EQ7-MPC/ folder or just EQ7-MPC-source.zip (phone-friendly upload).
+name: eq7
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write     # needed to publish the release
+
+jobs:
+  build:
+    # 22.04 on purpose: its armhf glibc keeps the plugin within GLIBC_2.34, like the JV-880, GlueBus and SP1200 packages
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate project (unpack the source zip if that's what was uploaded)
+        run: |
+          if [ -f EQ7-MPC/Makefile ]; then echo "PROJ=EQ7-MPC" >> "$GITHUB_ENV"
+          elif [ -f EQ7-MPC-source.zip ]; then
+            unzip -q -o EQ7-MPC-source.zip -d eq7_src
+            echo "PROJ=eq7_src/EQ7-MPC" >> "$GITHUB_ENV"
+          else echo "Can't find EQ7-MPC/ or EQ7-MPC-source.zip"; exit 1; fi
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf file zip
+          pip install --quiet pillow
+
+      - name: Offline host test (x86)
+        working-directory: ${{ env.PROJ }}
+        run: make test
+
+      - name: Build ARM plugin + package (verifies ARM/32-bit/hard-float/glibc)
+        working-directory: ${{ env.PROJ }}
+        run: |
+          chmod +x scripts/*.sh mpc/*.sh
+          READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/EQ7-1.0.0-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EQ7-mpc-armv7
+          path: out/*.zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: eq7-build-${{ github.run_number }}
+          name: EQ7 1.0.0 (build ${{ github.run_number }})
+          make_latest: false
+          files: out/EQ7-1.0.0-mpc-armv7.zip
+          body: |
+            Install from Terminus (SSH into the MPC as root):
+            1. Upload EQ7-1.0.0-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o EQ7-1.0.0-mpc-armv7.zip && sh EQ7-1.0.0/install.sh
