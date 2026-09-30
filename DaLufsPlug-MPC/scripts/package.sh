@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build radioready_lufs.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  RadioReadyLUFS-1.0.1/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/radioready_lufs.so,...}
+# Build dalufsplug.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
+# in the same layout as the JV-880 package:  DaLufsPlug-1.0.2/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/dalufsplug.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.1; NAME="RadioReadyLUFS-$VERSION"; SO=build/arm/radioready_lufs.so
+VERSION=1.0.2; NAME="DaLufsPlug-$VERSION"; SO=build/arm/dalufsplug.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker
@@ -24,14 +24,14 @@ if command -v "$RE" >/dev/null; then
   [ "$(printf '%s\n' "$maxg" GLIBC_2.34 | sort -V | tail -1)" = GLIBC_2.34 ] || { echo "ERROR: needs $maxg, newer than the JV-880 (GLIBC_2.34): build on an older distro"; exit 1; }
 fi
 
-SKIN="mpc/skin/RadioReady Audio - VST - RadioReady LUFS Meter"
+SKIN="mpc/skin/RadioReady Audio - VST - Da Lufs Plug"
 [ -f "$SKIN/Plugin Skins/TUI.json" ] || python3 tools/make_skin.py
 rm -rf "dist/$NAME"; mkdir -p "dist/$NAME/payload/vst" "dist/$NAME/payload/Synths"
 cp -a "$SKIN" "dist/$NAME/payload/Synths/"
-cp "$SO" "dist/$NAME/payload/vst/radioready_lufs.so"
+cp "$SO" "dist/$NAME/payload/vst/dalufsplug.so"
 cp mpc/install.sh mpc/uninstall.sh mpc/plugin.xml mpc/plugin_list.awk "dist/$NAME/"
 cp mpc/INSTALL.md "dist/$NAME/INSTALL.md"
 chmod +x "dist/$NAME/"*.sh
-( cd "dist/$NAME" && sha256sum INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload/vst/radioready_lufs.so > SHA256SUMS )
+( cd "dist/$NAME" && sha256sum INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload/vst/dalufsplug.so > SHA256SUMS )
 ( cd dist && rm -f "$NAME-mpc-armv7.zip" && zip -qr "$NAME-mpc-armv7.zip" "$NAME" )
 echo "Built dist/$NAME-mpc-armv7.zip"

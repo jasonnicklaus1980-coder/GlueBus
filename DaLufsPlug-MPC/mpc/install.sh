@@ -1,16 +1,18 @@
 #!/bin/sh
-# RadioReady LUFS Meter installer for Gen1 MPC OS devices (MPC Live/Live II/One/X/Key 61, Force). Run ON the device as root:
+# Da Lufs Plug installer for Gen1 MPC OS devices (MPC Live/Live II/One/X/Key 61, Force). Run ON the device as root:
 #   sh install.sh [-y]
-# Copies radioready_lufs.so to /sdcard/vst, backs up MPC.settings, registers the plugin, and restarts MPC
+# Copies dalufsplug.so to /sdcard/vst, backs up MPC.settings, registers the plugin, and restarts MPC
 # (MPC is stopped for the edit - save your project first). Safe to re-run: it upgrades in place.
 set -e
 cd "$(dirname "$0")"
-NAME='RadioReady LUFS Meter'; VERSION='1.0.1'; SO_DIR='/sdcard/vst'; SO='radioready_lufs.so'; SKIN='RadioReady Audio - VST - RadioReady LUFS Meter'
+NAME='Da Lufs Plug'; VERSION='1.0.2'; SO_DIR='/sdcard/vst'; SO='dalufsplug.so'; SKIN='RadioReady Audio - VST - Da Lufs Plug'
+# earlier name of this plugin (1.0.0 / 1.0.1): replaced by this install
+OLD_SO='radioready_lufs.so'; OLD_SKIN='RadioReady Audio - VST - RadioReady LUFS Meter'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
-# LUFS_TEST_ROOT: test hook that redirects all paths into a fake root and skips device checks.
-PFX="${LUFS_TEST_ROOT:-}"
+# DLP_TEST_ROOT: test hook that redirects all paths into a fake root and skips device checks.
+PFX="${DLP_TEST_ROOT:-}"
 if [ -z "$PFX" ]; then
     [ "$(id -u)" = 0 ] || die "run as root"
     case "$(uname -m)" in armv7*) ;; *) die "this build is for 32-bit ARM MPC OS devices (Gen1); this one is $(uname -m)" ;; esac
@@ -42,9 +44,17 @@ cp payload/vst/"$SO" "$PFX$SO_DIR/$SO.new" && mv "$PFX$SO_DIR/$SO.new" "$PFX$SO_
 mkdir -p "$PFX/sdcard/Synths"
 rm -rf "$PFX/sdcard/Synths/$SKIN"; cp -a "payload/Synths/$SKIN" "$PFX/sdcard/Synths/$SKIN"
 
-BAK="$SETTINGS.bak-radioready-lufs-$(date +%Y%m%d-%H%M%S)"
+BAK="$SETTINGS.bak-dalufsplug-$(date +%Y%m%d-%H%M%S)"
 cp "$SETTINGS" "$BAK"
-awk -v mode=add -v file="$SO_DIR/$SO" -v entryfile=plugin.xml -f plugin_list.awk "$SETTINGS" > "$SETTINGS.new"
+BASE="$SETTINGS"
+if grep -q "file=\"$SO_DIR/$OLD_SO\"" "$SETTINGS"; then
+    echo "  replacing the older 'RadioReady LUFS Meter' install"
+    awk -v mode=remove -v file="$SO_DIR/$OLD_SO" -f plugin_list.awk "$SETTINGS" > "$SETTINGS.migrate"; BASE="$SETTINGS.migrate"
+fi
+awk -v mode=add -v file="$SO_DIR/$SO" -v entryfile=plugin.xml -f plugin_list.awk "$BASE" > "$SETTINGS.new"
+rm -f "$SETTINGS.migrate"
+n=$(grep -c "file=\"$SO_DIR/$OLD_SO\"" "$SETTINGS.new" || true)
+[ "$n" = 0 ] || { rm -f "$SETTINGS.new"; die "could not remove the old entry; MPC.settings unchanged"; }
 n=$(grep -c "file=\"$SO_DIR/$SO\"" "$SETTINGS.new" || true)
 [ "$n" = 1 ] || { rm -f "$SETTINGS.new"; die "settings edit failed (entry count $n); MPC.settings unchanged"; }
 if command -v python3 >/dev/null; then
@@ -52,6 +62,7 @@ if command -v python3 >/dev/null; then
         { rm -f "$SETTINGS.new"; die "edited settings aren't valid XML; MPC.settings unchanged"; }
 fi
 mv "$SETTINGS.new" "$SETTINGS"
+rm -f "$PFX$SO_DIR/$OLD_SO"; rm -rf "$PFX/sdcard/Synths/$OLD_SKIN"
 sync
 
 echo "Done. Settings backup: $BAK"

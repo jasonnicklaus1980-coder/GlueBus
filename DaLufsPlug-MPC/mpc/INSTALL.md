@@ -1,23 +1,24 @@
-# RadioReady LUFS Meter 1.0.1
+# Da Lufs Plug 1.0.2
 
 A loudness meter for MPC, in the style of classic hardware loudness meters. It shows Momentary, Short Term,
 Integrated, Loudness Range, True Peak and elapsed time, and has presets for streaming platforms (Spotify, Apple Music,
-YouTube and more). It's a native MPC OS VST2 insert effect. In the plugin browser it's **RadioReady LUFS Meter** by
-**RadioReady Audio**, and the screen's gold title reads **Da Lufs Plug**. Audio passes through untouched.
+YouTube and more). It's a native MPC OS VST2 insert effect. In the plugin browser it's **Da Lufs Plug** by
+**RadioReady Audio**, and the screen's gold title reads **Da Lufs Plug**. If the earlier
+"RadioReady LUFS Meter" is installed, the installer replaces it; re-insert the plugin in your projects. Audio passes through untouched.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `RadioReadyLUFS-1.0.1-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `DaLufsPlug-1.0.2-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o RadioReadyLUFS-1.0.1-mpc-armv7.zip && sh RadioReadyLUFS-1.0.1/install.sh`
-3. Answer `y`. MPC restarts. Add **RadioReady LUFS Meter** as the **last insert on the master**, after your limiter,
+   `cd /tmp && unzip -o DaLufsPlug-1.0.2-mpc-armv7.zip && sh DaLufsPlug-1.0.2/install.sh`
+3. Answer `y`. MPC restarts. Add **Da Lufs Plug** as the **last insert on the master**, after your limiter,
    so it measures what listeners will hear.
 
-The installer copies `radioready_lufs.so` to `/sdcard/vst/` and the skin to
-`/sdcard/Synths/RadioReady Audio - VST - RadioReady LUFS Meter/`. It then **stops MPC**, backs up `MPC.settings`, adds
+The installer copies `dalufsplug.so` to `/sdcard/vst/` and the skin to
+`/sdcard/Synths/RadioReady Audio - VST - Da Lufs Plug/`. It then **stops MPC**, backs up `MPC.settings`, adds
 the plugin to the plugin list and starts MPC again. It installs alongside RadioReady EQ and the other plugins.
 
 ## Reading the meter
@@ -66,14 +67,14 @@ below the ceiling, and a negative value means your peaks are over it.
 1 Platform, 2 Target, 3 Peak Ceiling, 4 Pause.
 
 ## Uninstall
-`sh /tmp/RadioReadyLUFS-1.0.1/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/DaLufsPlug-1.0.2/uninstall.sh` (unzip the package to `/tmp` again first).
 
 ## Troubleshooting
 - **Not in the plugin list:** it appears after MPC restarts. Check with
-  `grep radioready_lufs /media/az01-internal/Settings/*/MPC.settings`.
-- **MPC crashes on load:** run `uninstall.sh`, or restore the `MPC.settings.bak-radioready-lufs-*` backup and delete
-  `/sdcard/vst/radioready_lufs.so`.
+  `grep dalufsplug /media/az01-internal/Settings/*/MPC.settings`.
+- **MPC crashes on load:** run `uninstall.sh`, or restore the `MPC.settings.bak-dalufsplug-*` backup and delete
+  `/sdcard/vst/dalufsplug.so`.
 - **Plain parameter list instead of the meter screen:** `ls /sdcard/Synths` must show
-  `RadioReady Audio - VST - RadioReady LUFS Meter`.
+  `RadioReady Audio - VST - Da Lufs Plug`.
 - **Integrated shows "-inf" or doesn't move:** make sure audio is playing through the channel the meter is on, and
   that PAUSE is off.

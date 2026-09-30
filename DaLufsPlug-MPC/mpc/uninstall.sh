@@ -1,13 +1,13 @@
 #!/bin/sh
-# RadioReady LUFS Meter uninstaller. Run ON the device as root:  sh uninstall.sh [-y]
-# Stops MPC, removes radioready_lufs.so and its MPC.settings entry (after a backup), starts MPC again.
+# Da Lufs Plug uninstaller. Run ON the device as root:  sh uninstall.sh [-y]
+# Stops MPC, removes dalufsplug.so and its MPC.settings entry (after a backup), starts MPC again.
 set -e
 cd "$(dirname "$0")"
-NAME='RadioReady LUFS Meter'; SO_DIR='/sdcard/vst'; SO='radioready_lufs.so'; SKIN='RadioReady Audio - VST - RadioReady LUFS Meter'
+NAME='Da Lufs Plug'; SO_DIR='/sdcard/vst'; SO='dalufsplug.so'; SKIN='RadioReady Audio - VST - Da Lufs Plug'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
-PFX="${LUFS_TEST_ROOT:-}"
+PFX="${DLP_TEST_ROOT:-}"
 [ -n "$PFX" ] || [ "$(id -u)" = 0 ] || die "run as root"
 SETTINGS=$(ls "$PFX"/media/az01-internal/Settings/*/MPC.settings 2>/dev/null | head -n 1)
 [ -n "$SETTINGS" ] || die "MPC.settings not found"
@@ -23,7 +23,7 @@ if [ -z "$PFX" ]; then
     pidof MPC >/dev/null && die "MPC did not stop"
 fi
 
-BAK="$SETTINGS.bak-radioready-lufs-$(date +%Y%m%d-%H%M%S)"
+BAK="$SETTINGS.bak-dalufsplug-$(date +%Y%m%d-%H%M%S)"
 cp "$SETTINGS" "$BAK"
 awk -v mode=remove -v file="$SO_DIR/$SO" -f plugin_list.awk "$SETTINGS" > "$SETTINGS.new"
 n=$(grep -c "file=\"$SO_DIR/$SO\"" "$SETTINGS.new" || true)

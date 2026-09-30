@@ -1,4 +1,4 @@
-# RadioReady LUFS Meter for MPC
+# Da Lufs Plug for MPC
 
 A loudness meter for first-generation MPC OS devices (MPC X, Live / Live II, One, Key 61, Force; 32-bit ARM), built as
 a native VST2 insert. It uses the same dependency-free build, packaging and skin pipeline as GlueBus, SP1200, ASR10,
@@ -24,8 +24,8 @@ Install and usage: [mpc/INSTALL.md](mpc/INSTALL.md). Design notes: [docs/DESIGN.
 ## Build
 ```
 make test                  # native build + offline VST2 host test
-make arm                   # build/arm/radioready_lufs.so (needs g++-arm-linux-gnueabihf), or: make docker
-./scripts/package.sh       # dist/RadioReadyLUFS-1.0.1-mpc-armv7.zip
+make arm                   # build/arm/dalufsplug.so (needs g++-arm-linux-gnueabihf), or: make docker
+./scripts/package.sh       # dist/DaLufsPlug-1.0.2-mpc-armv7.zip
 ./scripts/deploy.sh <ip>   # copy + install over SSH
 python3 tools/make_skin.py docs   # regenerate the skin (+ preview rendered from build/native)
 ```

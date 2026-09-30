@@ -1,4 +1,4 @@
-// Offline VST2 host test for RadioReady LUFS Meter (loads the plugin like MPC does, no MPC needed).
+// Offline VST2 host test for Da Lufs Plug (loads the plugin like MPC does, no MPC needed).
 // Covers: pass-through, BS.1770 / EBU Tech 3341 loudness cases (momentary, short-term, gated integrated),
 // Tech 3342 loudness range, true peak (inter-sample), platform presets and status lines, reset, pause, history,
 // sample rates.
@@ -47,12 +47,12 @@ static void sine(float dbfs, float seconds, float hz = 997.f, bool stereo = true
 static void fresh(int platform = 0) { D(effSetProgram, 0, platform); press(P_RESET); std::vector<float> z(64, 0.f), z2(64, 0.f); feed(z, z2); }
 
 int main(int argc, char** argv) {
-    void* h = dlopen(argc > 1 ? argv[1] : "build/native/radioready_lufs.so", RTLD_NOW);
+    void* h = dlopen(argc > 1 ? argv[1] : "build/native/dalufsplug.so", RTLD_NOW);
     if (!h) { std::printf("dlopen: %s\n", dlerror()); return 2; }
     auto entry = (AEffect* (*)(audioMasterCallback)) dlsym(h, "VSTPluginMain");
     fx = entry(host);
     CHECK(fx && fx->magic == kEffectMagic, "magic");
-    CHECK(fx->uniqueID == 0x52524c4d, "uid %08x", fx->uniqueID);
+    CHECK(fx->uniqueID == 0x444c5047, "uid %08x", fx->uniqueID);
     CHECK(fx->numParams == P_COUNT && fx->numPrograms == NPROG, "counts %d/%d", fx->numParams, fx->numPrograms);
     CHECK(fx->initialDelay == 0, "no latency");
     D(effOpen); D(effSetSampleRate, 0, 0, nullptr, SR); D(effMainsChanged, 0, 1);

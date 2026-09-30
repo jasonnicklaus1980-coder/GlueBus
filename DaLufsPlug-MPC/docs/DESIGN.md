@@ -1,4 +1,4 @@
-# RadioReady LUFS Meter: design notes
+# Da Lufs Plug: design notes
 
 ## Measurement (src/Loudness.h)
 - **K-weighting** (BS.1770-4): a high shelf (+4 dB above ~1.7 kHz) followed by the RLB high-pass (~38 Hz).
@@ -23,7 +23,7 @@ Test results (test/host_test.cpp):
 - An fs/4 sine at 45° phase shows its true peak, not its sample peak, at 44.1, 48 and 96 kHz.
 - Integrated is correct at 48, 88.2 and 192 kHz.
 
-## Plugin (src/lufsmeter.cpp)
+## Plugin (src/dalufsplug.cpp)
 - **Audio** is copied through untouched. Metering runs on the audio thread, and Pause stops feeding the meters.
 - **Reset** is a request flag that the audio thread picks up at the next block.
 - **Platforms** are the plugin's programs and its Platform parameter (index 0). Each sets a target and a true-peak

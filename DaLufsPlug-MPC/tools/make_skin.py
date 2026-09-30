@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the RadioReady LUFS Meter MPC screen skin (GlueBus / RadioReady skin pipeline).
+"""Generate the Da Lufs Plug MPC screen skin (GlueBus / RadioReady skin pipeline).
 
 A classic hardware-style loudness meter: a tall LED bar on the left (momentary loudness relative to the target, +-18 LU,
 target arrow at 0), big teal digital readouts (Momentary + max, Range, True Peak with an OVER light, Integrated,
@@ -9,7 +9,7 @@ Everything shown is a plugin parameter; the readouts are pushed by the plugin wh
 
 MPC rules (proven on an MPC X): filmstrips are square frames (image width = frame height); tall controls are split into
 square sections; numFrames = last frame index; skin folder "<manufacturer> - VST - <plugin>".
-Output: mpc/skin/RadioReady Audio - VST - RadioReady LUFS Meter/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
+Output: mpc/skin/RadioReady Audio - VST - Da Lufs Plug/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
 Requires Pillow (+ numpy for the preview). Title font: Great Vibes from tools/fonts/ if present.
 Usage: python3 tools/make_skin.py [preview-dir]
 """
@@ -17,11 +17,11 @@ import ctypes, json, math, os, shutil, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - RadioReady LUFS Meter")
+SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da Lufs Plug")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.1.0"
+VERSION = "1.0.2.0"
 TITLE = "Da Lufs Plug"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -49,7 +49,7 @@ GOLD, GOLD_DARK = (230, 184, 76), (150, 108, 30)
 RED, AMBER = (240, 70, 56), (236, 196, 60)
 LINE = (6, 7, 9)
 
-# ---------- parameter indices (must match src/lufsmeter.cpp) ----------
+# ---------- parameter indices (must match src/dalufsplug.cpp) ----------
 (P_PLATFORM, P_TARGET, P_CEIL, P_PREV, P_NEXT, P_RESET, P_PAUSE, P_M, P_S, P_I, P_LRA, P_TP, P_MAXM, P_MAXS, P_TIME,
  P_GAIN, P_TPHEAD, P_TPOVER, P_STATUS, P_TPSTATUS, P_REL, P_HIST0) = range(22)
 NHIST = 60; P_COUNT = P_HIST0 + NHIST
@@ -315,11 +315,11 @@ def build():
          "Program Mode Q-Links": qmap}
     for fn in ("Q-Links.json", "Q-Links - 8by1.json"): json.dump(q, open(os.path.join(OUT, fn), "w"), indent=4)
     open(os.path.join(SKIN_DIR, "version.xml"), "w").write(
-        "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>radioready.vst.lufsmeter</identifier>\n"
+        "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>dalufsplug.vst.dalufsplug</identifier>\n"
         f"\t<version>{VERSION}</version>\n</plugincontent>\n")
     print("skin written to", SKIN_DIR)
 
-# ---------- preview: rendered from the real plugin (build/native/radioready_lufs.so) after 70 s of music-like noise ----------
+# ---------- preview: rendered from the real plugin (build/native/dalufsplug.so) after 70 s of music-like noise ----------
 class AEffect(ctypes.Structure): pass
 DISP = ctypes.CFUNCTYPE(ctypes.c_ssize_t, ctypes.POINTER(AEffect), ctypes.c_int32, ctypes.c_int32, ctypes.c_ssize_t, ctypes.c_void_p, ctypes.c_float)
 PROC = ctypes.CFUNCTYPE(None, ctypes.POINTER(AEffect), ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32)
@@ -334,7 +334,7 @@ HOSTCB = ctypes.CFUNCTYPE(ctypes.c_ssize_t, ctypes.c_void_p, ctypes.c_int32, cty
 
 def plugin_state():
     import numpy as np
-    lib = ctypes.CDLL(os.path.join(ROOT, "build", "native", "radioready_lufs.so"))
+    lib = ctypes.CDLL(os.path.join(ROOT, "build", "native", "dalufsplug.so"))
     cb = HOSTCB(lambda *a: 2400); lib.VSTPluginMain.restype = ctypes.POINTER(AEffect); lib.VSTPluginMain.argtypes = [HOSTCB]
     fx = lib.VSTPluginMain(cb); e = fx.contents
     D = lambda op, idx=0, val=0, ptr=None, opt=0.0: e.dispatcher(fx, op, idx, val, ptr, opt)

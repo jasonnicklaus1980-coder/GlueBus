@@ -1,6 +1,6 @@
-# Builds the RadioReady LUFS Meter MPC plugin, runs the offline host test and publishes the install zip as a release.
-# Works whether the repo holds the LUFS-MPC/ folder or just LUFS-MPC-source.zip (phone-friendly upload).
-name: lufsmeter
+# Builds the Da Lufs Plug MPC plugin, runs the offline host test and publishes the install zip as a release.
+# Works whether the repo holds the DaLufsPlug-MPC/ folder or just DaLufsPlug-MPC-source.zip (phone-friendly upload).
+name: dalufsplug
 
 on:
   push:
@@ -18,11 +18,11 @@ jobs:
 
       - name: Locate project (unpack the source zip if that's what was uploaded)
         run: |
-          if [ -f LUFS-MPC/Makefile ]; then echo "PROJ=LUFS-MPC" >> "$GITHUB_ENV"
-          elif [ -f LUFS-MPC-source.zip ]; then
-            unzip -q -o LUFS-MPC-source.zip -d lufs_src
-            echo "PROJ=lufs_src/LUFS-MPC" >> "$GITHUB_ENV"
-          else echo "Can't find LUFS-MPC/ or LUFS-MPC-source.zip"; exit 1; fi
+          if [ -f DaLufsPlug-MPC/Makefile ]; then echo "PROJ=DaLufsPlug-MPC" >> "$GITHUB_ENV"
+          elif [ -f DaLufsPlug-MPC-source.zip ]; then
+            unzip -q -o DaLufsPlug-MPC-source.zip -d dlp_src
+            echo "PROJ=dlp_src/DaLufsPlug-MPC" >> "$GITHUB_ENV"
+          else echo "Can't find DaLufsPlug-MPC/ or DaLufsPlug-MPC-source.zip"; exit 1; fi
 
       - name: Install toolchain
         run: |
@@ -39,22 +39,22 @@ jobs:
         run: |
           chmod +x scripts/*.sh mpc/*.sh
           READELF=arm-linux-gnueabihf-readelf ./scripts/package.sh
-          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/RadioReadyLUFS-1.0.1-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
+          mkdir -p "$GITHUB_WORKSPACE/out" && cp dist/DaLufsPlug-1.0.2-mpc-armv7.zip "$GITHUB_WORKSPACE/out/"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RadioReadyLUFS-mpc-armv7
+          name: DaLufsPlug-mpc-armv7
           path: out/*.zip
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: lufsmeter-build-${{ github.run_number }}
-          name: RadioReady LUFS Meter 1.0.1 (build ${{ github.run_number }})
+          tag_name: dalufsplug-build-${{ github.run_number }}
+          name: Da Lufs Plug 1.0.2 (build ${{ github.run_number }})
           make_latest: false
-          files: out/RadioReadyLUFS-1.0.1-mpc-armv7.zip
+          files: out/DaLufsPlug-1.0.2-mpc-armv7.zip
           body: |
             Install from Terminus (SSH into the MPC as root):
-            1. Upload RadioReadyLUFS-1.0.1-mpc-armv7.zip to /tmp
-            2. cd /tmp && unzip -o RadioReadyLUFS-1.0.1-mpc-armv7.zip && sh RadioReadyLUFS-1.0.1/install.sh
+            1. Upload DaLufsPlug-1.0.2-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o DaLufsPlug-1.0.2-mpc-armv7.zip && sh DaLufsPlug-1.0.2/install.sh

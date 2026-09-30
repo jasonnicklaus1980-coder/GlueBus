@@ -1,4 +1,4 @@
-// RadioReady LUFS Meter - loudness meter for Akai MPC OS (Gen1, 32-bit ARM), built from the GlueBus / RadioReady
+// Da Lufs Plug - loudness meter for Akai MPC OS (Gen1, 32-bit ARM), built from the GlueBus / RadioReady
 // components (dependency-free VST2 core, parameter model, host notification, packaging, skin pipeline).
 // Needs only libc/libm. No GUI: MPC draws the skin from /sdcard/Synths. Audio passes through untouched (bit-exact).
 //
@@ -355,9 +355,9 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effCanBeAutomated:   return (idx == P_PLATFORM || idx == P_TARGET || idx == P_CEIL || idx == P_PAUSE) ? 1 : 0;
         case effSetSampleRate:    if (opt > 1000.f) p->prepare (opt); return 0;
         case effGetEffectName:
-        case effGetProductString: copyStr (ptr, "RadioReady LUFS Meter", 32); return 1;
+        case effGetProductString: copyStr (ptr, "Da Lufs Plug", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1001;
+        case effGetVendorVersion: return 1002;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effSetProcessPrecision: return val == 0 ? 1 : 0;
@@ -389,7 +389,7 @@ LM_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.flags = effFlagsCanReplacing;
     fx.ioRatio = 1.f;
     fx.object = p;
-    fx.uniqueID = ('R' << 24) | ('R' << 16) | ('L' << 8) | 'M';   // 'RRLM' = 0x52524c4d
-    fx.version = 1001;
+    fx.uniqueID = ('D' << 24) | ('L' << 16) | ('P' << 8) | 'G';   // 'DLPG' = 0x444c5047
+    fx.version = 1002;
     return &fx;
 }
