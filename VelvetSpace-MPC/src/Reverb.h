@@ -1,5 +1,5 @@
 #pragma once
-// Da Space - the reverb engine. Seven algorithms on shared building blocks, all sample-rate independent:
+// Velvet Space - the reverb engine. Seven algorithms on shared building blocks, all sample-rate independent:
 //   Room, Hall  : early reflections + an 8-line feedback delay network (Householder matrix, modulated lines,
 //                 in-loop damping, per-line gains from the decay time: the tail decays at the set RT60)
 //   Plate       : a plate tank after Dattorro (4 input diffusers, two cross-fed branches with modulated allpasses)

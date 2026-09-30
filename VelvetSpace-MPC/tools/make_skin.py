@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Generate the Da Space MPC screen skin (GlueBus / RadioReady skin pipeline).
+"""Generate the Velvet Space MPC screen skin (GlueBus / RadioReady skin pipeline).
 
 A night-sky panel: gold script title, preset browser (prev / preset / next), algorithm selector with a one-line
 description, input and reverb meters, and two rows of big knobs:
   Mix, Pre-Delay, Size, Decay, Damping, Low Cut, Diffusion  /  Modulation, Width, Shimmer, Color, Ducking, Output + FREEZE
 MPC rules (proven on an MPC X): square filmstrip frames, numFrames = last frame index, LED parts one solid colour per
 frame, skin folder "<manufacturer> - VST - <plugin>".
-Output: mpc/skin/RadioReady Audio - VST - Da Space/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
+Output: mpc/skin/RadioReady Audio - VST - Velvet Space/{version.xml, Plugin Skins/{TUI.json, Q-Links*.json, *.png}}
 Usage: python3 tools/make_skin.py [preview-dir]
 """
 import ctypes, json, math, os, random, shutil, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da Space")
+SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Velvet Space")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.1.0"
+VERSION = "1.0.2.0"
 TITLE = "Velvet Space"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -198,7 +198,7 @@ def build():
     q = {"version": 4, "info": {"version": 1, "type": "CompleteDescription"},
          "Screen Mode Q-Links": {"version": 4, "map": [{"Tab": 1, "SubTab": 1, "Bank Direction": "Column", "Q-Links": qmap}]}, "Program Mode Q-Links": qmap}
     for fn in ("Q-Links.json", "Q-Links - 8by1.json"): json.dump(q, open(os.path.join(OUT, fn), "w"), indent=4)
-    open(os.path.join(SKIN_DIR, "version.xml"), "w").write("<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>daspace.vst.daspace</identifier>\n"
+    open(os.path.join(SKIN_DIR, "version.xml"), "w").write("<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>velvetspace.vst.velvetspace</identifier>\n"
         f"\t<version>{VERSION}</version>\n</plugincontent>\n")
     print("skin written to", SKIN_DIR)
 
@@ -215,7 +215,7 @@ AEffect._fields_ = [("magic", ctypes.c_int32), ("dispatcher", DISP), ("process",
                     ("user", ctypes.c_void_p), ("uniqueID", ctypes.c_int32), ("version", ctypes.c_int32), ("processReplacing", PROC)]
 HOSTCB = ctypes.CFUNCTYPE(ctypes.c_ssize_t, ctypes.c_void_p, ctypes.c_int32, ctypes.c_int32, ctypes.c_ssize_t, ctypes.c_void_p, ctypes.c_float)
 def preview(outdir):
-    lib = ctypes.CDLL(os.path.join(ROOT, "build", "native", "daspace.so"))
+    lib = ctypes.CDLL(os.path.join(ROOT, "build", "native", "velvetspace.so"))
     cb = HOSTCB(lambda *a: 2400); lib.VSTPluginMain.restype = ctypes.POINTER(AEffect); lib.VSTPluginMain.argtypes = [HOSTCB]
     fx = lib.VSTPluginMain(cb); e = fx.contents
     D = lambda op, idx=0, val=0, ptr=None, opt=0.0: e.dispatcher(fx, op, idx, val, ptr, opt)

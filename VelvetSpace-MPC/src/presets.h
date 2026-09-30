@@ -1,5 +1,5 @@
 #pragma once
-// Da Space factory presets. Algo: 0 Room, 1 Hall, 2 Plate, 3 Classic, 4 Ice, 5 Meta, 6 Reflex.
+// Velvet Space factory presets. Algo: 0 Room, 1 Hall, 2 Plate, 3 Classic, 4 Ice, 5 Meta, 6 Reflex.
 // mix 0..1, pre-delay ms, size 0..1, decay s, damping Hz, low cut Hz, diffusion 0..1, modulation 0..1, width 0..1.5,
 // shimmer 0..1, colour -1..1, ducking 0..1, output dB
 struct Preset { const char* name; int algo; float mix, pre, size, decay, damp, lowcut, diff, mod, width, shimmer, color, duck, out; };

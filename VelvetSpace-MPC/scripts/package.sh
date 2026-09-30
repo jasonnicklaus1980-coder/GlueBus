@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build daspace.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  DaSpace-1.0.1/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/daspace.so,...}
+# Build velvetspace.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
+# in the same layout as the JV-880 package:  VelvetSpace-1.0.2/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/velvetspace.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.1; NAME="DaSpace-$VERSION"; SO=build/arm/daspace.so
+VERSION=1.0.2; NAME="VelvetSpace-$VERSION"; SO=build/arm/velvetspace.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker
@@ -24,14 +24,14 @@ if command -v "$RE" >/dev/null; then
   [ "$(printf '%s\n' "$maxg" GLIBC_2.34 | sort -V | tail -1)" = GLIBC_2.34 ] || { echo "ERROR: needs $maxg, newer than the JV-880 (GLIBC_2.34): build on an older distro"; exit 1; }
 fi
 
-SKIN="mpc/skin/RadioReady Audio - VST - Da Space"
+SKIN="mpc/skin/RadioReady Audio - VST - Velvet Space"
 [ -f "$SKIN/Plugin Skins/TUI.json" ] || python3 tools/make_skin.py
 rm -rf "dist/$NAME"; mkdir -p "dist/$NAME/payload/vst" "dist/$NAME/payload/Synths"
 cp -a "$SKIN" "dist/$NAME/payload/Synths/"
-cp "$SO" "dist/$NAME/payload/vst/daspace.so"
+cp "$SO" "dist/$NAME/payload/vst/velvetspace.so"
 cp mpc/install.sh mpc/uninstall.sh mpc/plugin.xml mpc/plugin_list.awk "dist/$NAME/"
 cp mpc/INSTALL.md "dist/$NAME/INSTALL.md"
 chmod +x "dist/$NAME/"*.sh
-( cd "dist/$NAME" && sha256sum INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload/vst/daspace.so > SHA256SUMS )
+( cd "dist/$NAME" && sha256sum INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload/vst/velvetspace.so > SHA256SUMS )
 ( cd dist && rm -f "$NAME-mpc-armv7.zip" && zip -qr "$NAME-mpc-armv7.zip" "$NAME" )
 echo "Built dist/$NAME-mpc-armv7.zip"

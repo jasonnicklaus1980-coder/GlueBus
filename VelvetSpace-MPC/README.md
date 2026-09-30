@@ -1,4 +1,4 @@
-# Da Space for MPC
+# Velvet Space for MPC
 
 A spatial and reverb plugin for first-generation MPC OS devices (32-bit ARM), built as a native VST2 insert. It uses
 the same dependency-free build, packaging and skin pipeline as the other GlueBus / RadioReady / Da plugins.
@@ -15,7 +15,7 @@ Install and usage: [mpc/INSTALL.md](mpc/INSTALL.md). Design notes: [docs/DESIGN.
 ## Build
 ```
 make test        # native build + offline host test (RT60, pre-delay, damping, shimmer, freeze, stability ...)
-make arm         # build/arm/daspace.so
+make arm         # build/arm/velvetspace.so
 ./scripts/package.sh
 python3 tools/make_skin.py docs
 ```

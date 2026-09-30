@@ -1,4 +1,4 @@
-# Da Space: design notes
+# Velvet Space: design notes
 
 ## Engine (src/Reverb.h)
 Floats throughout, for speed on the MPC's ARM CPU. Everything is sample-rate independent.

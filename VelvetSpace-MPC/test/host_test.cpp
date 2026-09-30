@@ -1,4 +1,4 @@
-// Offline VST2 host test for Da Space. Measures the reverbs like an acoustician would: impulse responses, RT60 from
+// Offline VST2 host test for Velvet Space. Measures the reverbs like an acoustician would: impulse responses, RT60 from
 // the Schroeder backward-integrated energy decay (T20), pre-delay onset, damping (HF decays faster), low cut,
 // shimmer (energy an octave up), freeze, ducking, width / decorrelation, stability of every algorithm and preset at
 // extreme settings, denormals, sample rates, mix 0 = bit-exact dry.
@@ -74,11 +74,11 @@ static void clean(int a, float decay) {                     // measurement setup
 }
 
 int main(int argc, char** argv) {
-    void* h = dlopen(argc > 1 ? argv[1] : "build/native/daspace.so", RTLD_NOW);
+    void* h = dlopen(argc > 1 ? argv[1] : "build/native/velvetspace.so", RTLD_NOW);
     if (!h) { std::printf("dlopen: %s\n", dlerror()); return 2; }
     auto entry = (AEffect* (*)(audioMasterCallback)) dlsym(h, "VSTPluginMain");
     fx = entry(host);
-    CHECK(fx && fx->magic == kEffectMagic && fx->uniqueID == 0x44535043, "plugin");
+    CHECK(fx && fx->magic == kEffectMagic && fx->uniqueID == 0x564c5350, "plugin");
     CHECK(fx->numParams == P_COUNT && fx->numPrograms == 34, "counts %d / %d", fx->numParams, fx->numPrograms);
     D(effOpen); D(effSetSampleRate, 0, 0, nullptr, SR); D(effMainsChanged, 0, 1);
     for (int i = 0; i < P_COUNT; ++i) { char n[64] = {}; D(effGetParamName, i, 0, n); CHECK(std::strlen(n) > 0 && !display(i).empty(), "param %d", i); }

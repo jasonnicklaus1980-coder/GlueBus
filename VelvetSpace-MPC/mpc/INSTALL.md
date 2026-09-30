@@ -1,17 +1,18 @@
-# Da Space 1.0.1
+# Velvet Space 1.0.2
 
 A spatial and reverb plugin for MPC with seven algorithms and 34 presets, including **High Sky**. It's a native MPC OS
-VST2 insert effect. In the plugin browser it's **Da Space** by **RadioReady Audio**, and the screen's title reads
-**Velvet Space** in blue script.
+VST2 insert effect. In the plugin browser it's **Velvet Space** by **RadioReady Audio**, and the screen's title reads
+**Velvet Space** in blue script. If the earlier **Da Space** is installed, the installer replaces it;
+re-insert the plugin in projects that used it.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `DaSpace-1.0.1-mpc-armv7.zip` to `/tmp`.
-2. Run `cd /tmp && unzip -o DaSpace-1.0.1-mpc-armv7.zip && sh DaSpace-1.0.1/install.sh`.
-3. Answer `y`. MPC restarts; add **Da Space** as an insert effect.
+1. Upload `VelvetSpace-1.0.2-mpc-armv7.zip` to `/tmp`.
+2. Run `cd /tmp && unzip -o VelvetSpace-1.0.2-mpc-armv7.zip && sh VelvetSpace-1.0.2/install.sh`.
+3. Answer `y`. MPC restarts; add **Velvet Space** as an insert effect.
 
 On a track, keep Mix around 15–40%. On a send or return bus, set Mix to 100%.
 
@@ -73,4 +74,4 @@ All seven are level-matched, so switching modes doesn't jump in volume.
 confirm the exact effect or settings used on any particular record, so adjust by ear.
 
 ## Uninstall
-`sh /tmp/DaSpace-1.0.1/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/VelvetSpace-1.0.2/uninstall.sh` (unzip the package to `/tmp` again first).

@@ -1,13 +1,13 @@
 #!/bin/sh
-# Da Space uninstaller. Run ON the device as root:  sh uninstall.sh [-y]
-# Stops MPC, removes daspace.so and its MPC.settings entry (after a backup), starts MPC again.
+# Velvet Space uninstaller. Run ON the device as root:  sh uninstall.sh [-y]
+# Stops MPC, removes velvetspace.so and its MPC.settings entry (after a backup), starts MPC again.
 set -e
 cd "$(dirname "$0")"
-NAME='Da Space'; SO_DIR='/sdcard/vst'; SO='daspace.so'; SKIN='RadioReady Audio - VST - Da Space'
+NAME='Velvet Space'; SO_DIR='/sdcard/vst'; SO='velvetspace.so'; SKIN='RadioReady Audio - VST - Velvet Space'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
-PFX="${SPACE_TEST_ROOT:-}"
+PFX="${VELVET_TEST_ROOT:-}"
 [ -n "$PFX" ] || [ "$(id -u)" = 0 ] || die "run as root"
 SETTINGS=$(ls "$PFX"/media/az01-internal/Settings/*/MPC.settings 2>/dev/null | head -n 1)
 [ -n "$SETTINGS" ] || die "MPC.settings not found"
@@ -23,7 +23,7 @@ if [ -z "$PFX" ]; then
     pidof MPC >/dev/null && die "MPC did not stop"
 fi
 
-BAK="$SETTINGS.bak-daspace-$(date +%Y%m%d-%H%M%S)"
+BAK="$SETTINGS.bak-velvetspace-$(date +%Y%m%d-%H%M%S)"
 cp "$SETTINGS" "$BAK"
 awk -v mode=remove -v file="$SO_DIR/$SO" -f plugin_list.awk "$SETTINGS" > "$SETTINGS.new"
 n=$(grep -c "file=\"$SO_DIR/$SO\"" "$SETTINGS.new" || true)

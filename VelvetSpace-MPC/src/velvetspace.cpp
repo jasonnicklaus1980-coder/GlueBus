@@ -1,4 +1,4 @@
-// Da Space - spatial & reverb plugin for Akai MPC OS (Gen1, 32-bit ARM), built from the GlueBus / RadioReady
+// Velvet Space - spatial & reverb plugin for Akai MPC OS (Gen1, 32-bit ARM), built from the GlueBus / RadioReady
 // components (dependency-free VST2 core, parameter model, host notification, packaging, skin pipeline).
 // Needs only libc/libm. No GUI: MPC draws the skin from /sdcard/Synths.
 // Seven algorithms (Room, Hall, Plate, Classic, Ice, Meta, Reflex - see Reverb.h), 34 presets including High Sky.
@@ -256,9 +256,9 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effSetSampleRate:    if (opt > 1000.f) { p->sr = opt; p->rv.prepare (opt); } return 0;
         case effMainsChanged:     if (val != 0) p->rv.clear(); return 0;
         case effGetEffectName:
-        case effGetProductString: copyStr (ptr, "Da Space", 32); return 1;
+        case effGetProductString: copyStr (ptr, "Velvet Space", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1001;
+        case effGetVendorVersion: return 1002;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return (intptr_t) (p->sr * 20);
@@ -291,7 +291,7 @@ SPACE_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.flags = effFlagsCanReplacing;
     fx.ioRatio = 1.f;
     fx.object = p;
-    fx.uniqueID = ('D' << 24) | ('S' << 16) | ('P' << 8) | 'C';   // 'DSPC' = 0x44535043
-    fx.version = 1001;
+    fx.uniqueID = ('V' << 24) | ('L' << 16) | ('S' << 8) | 'P';   // 'VLSP' = 0x564c5350
+    fx.version = 1002;
     return &fx;
 }
