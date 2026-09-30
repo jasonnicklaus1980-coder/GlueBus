@@ -1,0 +1,2557 @@
+{
+ "format": "RadioReady EQ presets 1",
+ "presets": [
+  {
+   "name": "Init (Flat)",
+   "category": "Init",
+   "mode": "Stereo",
+   "bands": [],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Everything flat: the plugin is transparent."
+  },
+  {
+   "name": "Modern Radio Hip-Hop",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 60,
+     "gain": 1.5,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 500,
+     "gain": -0.8,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 1.2,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 6500,
+     "gain": -0.8,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 2.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 40,
+    "vocal": 40,
+    "air": 40,
+    "punch": 40
+   },
+   "note": "Full hip-hop mix: sub cleanup, low-mid mud cut, vocal presence, controlled top."
+  },
+  {
+   "name": "Classic Boom Bap",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "Peak",
+     "freq": 90,
+     "gain": 2.0,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 1200,
+     "gain": 1.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 8000,
+     "gain": -1.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 14000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 30,
+    "vocal": 20,
+    "air": 0,
+    "punch": 60
+   },
+   "note": "90s-style: thick kick area, rounded top, mids forward."
+  },
+  {
+   "name": "West Coast G-Funk",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 22,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 70,
+     "gain": 2.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 900,
+     "gain": -0.8,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 0.8,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 2.5,
+     "q": 0.6
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 50,
+    "vocal": 0,
+    "air": 50,
+    "punch": 20
+   },
+   "note": "Rolling low end and a smooth, shiny top for leads and synths."
+  },
+  {
+   "name": "East Coast Punch",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 28,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 100,
+     "gain": 2.0,
+     "q": 1.1
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 1800,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 0,
+    "vocal": 30,
+    "air": 0,
+    "punch": 70
+   },
+   "note": "Hard-hitting drums and upfront mids."
+  },
+  {
+   "name": "Trap Radio Ready",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 22,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 50,
+     "gain": 2.0,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 450,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3500,
+     "gain": 1.2,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7500,
+     "gain": -1.0,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 13000,
+     "gain": 2.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 60,
+    "vocal": 0,
+    "air": 50,
+    "punch": 30
+   },
+   "note": "Deep 808 room, clean low mids, crisp hats."
+  },
+  {
+   "name": "Dark Hip-Hop",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 80,
+     "gain": 1.5,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 9000,
+     "gain": -2.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 16000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 40,
+    "vocal": 0,
+    "air": 0,
+    "punch": 30
+   },
+   "note": "Moody and heavy: darker top, weight kept."
+  },
+  {
+   "name": "Clean Hip-Hop Mix",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 600,
+     "gain": -0.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 0.8,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 30,
+    "vocal": 30,
+    "air": 30,
+    "punch": 30
+   },
+   "note": "Gentle clean-up for a balanced mix."
+  },
+  {
+   "name": "Vintage Sample Warmth",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 35,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "LowShelf",
+     "freq": 120,
+     "gain": 1.5,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": 0.8,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": -1.0,
+     "q": 0.9
+    },
+    {
+     "type": "HighShelf",
+     "freq": 8000,
+     "gain": -2.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 12000,
+     "slope": 24
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 30,
+    "vocal": 0,
+    "air": 0,
+    "punch": 20
+   },
+   "note": "Warm, soulful sample-based beats."
+  },
+  {
+   "name": "Heavy 808 Mix",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 55,
+     "gain": 2.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 150,
+     "gain": -1.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 1200,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 70,
+    "vocal": 0,
+    "air": 0,
+    "punch": 40
+   },
+   "note": "808-driven mixes: big sub, clear harmonics so the 808 reads on small speakers."
+  },
+  {
+   "name": "Commercial Rap",
+   "category": "Hip-Hop",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 28,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 70,
+     "gain": 1.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2800,
+     "gain": 1.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 6000,
+     "gain": -1.0,
+     "q": 3.5
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 2.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 0,
+    "vocal": 60,
+    "air": 40,
+    "punch": 0
+   },
+   "note": "Vocal-forward commercial balance."
+  },
+  {
+   "name": "Radio Lead Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 90,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -2.5,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 3200,
+     "gain": 2.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 6500,
+     "gain": -2.0,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 3.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 50,
+    "air": 40,
+    "punch": 0
+   },
+   "note": "Upfront lead vocal with presence and air, sibilance kept in check."
+  },
+  {
+   "name": "Warm Male Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 70,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 150,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 5500,
+     "gain": -1.5,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 30,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Chest weight, less boxiness, smooth top."
+  },
+  {
+   "name": "Bright Female Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 110,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 900,
+     "gain": -1.0,
+     "q": 1.5
+    },
+    {
+     "type": "Peak",
+     "freq": 3500,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7500,
+     "gain": -2.0,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 3.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 0,
+    "vocal": 40,
+    "air": 60,
+    "punch": 0
+   },
+   "note": "Open and airy without harshness."
+  },
+  {
+   "name": "Smooth Rap Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 80,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 220,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 2800,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 6000,
+     "gain": -2.5,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 16000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 30,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Clear but relaxed: softened sibilance."
+  },
+  {
+   "name": "Aggressive Rap Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 100,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -3.0,
+     "q": 1.1
+    },
+    {
+     "type": "Peak",
+     "freq": 1200,
+     "gain": 1.5,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 4000,
+     "gain": 3.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -2.0,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 2.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 35,
+    "lowEnd": 0,
+    "vocal": 60,
+    "air": 0,
+    "punch": 40
+   },
+   "note": "Bite and bark that cut through a dense beat."
+  },
+  {
+   "name": "Vocal Presence",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 80,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 2.5,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": 1.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 7500,
+     "gain": -1.5,
+     "q": 4.0
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 0,
+    "vocal": 40,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Brings the vocal forward in the 2-5 kHz range."
+  },
+  {
+   "name": "Vocal Air",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 80,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -1.5,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 4.0,
+     "q": 0.6
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 70,
+    "punch": 0
+   },
+   "note": "High-shelf air with a narrow sibilance guard."
+  },
+  {
+   "name": "Intimate Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 60,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "Peak",
+     "freq": 180,
+     "gain": 1.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 5500,
+     "gain": -2.0,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.5,
+     "q": 0.5
+    },
+    {
+     "type": "LowPass",
+     "freq": 17000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 15,
+    "lowEnd": 0,
+    "vocal": 20,
+    "air": 20,
+    "punch": 0
+   },
+   "note": "Close, warm, soft top."
+  },
+  {
+   "name": "Vocal Clarity",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 100,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 500,
+     "gain": -2.0,
+     "q": 1.4
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 6500,
+     "gain": -1.5,
+     "q": 4.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 70,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Removes mud and boxiness, adds intelligibility."
+  },
+  {
+   "name": "Polished Vocal",
+   "category": "Vocals",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 85,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 380,
+     "gain": -2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 1000,
+     "gain": -0.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3200,
+     "gain": 2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -2.0,
+     "q": 4.5
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 3.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 18000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 40,
+    "air": 40,
+    "punch": 0
+   },
+   "note": "Finished, expensive-sounding vocal tone."
+  },
+  {
+   "name": "Punchy Kick",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 60,
+     "gain": 3.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -4.0,
+     "q": 1.4
+    },
+    {
+     "type": "Peak",
+     "freq": 3500,
+     "gain": 3.0,
+     "q": 1.4
+    },
+    {
+     "type": "LowPass",
+     "freq": 12000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 60
+   },
+   "note": "Sub thump, less cardboard, beater click."
+  },
+  {
+   "name": "Deep 808",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 45,
+     "gain": 2.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -3.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "LowPass",
+     "freq": 5000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 50,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Deep sub with audible harmonics; rolls off fizz."
+  },
+  {
+   "name": "Snare Crack",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 80,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": 2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": -2.5,
+     "q": 2.0
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": 3.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 50
+   },
+   "note": "Body, less box, sharp crack."
+  },
+  {
+   "name": "Classic MPC Drums",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "Peak",
+     "freq": 100,
+     "gain": 2.0,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 500,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2000,
+     "gain": 1.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 8000,
+     "gain": -1.5,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 15000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 50
+   },
+   "note": "Fat, slightly dark MPC-style drum tone."
+  },
+  {
+   "name": "Tight Drum Bus",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 35,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 80,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -2.5,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 450,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 4000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 40,
+    "vocal": 0,
+    "air": 0,
+    "punch": 50
+   },
+   "note": "Controlled lows and a tight, focused kit."
+  },
+  {
+   "name": "Modern Trap Drums",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 22,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 55,
+     "gain": 2.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 1500,
+     "gain": -0.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 13000,
+     "gain": 3.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 40,
+    "vocal": 0,
+    "air": 50,
+    "punch": 40
+   },
+   "note": "Big lows, scooped low mids, crisp hats."
+  },
+  {
+   "name": "Boom Bap Drums",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 35,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "Peak",
+     "freq": 90,
+     "gain": 2.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -2.0,
+     "q": 1.2
+    },
+    {
+     "type": "Peak",
+     "freq": 1500,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 7000,
+     "gain": -1.5,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 12000,
+     "slope": 24
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 60
+   },
+   "note": "Dusty, punchy knock."
+  },
+  {
+   "name": "Drum Bus Glue",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 70,
+     "gain": 1.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 0.8,
+     "q": 0.7
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 30
+   },
+   "note": "Broad, gentle moves that hold a kit together."
+  },
+  {
+   "name": "Bright Hi-Hats",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 300,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 1000,
+     "gain": -1.5,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 6000,
+     "gain": -1.0,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 3.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 19000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 50,
+    "punch": 0
+   },
+   "note": "Shimmer without clang."
+  },
+  {
+   "name": "Full Drum Mix",
+   "category": "Drums",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 28,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 70,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 350,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 1000,
+     "gain": -0.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 4000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 30,
+    "vocal": 0,
+    "air": 30,
+    "punch": 50
+   },
+   "note": "Complete drum stem balance."
+  },
+  {
+   "name": "Radio Master",
+   "category": "Master Bus",
+   "mode": "Mid/Side",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "HighPass",
+     "freq": 120,
+     "slope": 12,
+     "q": 0.707,
+     "target": "R/Side"
+    },
+    {
+     "type": "LowShelf",
+     "freq": 60,
+     "gain": 1.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 0.8,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 30,
+    "vocal": 30,
+    "air": 30,
+    "punch": 30
+   },
+   "note": "Mid/Side: mono lows below ~120 Hz, gentle broadcast-style tilt."
+  },
+  {
+   "name": "Commercial Loudness Prep",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -1.0,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 0.5,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": -1.0,
+     "q": 2.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 14000,
+     "gain": 0.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 15,
+    "lowEnd": 30,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Removes energy that wastes limiter headroom (sub rumble, harsh 5k) before loudness processing."
+  },
+  {
+   "name": "Clean Master Bus",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 20,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -0.5,
+     "q": 0.7
+    },
+    {
+     "type": "HighShelf",
+     "freq": 14000,
+     "gain": 0.8,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Almost transparent: sub cleanup and a touch of air."
+  },
+  {
+   "name": "Warm Master Bus",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 22,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 100,
+     "gain": 1.0,
+     "q": 0.6
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": 0.5,
+     "q": 0.7
+    },
+    {
+     "type": "HighShelf",
+     "freq": 9000,
+     "gain": -1.0,
+     "q": 0.6
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Gentle warm tilt."
+  },
+  {
+   "name": "Modern Hip-Hop Master",
+   "category": "Master Bus",
+   "mode": "Mid/Side",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "HighPass",
+     "freq": 100,
+     "slope": 12,
+     "q": 0.707,
+     "target": "R/Side"
+    },
+    {
+     "type": "LowShelf",
+     "freq": 55,
+     "gain": 1.2,
+     "q": 0.7,
+     "target": "L/Mid"
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 0.8,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.5,
+     "q": 0.7,
+     "target": "R/Side"
+    },
+    {
+     "type": "HighShelf",
+     "freq": 13000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 40,
+    "vocal": 0,
+    "air": 0,
+    "punch": 30
+   },
+   "note": "Mid/Side: solid mono low end, wide bright sides."
+  },
+  {
+   "name": "Smooth High End",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 20,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 3500,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -1.5,
+     "q": 2.5
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": -1.0,
+     "q": 0.6
+    },
+    {
+     "type": "LowPass",
+     "freq": 18000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Tames harsh, brittle tops."
+  },
+  {
+   "name": "Tight Low End",
+   "category": "Master Bus",
+   "mode": "Mid/Side",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 48
+    },
+    {
+     "type": "HighPass",
+     "freq": 150,
+     "slope": 24,
+     "target": "R/Side"
+    },
+    {
+     "type": "LowShelf",
+     "freq": 60,
+     "gain": 0.8,
+     "q": 0.7,
+     "target": "L/Mid"
+    },
+    {
+     "type": "Peak",
+     "freq": 180,
+     "gain": -1.5,
+     "q": 1.0,
+     "target": "L/Mid"
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 50,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Mid/Side: steep sub filter, bass in the centre only, less low-mid boom."
+  },
+  {
+   "name": "Wide Mix Tonality",
+   "category": "Master Bus",
+   "mode": "Mid/Side",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 120,
+     "slope": 12,
+     "q": 0.707,
+     "target": "R/Side"
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.0,
+     "q": 1.0,
+     "target": "R/Side"
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -0.5,
+     "q": 1.0,
+     "target": "L/Mid"
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 1.0,
+     "q": 0.7,
+     "target": "R/Side"
+    },
+    {
+     "type": "HighShelf",
+     "freq": 8000,
+     "gain": 2.5,
+     "q": 0.6,
+     "target": "R/Side"
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Mid/Side: brighter, cleaner sides for a wider-sounding mix; mono-safe low end."
+  },
+  {
+   "name": "Analog-Inspired Master",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 20,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "LowShelf",
+     "freq": 90,
+     "gain": 1.0,
+     "q": 0.5
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -0.5,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 1500,
+     "gain": 0.4,
+     "q": 0.5
+    },
+    {
+     "type": "HighShelf",
+     "freq": 16000,
+     "gain": 1.0,
+     "q": 0.5
+    }
+   ],
+   "quick": {
+    "amount": 15,
+    "lowEnd": 20,
+    "vocal": 0,
+    "air": 0,
+    "punch": 20
+   },
+   "note": "Broad, low-Q curves like a console/tube EQ."
+  },
+  {
+   "name": "Final Mix Polish",
+   "category": "Master Bus",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 22,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -0.8,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 0.8,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 6000,
+     "gain": -0.8,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.2,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 30,
+    "vocal": 30,
+    "air": 30,
+    "punch": 30
+   },
+   "note": "Last small tonal touches."
+  },
+  {
+   "name": "Warm Piano",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 50,
+     "slope": 12,
+     "q": 0.707
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": 1.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 9000,
+     "gain": -1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 10,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Rounded, warm piano."
+  },
+  {
+   "name": "Bright Piano",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 70,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 3.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 40,
+    "punch": 0
+   },
+   "note": "Pop piano that cuts through."
+  },
+  {
+   "name": "Vintage Sample",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 60,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": 1.0,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 1200,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 6000,
+     "gain": -2.0,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 10000,
+     "slope": 24
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Lo-fi, mid-forward record tone."
+  },
+  {
+   "name": "Synth Presence",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 80,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2000,
+     "gain": 2.0,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 4500,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 30
+   },
+   "note": "Leads and pads step forward."
+  },
+  {
+   "name": "Electric Bass",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 35,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 70,
+     "gain": 1.5,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -2.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": 2.0,
+     "q": 1.2
+    },
+    {
+     "type": "LowPass",
+     "freq": 6000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 25,
+    "lowEnd": 40,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Solid lows and growl that reads on small speakers."
+  },
+  {
+   "name": "Acoustic Guitar",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 90,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -2.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 2.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 30,
+    "punch": 0
+   },
+   "note": "Less boom, more string detail."
+  },
+  {
+   "name": "String Clarity",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 70,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3500,
+     "gain": -1.0,
+     "q": 2.0
+    },
+    {
+     "type": "Peak",
+     "freq": 6000,
+     "gain": 1.5,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 15,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 20,
+    "punch": 0
+   },
+   "note": "Clear, silky strings."
+  },
+  {
+   "name": "Dark Sample Restoration",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 40,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 400,
+     "gain": -1.5,
+     "q": 0.9
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 2.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 8000,
+     "gain": 4.0,
+     "q": 0.6
+    }
+   ],
+   "quick": {
+    "amount": 30,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 50,
+    "punch": 0
+   },
+   "note": "Brings dull or muffled samples back to life."
+  },
+  {
+   "name": "Bright Sample Restoration",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 150,
+     "gain": 2.0,
+     "q": 0.6
+    },
+    {
+     "type": "Peak",
+     "freq": 4000,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -3.0,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": -2.5,
+     "q": 0.7
+    },
+    {
+     "type": "LowPass",
+     "freq": 15000,
+     "slope": 12,
+     "q": 0.707
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Tames thin, harsh or brittle samples."
+  },
+  {
+   "name": "Full Instrument Mix",
+   "category": "Instruments",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 40,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": -0.5,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 1.0,
+     "q": 1.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 11000,
+     "gain": 1.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 20,
+    "vocal": 0,
+    "air": 20,
+    "punch": 20
+   },
+   "note": "Instrumental stem balance."
+  },
+  {
+   "name": "Car Speakers",
+   "category": "Translation",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 30,
+     "slope": 24
+    },
+    {
+     "type": "LowShelf",
+     "freq": 60,
+     "gain": -1.5,
+     "q": 0.7
+    },
+    {
+     "type": "Peak",
+     "freq": 250,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 1.0,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 10000,
+     "gain": 1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 30,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Cars add a lot of cabin bass: trims boom, lifts the mids road noise masks."
+  },
+  {
+   "name": "Consumer Headphones",
+   "category": "Translation",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 100,
+     "gain": -1.0,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 3000,
+     "gain": 0.8,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 7000,
+     "gain": -1.5,
+     "q": 3.0
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": -0.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Most earbuds are bass-heavy with a treble peak: leaner lows, softer 7k."
+  },
+  {
+   "name": "Studio Monitors",
+   "category": "Translation",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 20,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 200,
+     "gain": -0.5,
+     "q": 0.8
+    },
+    {
+     "type": "HighShelf",
+     "freq": 12000,
+     "gain": 0.5,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 0,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "Near-neutral reference: only sub cleanup and small tilt."
+  },
+  {
+   "name": "Small Speakers",
+   "category": "Translation",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 40,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 120,
+     "gain": -1.0,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 800,
+     "gain": 1.5,
+     "q": 0.8
+    },
+    {
+     "type": "Peak",
+     "freq": 2500,
+     "gain": 1.5,
+     "q": 1.0
+    }
+   ],
+   "quick": {
+    "amount": 20,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 40
+   },
+   "note": "Phones/laptops can't play deep bass: frees headroom and lifts the harmonics that imply it."
+  },
+  {
+   "name": "Streaming",
+   "category": "Translation",
+   "mode": "Stereo",
+   "bands": [
+    {
+     "type": "HighPass",
+     "freq": 25,
+     "slope": 24
+    },
+    {
+     "type": "Peak",
+     "freq": 300,
+     "gain": -0.8,
+     "q": 1.0
+    },
+    {
+     "type": "Peak",
+     "freq": 5000,
+     "gain": -0.8,
+     "q": 2.5
+    },
+    {
+     "type": "HighShelf",
+     "freq": 16000,
+     "gain": -1.0,
+     "q": 0.7
+    }
+   ],
+   "quick": {
+    "amount": 15,
+    "lowEnd": 0,
+    "vocal": 0,
+    "air": 0,
+    "punch": 0
+   },
+   "note": "For loudness-normalised platforms: tidy lows, no harsh upper mids or codec-smeared top."
+  }
+ ]
+}
