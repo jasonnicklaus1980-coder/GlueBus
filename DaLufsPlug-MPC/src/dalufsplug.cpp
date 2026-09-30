@@ -368,7 +368,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "Da Lufs Plug", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1003;
+        case effGetVendorVersion: return 1004;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effSetProcessPrecision: return val == 0 ? 1 : 0;
@@ -401,6 +401,6 @@ LM_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('D' << 24) | ('L' << 16) | ('P' << 8) | 'G';   // 'DLPG' = 0x444c5047
-    fx.version = 1003;
+    fx.version = 1004;
     return &fx;
 }

@@ -37,7 +37,9 @@ Test results (test/host_test.cpp):
   term vs target, ±12 LU) are read-only parameters. They are sent to MPC only when they change, at 10 Hz at most.
 
 ## Skin
-- **Layout:** the LED bar is 4 square filmstrip sections bound to the same parameter, each drawing its own 9 LU slice.
+- **Layout:** the LED bar is 36 one-LU segments bound to the same parameter. Each segment's frames are a single solid
+  colour, so the bar stays correct whatever offset MPC uses when slicing tall filmstrips (1.0.3 used 4 tall sections,
+  and on an MPC X the top section showed its lit part at the wrong end).
 - **Readouts:** big teal readouts are Titillium labels in bevelled wells. Platform, Target and Ceiling are value boxes
   with transparent drag strips.
-- **Memory:** about 45 MB of images when decoded.
+- **Memory:** about 31 MB of images when decoded.

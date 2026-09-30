@@ -21,7 +21,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da Lufs P
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.3.0"
+VERSION = "1.0.4.0"
 TITLE = "Da Lufs Plug"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -89,20 +89,17 @@ def led_col(v):                             # colour by loudness vs target: gree
     if v > 0: return RED
     if v > -6: return mix((196, 214, 40), AMBER, (v + 6) / 6)
     return mix((40, 170, 70), (196, 214, 40), max(0.0, (v + 18) / 12))
-def meter_section(k):
-    """Section k (0 = bottom): frame f is the whole meter at v = -18 + 36 f / 127; this section draws its 9 LU slice."""
-    lo = -REL + 9 * k
-    strip = Image.new("RGBA", (SEC, SEC * FRAMES), (0, 0, 0, 0)); d = ImageDraw.Draw(strip)
-    x0 = (SEC - MW) // 2
+NSEG = 36                                   # LED bar: 36 segments of 1 LU, -18 .. +18 LU vs target
+SEG_PITCH = 4 * SEC / NSEG                   # 14.67 px
+def led_segment(k):
+    """Segment k (0 = bottom, -18..-17 LU). Every frame is one solid colour over its whole height (lit if the level
+    reaches the segment's centre), so the picture is right however MPC positions the frame in the strip."""
+    lo = -REL + k; lit_from = lo + 0.5; c = led_col(lo + 0.5)
+    strip = Image.new("RGBA", (MW, MW * FRAMES), (0, 0, 0, 0)); d = ImageDraw.Draw(strip)
     for f in range(FRAMES):
-        v = -REL + 2 * REL * f / (FRAMES - 1); oy = f * SEC
-        d.rectangle([x0, oy, x0 + MW - 1, oy + SEC - 1], fill=rgba((8, 9, 10)))
-        for y in range(SEC):                                   # y = 0 is the top of this section
-            lv = lo + 9 * (SEC - 1 - y) / (SEC - 1)
-            lit = f > 0 and lv <= v
-            c = led_col(lv)
-            if y % 4 == 3: continue                            # LED segment gaps
-            d.line([x0 + 3, oy + y, x0 + MW - 4, oy + y], fill=rgba(c if lit else mix(c, (8, 9, 10), 0.86)))
+        v = -REL + 2 * REL * f / (FRAMES - 1)
+        on = f > 0 and v >= lit_from
+        d.rectangle([3, f * MW, MW - 4, f * MW + MW - 1], fill=rgba(c if on else mix(c, (8, 9, 10), 0.86)))
     return strip
 
 def hist_strip():
@@ -243,10 +240,11 @@ def build():
     if os.path.isdir(SKIN_DIR): shutil.rmtree(SKIN_DIR)
     os.makedirs(OUT)
     save = lambda im, n: im.save(os.path.join(OUT, n), optimize=True)
-    for k in range(4): save(meter_section(k), f"lm_bar{k}.png")
+    for k in range(NSEG): save(led_segment(k), f"lm_seg{k}.png")
     save(hist_strip(), "lm_hist.png"); save(led_strip(), "lm_led.png"); save(drag_strip(), "lm_drag.png")
     defs = []
-    for k in range(4): defs.append({"key": f"lmBar{k}", "value": definition([], [strip_part(f"lm_bar{k}.png", MW, SEC, SEC)], ignore=True)})
+    SEG_H = int(SEG_PITCH) - 3                 # visible LED height; the 3 px gaps show the dark well
+    for k in range(NSEG): defs.append({"key": f"lmSeg{k}", "value": definition([], [strip_part(f"lm_seg{k}.png", MW, SEG_H, MW)], ignore=True)})
     defs.append({"key": "lmHist", "value": definition([], [strip_part("lm_hist.png", HCOL, HH, HH)], ignore=True)})
     defs.append({"key": "lmLed", "value": definition([], [strip_part("lm_led.png", 18, 18, 18)], ignore=True)})
     readout_def(defs, "lmBig", 118, TEAL, BW - 20, 150); readout_def(defs, "lmMid", 92, TEAL, BW - 20, 110)
@@ -274,8 +272,8 @@ def build():
     save(im, "lm_bg.png")
 
     comps = [comp("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": "lm_bg.png"}, bounds((0, 0, W, H)))]
-    for k in range(4):   # section 0 (bottom) .. 3 (top)
-        place(comps, f"Meter {k}", f"lmBar{k}", P_REL, MX, MY + (3 - k) * SEC, MW, SEC, "bar", k)
+    for k in range(NSEG):   # segment 0 at the bottom
+        place(comps, f"LED {k}", f"lmSeg{k}", P_REL, MX, MY + 4 * SEC - (k + 1) * SEG_PITCH + 1, MW, int(SEG_PITCH) - 3, "seg", k)
     place(comps, "Momentary", "lmMom", P_M, AX + 10, 84, AW - 20, 86, "ro", "lmMom")
     place(comps, "Momentary Max", "lmMax", P_MAXM, AX + 62, 159, 110, 26, "ro", "lmMax")
     place(comps, "Range", "lmRng", P_LRA, AX + 10, 222, AW - 20, 70, "ro", "lmRng")
@@ -367,10 +365,10 @@ def preview(outdir):
     def frame(strip, sq, v, w, h):
         fr = max(0, min(FRAMES - 1, round(v * NUMFRAMES))); cx0, cy0 = (sq - w) // 2, (sq - h) // 2
         return strip.crop((cx0, fr * sq + cy0, cx0 + w, fr * sq + cy0 + h))
-    bars = [img(f"lm_bar{k}.png") for k in range(4)]; hist = img("lm_hist.png"); led = img("lm_led.png")
+    segs = [img(f"lm_seg{k}.png") for k in range(NSEG)]; hist = img("lm_hist.png"); led = img("lm_led.png")
     for (kind, p, x, y, w, h, extra) in PLACED:
         x, y, w, h = int(round(x)), int(round(y)), int(round(w)), int(round(h)); v = vals[p]
-        if kind == "bar": im.alpha_composite(frame(bars[extra], SEC, v, MW, SEC), (x, y))
+        if kind == "seg": im.alpha_composite(frame(segs[extra], MW, v, MW, h), (x, y))
         elif kind == "hist": im.alpha_composite(frame(hist, HH, v, HCOL, HH), (x, y))
         elif kind == "led": im.alpha_composite(frame(led, 18, v, 18, 18), (x, y))
         elif kind == "btn": im.alpha_composite(img(f"lm_{extra}_{'on' if v >= 0.5 else 'off'}.png"), (x, y))

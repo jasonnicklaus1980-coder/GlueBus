@@ -25,7 +25,7 @@ Install and usage: [mpc/INSTALL.md](mpc/INSTALL.md). Design notes: [docs/DESIGN.
 ```
 make test                  # native build + offline VST2 host test
 make arm                   # build/arm/dalufsplug.so (needs g++-arm-linux-gnueabihf), or: make docker
-./scripts/package.sh       # dist/DaLufsPlug-1.0.3-mpc-armv7.zip
+./scripts/package.sh       # dist/DaLufsPlug-1.0.4-mpc-armv7.zip
 ./scripts/deploy.sh <ip>   # copy + install over SSH
 python3 tools/make_skin.py docs   # regenerate the skin (+ preview rendered from build/native)
 ```

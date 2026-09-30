@@ -1,4 +1,4 @@
-# Da Lufs Plug 1.0.3
+# Da Lufs Plug 1.0.4
 
 A loudness meter for MPC, in the style of classic hardware loudness meters. It shows Momentary, Short Term,
 Integrated, Loudness Range, True Peak and elapsed time, and has presets for streaming platforms (Spotify, Apple Music,
@@ -11,9 +11,9 @@ YouTube and more). It's a native MPC OS VST2 insert effect. In the plugin browse
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `DaLufsPlug-1.0.3-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `DaLufsPlug-1.0.4-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o DaLufsPlug-1.0.3-mpc-armv7.zip && sh DaLufsPlug-1.0.3/install.sh`
+   `cd /tmp && unzip -o DaLufsPlug-1.0.4-mpc-armv7.zip && sh DaLufsPlug-1.0.4/install.sh`
 3. Answer `y`. MPC restarts. Add **Da Lufs Plug** as the **last insert on the master**, after your limiter,
    so it measures what listeners will hear.
 
@@ -73,7 +73,7 @@ below the ceiling, and a negative value means your peaks are over it.
 1 Platform, 2 Target, 3 Peak Ceiling, 4 Pause.
 
 ## Uninstall
-`sh /tmp/DaLufsPlug-1.0.3/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/DaLufsPlug-1.0.4/uninstall.sh` (unzip the package to `/tmp` again first).
 
 ## Troubleshooting
 - **Not in the plugin list:** it appears after MPC restarts. Check with

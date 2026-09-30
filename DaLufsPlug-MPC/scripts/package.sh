@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build dalufsplug.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  DaLufsPlug-1.0.3/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/dalufsplug.so,...}
+# in the same layout as the JV-880 package:  DaLufsPlug-1.0.4/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/dalufsplug.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.3; NAME="DaLufsPlug-$VERSION"; SO=build/arm/dalufsplug.so
+VERSION=1.0.4; NAME="DaLufsPlug-$VERSION"; SO=build/arm/dalufsplug.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker
