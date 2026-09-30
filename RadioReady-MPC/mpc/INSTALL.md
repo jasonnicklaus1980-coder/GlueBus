@@ -1,4 +1,4 @@
-# RadioReady EQ 1.0.1
+# RadioReady EQ 1.0.2
 
 A professional 8-band EQ with a QUICK RADIO READY section, live analyzer, EQ curve, meters and 55 presets, built as a
 native MPC OS VST2 insert effect and loaded by MPC's built-in plugin host. In the plugin browser it's
@@ -9,9 +9,9 @@ native MPC OS VST2 insert effect and loaded by MPC's built-in plugin host. In th
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `RadioReady-1.0.1-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `RadioReady-1.0.2-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o RadioReady-1.0.1-mpc-armv7.zip && sh RadioReady-1.0.1/install.sh`
+   `cd /tmp && unzip -o RadioReady-1.0.2-mpc-armv7.zip && sh RadioReady-1.0.2/install.sh`
 3. Answer `y`. MPC restarts. Add **RadioReady EQ** as an insert on a track, program, bus or the master.
 
 What the installer does:
@@ -26,6 +26,10 @@ EQ7, ASR10, SP1200 and GlueBus plugins; none of them share files.
 **All tabs:**
 - The gold title bar reads Marcus And Moni Radio Ready EQ.
 - The graph shows the EQ curve (±18 dB, including the Quick section) over the live analyzer.
+- **Touch strips on the graph:** it is split into 8 strips, B1-B8, one per band. Drag up or down inside a strip to raise
+  or lower that band's gain; its value shows at the top of the strip. Double-tap a strip for the value dial. The strips
+  are tied to the band number, not to where the band sits on the curve, so move frequencies with the FREQ boxes or
+  Q-Links 9-16.
 - On the right are the IN and OUT peak meters and **LEVEL COMP**, the automatic level compensation in use.
 
 **EQ GAIN/FREQ and EQ Q/TYPE** (same screen, different Q-Links). Each of the 8 band panels has:
@@ -92,7 +96,7 @@ Presets are starting points; every voice, beat and room is different. EQ is one 
 arrangement, balance, compression and mastering still matter, and nothing replaces checking on several systems.
 
 ## Uninstall
-Unzip the package to `/tmp` again first, then run `sh /tmp/RadioReady-1.0.1/uninstall.sh`. Favourites are kept in
+Unzip the package to `/tmp` again first, then run `sh /tmp/RadioReady-1.0.2/uninstall.sh`. Favourites are kept in
 `/sdcard/vst/radioready.favorites`; delete that file to clear them.
 
 ## Troubleshooting

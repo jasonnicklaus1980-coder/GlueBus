@@ -752,7 +752,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "RadioReady EQ", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1001;
+        case effGetVendorVersion: return 1002;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -790,6 +790,6 @@ RR_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('R' << 24) | ('R' << 16) | ('E' << 8) | 'Q';   // 'RREQ' = 0x52524551
-    fx.version = 1001;
+    fx.version = 1002;
     return &fx;
 }

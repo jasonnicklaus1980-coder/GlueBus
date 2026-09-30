@@ -7,7 +7,7 @@ spec asked for, here is what replaces it:
 
 | Spec | On the MPC |
 |---|---|
-| Drag nodes on the curve | The curve is a read-only display. Bands are set with the FREQ/GAIN/Q boxes and Q-Links (MPC skins have no free 2D drag). |
+| Drag nodes on the curve | MPC skins have no free 2D drag. The graph has 8 touch strips (B1-B8): drag up/down for that band's gain. Frequency and Q are set with the boxes and Q-Links. |
 | Preset search box | MPC plugin skins have no text entry. Instead there is a category filter, prev/next, a preset selector box and favourites. |
 | Save/load user presets | MPC's own plugin preset save/load. Every setting, including the Quick section and modes, is a parameter. |
 | Independent L/R | Each band's channel: Stereo, Left or Right (in Mid/Side mode: Mid or Side). |
@@ -71,6 +71,8 @@ Measured on band-limited pink noise, the worst case is 0.14 dB.
 ## Skin
 - **Title:** a gold script "Marcus And Moni Radio Ready EQ" bar across the top of every tab.
 - **Tabs:** EQ GAIN/FREQ and EQ Q/TYPE share one band screen with different Q-Link maps; RADIO READY has its own.
+- **Touch strips:** 8 invisible vertical drag areas over the graph, one per band gain, placed above the untouchable
+  curve/analyzer columns.
 - **Graph:** 64 curve columns and 32 analyzer bars, each a filmstrip bound to a read-only parameter.
 - **Memory:** about 64 MB decoded, less than EQ7. The value boxes are drawn in the backgrounds, and their drag
   controls use a transparent 16 px strip.

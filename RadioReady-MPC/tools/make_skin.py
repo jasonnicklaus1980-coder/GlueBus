@@ -23,7 +23,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - RadioRead
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.1.0"
+VERSION = "1.0.2.0"
 TITLE = "Marcus And Moni Radio Ready EQ"          # the gold script title across the top of every tab
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -67,6 +67,7 @@ BOT = GY + GH + 34                                 # bottom area starts (y 284)
 PANEL_W, PANEL_X0, PANEL_H = 152, 16, H - 8 - BOT
 BOX_W, BOX_H, SQ_BOX = 104, 30, 104
 KB, KS = 118, 78                                   # big / small knob sizes (square frames)
+ZONE_W = GW // 8                                   # touch strips over the graph: drag up/down = band 1-8 gain
 
 def col_x(i): return GX + i * COLW
 def hz_x(hz): return GX + (math.log(hz / 20.0) / math.log(1000.0) * (NCURVE - 1) + 0.5) * COLW
@@ -201,6 +202,10 @@ def graph_and_meters(im):
         x = hz_x(hz)
         if 20 < hz < 20000: d.line([x, GY, x, GY + GH], fill=GRID, width=1)
         text_c(d, min(max(x, GX + 10), GX + GW - 12), GY + GH + 8, lab, font(9), PRINT_DIM)
+    for b in range(8):                                             # touch-strip markers: band number + tick between strips
+        zx = GX + b * ZONE_W
+        if b: d.line([zx, GY, zx, GY + 7], fill=GRID_HI, width=1)
+        d.text((zx + 6, GY + 3), f"B{b + 1}", font=font(10), fill=BANDCOL[b])
     d.rounded_rectangle([RX0 - 8, GY - 4, RX1, GY + GH + 20], radius=6, fill=PANEL, outline=LINE, width=2)
     d = ImageDraw.Draw(im)
     for k, x in enumerate(meter_x()):
@@ -309,6 +314,11 @@ def build():
     defs.append({"key": "rrCurveCol", "value": definition([], [strip_part("rr_curve.png", COLW, GH, GH)], ignore=True)})
     defs.append({"key": "rrSpecBar", "value": definition([], [strip_part("rr_spec.png", 2 * COLW, GH, GH)], ignore=True)})
     defs.append({"key": "rrMeter", "value": definition([], [strip_part("rr_meter.png", MW, MH, MH)], ignore=True)})
+    for b in range(8):                                 # graph touch strips: invisible drag area + the band's gain
+        drag = comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "rr_drag.png", "numFrames": NUMFRAMES, "invert": False,
+                    "dragOrientation": "Vertical", "handleName": "Data"}, bounds((0, 0, ZONE_W, GH)))
+        defs.append({"key": f"rrZone{b}", "value": definition(CTRL(), [
+            drag, label("Value", 12, hexcol(BANDCOL[b]), (30, 2, ZONE_W - 36, 16), case="Upper Case"), focus((0, 0, ZONE_W, GH))])})
     defs.append({"key": "rrReadout", "value": definition([], [label("Value", 13, hexcol(PRINT), (0, 0, 150, 18), case="Upper Case")], ignore=True)})
     for key, w, h, fs in (("rrBox", BOX_W, BOX_H, 14), ("rrWide", 290, 36, 17), ("rrMid", 172, 32, 14)):
         drag = comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "rr_drag.png", "numFrames": NUMFRAMES, "invert": False,
@@ -344,6 +354,8 @@ def build():
         for k, x in enumerate(meter_x()):
             place(comps, tab, f"Meter {k}", "rrMeter", P_METER0 + k, x, MET_Y, MW, MH, "meter", touch=False)
         place(comps, tab, "Level Comp", "rrReadout", P_LEVEL, (RX0 + RX1) / 2 - 79, MET_Y + MH + 44, 150, 18, "readout", touch=False)
+        for b in range(8):                             # on top of the (untouchable) graph columns
+            place(comps, tab, f"Band {b + 1} Gain Strip", f"rrZone{b}", bp(b, 3), GX + b * ZONE_W, GY, ZONE_W, GH, "zone", b)
         return comps
 
     eq = common("eq", "rr_bg_eq.png")
@@ -464,6 +476,7 @@ def preview(outdir, program=1):
             if kind == "curve": im.alpha_composite(frame(st("rr_curve.png"), GH, v, COLW, GH), (x, y))
             elif kind == "spec": im.alpha_composite(frame(st("rr_spec.png"), GH, v, 2 * COLW, GH), (x, y))
             elif kind == "meter": im.alpha_composite(frame(st("rr_meter.png"), MH, v, MW, MH), (x, y))
+            elif kind == "zone": text_c(d, x + 30 + (w - 36) / 2, y + 10, txt[p].upper(), f(10), BANDCOL[extra])
             elif kind == "readout": text_c(d, x + w / 2, y + h / 2, txt[p].upper(), f(11), PRINT)
             elif kind == "power": im.alpha_composite(st(f"rr_pwr_{extra}_{'on' if v >= 0.5 else 'off'}.png"), (x, y))
             elif kind in ("box", "wide", "mid"):
