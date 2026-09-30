@@ -21,7 +21,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "RadioReady Audio - VST - Da Lufs P
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 3
-VERSION = "1.0.2.0"
+VERSION = "1.0.3.0"
 TITLE = "Da Lufs Plug"
 TITLE_H = 50
 SCRIPT_FONTS = [os.path.join(ROOT, "tools", "fonts", n) for n in ("GreatVibes-Regular.woff", "GreatVibes-Regular.ttf")]
@@ -192,7 +192,7 @@ def background():
     text_c(d, CX + 90, 160, "TARGET (LUFS)", font(10), PRINT_DIM); text_c(d, CX + CW - 90, 160, "PEAK CEILING (dBTP)", font(10), PRINT_DIM)
     for box in ((CX + 12, 94, CX + CW - 12, 136), (CX + 12, 170, CX + 168, 206), (CX + CW - 168, 170, CX + CW - 12, 206)): pass
     well(d, (CX + 16, 236, CX + CW - 16, 318), "Gain to Target", 13); well(d, (CX + 16, 334, CX + CW - 16, 404), "Peak Headroom", 13)
-    notes = ["Loudness targets as published by the", "platforms (they can change). Services turn", "loud masters down: louder is not better.",
+    notes = ["Targets are playback references: you don't", "have to master down to them. Louder masters", "are simply turned down; mind the peaks.",
              "Play the whole song, then read Integrated."]
     for i, s in enumerate(notes): text_c(d, CX + CW / 2, 426 + i * 18, s, font(10, "DejaVuSans.ttf"), PRINT_DIM)
     return im

@@ -16,7 +16,7 @@ static int fails = 0;
 
 enum { P_PLATFORM, P_TARGET, P_CEIL, P_PREV, P_NEXT, P_RESET, P_PAUSE, P_M, P_S, P_I, P_LRA, P_TP, P_MAXM, P_MAXS, P_TIME,
        P_GAIN, P_TPHEAD, P_TPOVER, P_STATUS, P_TPSTATUS, P_REL, P_HIST0, P_COUNT = P_HIST0 + 60 };
-static const int NPROG = 15;
+static const int NPROG = 17;
 
 static int automateCalls = 0;
 static intptr_t host(AEffect*, int32_t op, int32_t, intptr_t, void*, float) { if (op == 0) ++automateCalls; return 2400; }
@@ -120,8 +120,10 @@ int main(int argc, char** argv) {
     {
         struct Case { int platform; float level; const char* status; };
         const Case cases[] = { { 0, -20, "Turned up 6.0 dB" }, { 0, -10, "Turned down 4.0 dB" }, { 0, -14, "On target" },
-                               { 3, -20, "Plays 6.0 dB quieter" }, { 3, -8, "Turned down 6.0 dB" }, { 2, -20, "Turned up 4.0 dB" },
-                               { 7, -10, "4.0 LU above target" }, { 11, -26, "3.0 LU below target" } };
+                               { 4, -20, "Plays 6.0 dB quieter" }, { 4, -8, "Turned down 6.0 dB" }, { 3, -20, "Turned up 4.0 dB" },
+                               { 2, -16, "Turned down 3.0 dB" }, { 7, -16, "Turned down 2.0 dB" },
+                               { 9, -10, "Not normalized: plays as is" }, { 10, -11.5f, "On target" }, { 10, -8, "2.5 LU above target" },
+                               { 13, -26, "3.0 LU below target" } };
         for (const Case& c : cases) {
             fresh(c.platform); sine(c.level, 4);
             char n[64] = {}; D(effGetProgramName, 0, 0, n);
@@ -130,17 +132,21 @@ int main(int argc, char** argv) {
         fresh(0); sine(-14, 4);
         CHECK(std::fabs(getNorm(P_GAIN) * 80 - 40) < 0.1f, "gain to target 0 on target");
         CHECK(display(P_TPSTATUS) == "Peaks OK, 13.0 dB headroom", "tp status '%s'", display(P_TPSTATUS).c_str());
-        fresh(4); sine(-1, 4);                                      // Amazon: ceiling -2
+        fresh(0); sine(-6, 4);                                      // Spotify: a master louder than -14 gets the -2 dBTP ceiling
+        CHECK(display(P_TPSTATUS) == "Peaks OK, 4.0 dB headroom", "spotify ok '%s'", display(P_TPSTATUS).c_str());
+        fresh(0); sine(-1.5f, 4);
+        CHECK(display(P_TPSTATUS) == "Loud master: peaks 0.5 over -2" && getNorm(P_TPOVER) == 1.f, "spotify loud master '%s'", display(P_TPSTATUS).c_str());
+        fresh(5); sine(-1, 4);                                      // Amazon: ceiling -2
         CHECK(display(P_TPSTATUS) == "Peaks over ceiling by 1.0 dB" && getNorm(P_TPOVER) == 1.f, "tp over '%s'", display(P_TPSTATUS).c_str());
-        D(effSetProgram, 0, 2); CHECK(display(P_TARGET) == "-16.0" && display(P_CEIL) == "-1.0", "Apple Music target");
-        setNorm(P_TARGET, (-12.f + 30.f) / 25.f); D(effSetProgram, 0, 14);
+        D(effSetProgram, 0, 3); CHECK(display(P_TARGET) == "-16.0" && display(P_CEIL) == "-1.0", "Apple Music target");
+        setNorm(P_TARGET, (-12.f + 30.f) / 25.f); D(effSetProgram, 0, 16);
         CHECK(display(P_TARGET) == "-12.0", "Custom keeps your target (%s)", display(P_TARGET).c_str());
         D(effSetProgram, 0, 0); press(P_NEXT); char n[64] = {}; D(effGetProgramName, 0, 0, n);
         CHECK(std::strcmp(n, "Spotify Loud") == 0 && getNorm(P_NEXT) == 0.f, "next platform (%s)", n);
         press(P_PREV); press(P_PREV); D(effGetProgramName, 0, 0, n);
         CHECK(std::strcmp(n, "Custom") == 0, "prev wraps (%s)", n);
-        setNorm(P_PLATFORM, 3.f / (NPROG - 1)); D(effGetProgramName, 0, 0, n);
-        CHECK(std::strcmp(n, "YouTube") == 0, "platform parameter (%s)", n);
+        setNorm(P_PLATFORM, 4.f / (NPROG - 1)); D(effGetProgramName, 0, 0, n);
+        CHECK(std::strcmp(n, "YouTube / YT Music") == 0, "platform parameter (%s)", n);
     }
 
     // ---- reset, pause, history, meter bar ----

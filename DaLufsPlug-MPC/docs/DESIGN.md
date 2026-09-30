@@ -30,7 +30,8 @@ Test results (test/host_test.cpp):
   ceiling; Custom keeps whatever you set. Because Platform is restored first, a saved custom target/ceiling survives
   when MPC restores the project.
 - **Status lines** depend on the platform's policy: down only (YouTube, Amazon, Tidal, Deezer), up and down (Spotify,
-  Apple Music, podcasts), or no normalization / reference (SoundCloud, TikTok, broadcast, CD). The text is
+  Apple Music, podcasts), reference only (TikTok range, broadcast, CD) or none (SoundCloud: plays as delivered).
+  Spotify switches to a -2 dBTP ceiling for masters louder than its target. The text is
   double-buffered, and a changing parameter value tells MPC to fetch the new text.
 - **Display:** readouts, the LED bar (momentary vs target, ±18 LU) and the 60 history columns (one per second, short
   term vs target, ±12 LU) are read-only parameters. They are sent to MPC only when they change, at 10 Hz at most.

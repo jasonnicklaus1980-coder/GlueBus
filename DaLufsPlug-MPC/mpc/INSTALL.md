@@ -1,4 +1,4 @@
-# Da Lufs Plug 1.0.2
+# Da Lufs Plug 1.0.3
 
 A loudness meter for MPC, in the style of classic hardware loudness meters. It shows Momentary, Short Term,
 Integrated, Loudness Range, True Peak and elapsed time, and has presets for streaming platforms (Spotify, Apple Music,
@@ -11,9 +11,9 @@ YouTube and more). It's a native MPC OS VST2 insert effect. In the plugin browse
 - **Root shell access** (SSH). Installing plugins this way is unofficial, so back up first and use it at your own risk.
 
 ## Install with Terminus
-1. Upload `DaLufsPlug-1.0.2-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+1. Upload `DaLufsPlug-1.0.3-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
 2. Save your MPC project, then run:
-   `cd /tmp && unzip -o DaLufsPlug-1.0.2-mpc-armv7.zip && sh DaLufsPlug-1.0.2/install.sh`
+   `cd /tmp && unzip -o DaLufsPlug-1.0.3-mpc-armv7.zip && sh DaLufsPlug-1.0.3/install.sh`
 3. Answer `y`. MPC restarts. Add **Da Lufs Plug** as the **last insert on the master**, after your limiter,
    so it measures what listeners will hear.
 
@@ -40,15 +40,17 @@ The status lines then tell you what that platform will do with your track.
 
 | Platform | Target | Ceiling | What the platform does |
 |---|---|---|---|
-| Spotify | -14 LUFS | -1 dBTP | Turns loud tracks down and quiet tracks up (limited by peaks) |
+| Spotify | -14 LUFS | -1 dBTP (-2 for louder masters) | Turns loud tracks down and quiet tracks up (limited by peaks) |
 | Spotify Loud | -11 | -1 | Spotify's "Loud" listening setting |
+| Spotify Quiet | -19 | -1 | Spotify's "Quiet" listening setting |
 | Apple Music | -16 | -1 | Sound Check: down and up |
-| YouTube | -14 | -1 | Turns loud tracks down only |
+| YouTube / YT Music | -14 | -1 | Turns loud tracks down only |
 | Amazon Music | -14 | -2 | Down only |
 | Tidal | -14 | -1 | Down only |
+| Tidal Audiophile | -18 | -1 | Tidal's audiophile mode |
 | Deezer | -15 | -1 | Down only |
-| SoundCloud | -14 | -1 | No normalization; -14 is a common reference |
-| TikTok / Reels | -14 | -1 | No published target; -14 is a common reference |
+| SoundCloud | none | -1 | No normalization: plays as delivered |
+| TikTok / IG Reels | -12 to -9 | -1 | "On target" anywhere in that range |
 | Apple Podcasts | -16 | -1 | |
 | Spotify Podcasts | -14 | -1 | |
 | Broadcast EBU R128 | -23 | -1 | European TV / radio |
@@ -56,18 +58,22 @@ The status lines then tell you what that platform will do with your track.
 | CD / Club Master | -9 | -0.3 | A loud reference, no normalization |
 | Custom | yours | yours | Set **TARGET** and **PEAK CEILING** yourself |
 
+For Spotify, once your master is louder than -14 LUFS the peak check switches to the stricter -2 dBTP, and the status
+line says "Loud master". You don't have to master down to a platform's target: it is the playback reference, and
+many commercial releases are louder. The platform turns them down; what matters is that the peaks stay under the
+ceiling so the encoded file doesn't distort.
+
 These are the targets the platforms publish or that are commonly cited. Platforms change their policies, so check
 their current guidance for important releases.
 
-**Gain to Target** is the change the platform will apply to your track: negative means it gets turned down. A master
-louder than the target gains nothing on these platforms; it just loses punch. **Peak Headroom** is the space left
+**Gain to Target** is the change the platform will apply to your track: negative means it gets turned down. **Peak Headroom** is the space left
 below the ceiling, and a negative value means your peaks are over it.
 
 ## Q-Links
 1 Platform, 2 Target, 3 Peak Ceiling, 4 Pause.
 
 ## Uninstall
-`sh /tmp/DaLufsPlug-1.0.2/uninstall.sh` (unzip the package to `/tmp` again first).
+`sh /tmp/DaLufsPlug-1.0.3/uninstall.sh` (unzip the package to `/tmp` again first).
 
 ## Troubleshooting
 - **Not in the plugin list:** it appears after MPC restarts. Check with

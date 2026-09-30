@@ -5,7 +5,7 @@
 # (MPC is stopped for the edit - save your project first). Safe to re-run: it upgrades in place.
 set -e
 cd "$(dirname "$0")"
-NAME='Da Lufs Plug'; VERSION='1.0.2'; SO_DIR='/sdcard/vst'; SO='dalufsplug.so'; SKIN='RadioReady Audio - VST - Da Lufs Plug'
+NAME='Da Lufs Plug'; VERSION='1.0.3'; SO_DIR='/sdcard/vst'; SO='dalufsplug.so'; SKIN='RadioReady Audio - VST - Da Lufs Plug'
 # earlier name of this plugin (1.0.0 / 1.0.1): replaced by this install
 OLD_SO='radioready_lufs.so'; OLD_SKIN='RadioReady Audio - VST - RadioReady LUFS Meter'
 YES=0; [ "$1" = "-y" ] && YES=1

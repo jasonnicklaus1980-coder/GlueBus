@@ -12,8 +12,8 @@ EQ7 and RadioReady EQ. Audio passes through untouched.
   - Loudness Range (LRA)
   - True Peak in dBTP (4x oversampled at 44.1/48 kHz)
   - elapsed time, with Reset and Pause
-- **Platform presets:** Spotify, Spotify Loud, Apple Music, YouTube, Amazon Music, Tidal, Deezer, SoundCloud,
-  TikTok / Reels, Apple Podcasts, Spotify Podcasts, EBU R128, ATSC A/85, CD / Club, and Custom. Each sets a target and a
+- **Platform presets:** Spotify, Spotify Loud, Spotify Quiet, Apple Music, YouTube / YT Music, Amazon Music, Tidal, Tidal Audiophile, Deezer, SoundCloud,
+  TikTok / IG Reels, Apple Podcasts, Spotify Podcasts, EBU R128, ATSC A/85, CD / Club, and Custom. Each sets a target and a
   true-peak ceiling.
 - **Status lines** say what the platform will do ("Turned down 2.3 dB", "Plays 1.5 dB quieter", "Peaks over ceiling
   by 0.6 dB"). There are also Gain to Target and Peak Headroom readouts.
@@ -25,7 +25,7 @@ Install and usage: [mpc/INSTALL.md](mpc/INSTALL.md). Design notes: [docs/DESIGN.
 ```
 make test                  # native build + offline VST2 host test
 make arm                   # build/arm/dalufsplug.so (needs g++-arm-linux-gnueabihf), or: make docker
-./scripts/package.sh       # dist/DaLufsPlug-1.0.2-mpc-armv7.zip
+./scripts/package.sh       # dist/DaLufsPlug-1.0.3-mpc-armv7.zip
 ./scripts/deploy.sh <ip>   # copy + install over SSH
 python3 tools/make_skin.py docs   # regenerate the skin (+ preview rendered from build/native)
 ```

@@ -21,24 +21,29 @@
 namespace
 {
 // ------------------------------------------------------------------------------------------------ platforms
-// mode: 0 = normalises down only, 1 = normalises up and down, 2 = no normalisation / reference target
-struct Platform { const char* name; float target, ceiling; int mode; const char* note; };
+// mode: 0 = normalises down only, 1 = normalises up and down, 2 = no normalisation / reference target,
+//       3 = no normalisation at all (plays as delivered)
+// tol: the "on target" window (a range such as -12 .. -9 LUFS is a centre +- tol)
+// loudCeiling: stricter true-peak ceiling recommended for masters louder than the target (0 = none)
+struct Platform { const char* name; float target, ceiling; int mode; float tol, loudCeiling; const char* note; };
 const Platform kPlatforms[] = {
-    { "Spotify",             -14.f, -1.0f, 1, "Normal setting; turns loud tracks down, quiet ones up (peak-limited)" },
-    { "Spotify Loud",        -11.f, -1.0f, 1, "Spotify's Loud playback setting" },
-    { "Apple Music",         -16.f, -1.0f, 1, "Sound Check" },
-    { "YouTube",             -14.f, -1.0f, 0, "Turns loud videos down, never up" },
-    { "Amazon Music",        -14.f, -2.0f, 0, "" },
-    { "Tidal",               -14.f, -1.0f, 0, "" },
-    { "Deezer",              -15.f, -1.0f, 0, "" },
-    { "SoundCloud",          -14.f, -1.0f, 2, "No normalisation: plays at your level; -14 is a common reference" },
-    { "TikTok / Reels",      -14.f, -1.0f, 2, "No published target; -14 is a common reference" },
-    { "Apple Podcasts",      -16.f, -1.0f, 1, "" },
-    { "Spotify Podcasts",    -14.f, -1.0f, 1, "" },
-    { "Broadcast EBU R128",  -23.f, -1.0f, 2, "European TV / radio" },
-    { "US TV ATSC A/85",     -24.f, -2.0f, 2, "US broadcast (LKFS)" },
-    { "CD / Club Master",     -9.f, -0.3f, 2, "Loud master, no normalisation" },
-    { "Custom",              -14.f, -1.0f, 2, "Set your own target and ceiling" },
+    { "Spotify",             -14.f,  -1.0f, 1, 0.5f, -2.0f, "Turns loud tracks down, quiet ones up (peak-limited); -2 dBTP for louder masters" },
+    { "Spotify Loud",        -11.f,  -1.0f, 1, 0.5f,  0.f,  "Spotify's Loud playback setting" },
+    { "Spotify Quiet",       -19.f,  -1.0f, 1, 0.5f,  0.f,  "Spotify's Quiet playback setting" },
+    { "Apple Music",         -16.f,  -1.0f, 1, 0.5f,  0.f,  "Sound Check" },
+    { "YouTube / YT Music",  -14.f,  -1.0f, 0, 0.5f,  0.f,  "Turns loud tracks down, never up" },
+    { "Amazon Music",        -14.f,  -2.0f, 0, 0.5f,  0.f,  "" },
+    { "Tidal",               -14.f,  -1.0f, 0, 0.5f,  0.f,  "" },
+    { "Tidal Audiophile",    -18.f,  -1.0f, 0, 0.5f,  0.f,  "Tidal's audiophile mode" },
+    { "Deezer",              -15.f,  -1.0f, 0, 0.5f,  0.f,  "" },
+    { "SoundCloud",          -14.f,  -1.0f, 3, 0.5f,  0.f,  "No normalisation: plays as delivered" },
+    { "TikTok / IG Reels",   -10.5f, -1.0f, 2, 1.5f,  0.f,  "Typical range -12 .. -9 LUFS" },
+    { "Apple Podcasts",      -16.f,  -1.0f, 1, 0.5f,  0.f,  "" },
+    { "Spotify Podcasts",    -14.f,  -1.0f, 1, 0.5f,  0.f,  "" },
+    { "Broadcast EBU R128",  -23.f,  -1.0f, 2, 0.5f,  0.f,  "European TV / radio" },
+    { "US TV ATSC A/85",     -24.f,  -2.0f, 2, 0.5f,  0.f,  "US broadcast (LKFS)" },
+    { "CD / Club Master",     -9.f,  -0.3f, 2, 0.5f,  0.f,  "Loud master, no normalisation" },
+    { "Custom",              -14.f,  -1.0f, 2, 0.5f,  0.f,  "Set your own target and ceiling" },
 };
 constexpr int kNumPlatforms = (int) (sizeof (kPlatforms) / sizeof (kPlatforms[0]));
 const char* platformNames[kNumPlatforms];
@@ -219,10 +224,11 @@ struct Plugin
     }
     void update (bool stepped)
     {
-        const float target = get (P_TARGET), ceil = get (P_CEIL);
+        const float target = get (P_TARGET), userCeil = get (P_CEIL);
+        const Platform& pf = kPlatforms[program];
         const bool paused = get (P_PAUSE) > 0.5f;
-        const bool targetMoved = target != lastTarget || ceil != lastCeil || paused != lastPaused || program != lastProgram;
-        lastTarget = target; lastCeil = ceil; lastPaused = paused; lastProgram = program;
+        const bool targetMoved = target != lastTarget || userCeil != lastCeil || paused != lastPaused || program != lastProgram;
+        lastTarget = target; lastCeil = userCeil; lastPaused = paused; lastProgram = program;
         if (! stepped && ! targetMoved) return;
         const float M = (float) meter.momentary, S = (float) meter.shortTerm, I = (float) meter.integrated;
         send (P_M, M); send (P_S, S); send (P_I, I);
@@ -231,6 +237,9 @@ struct Plugin
         send (P_TP, tpDb);
         send (P_TIME, std::floor ((float) meter.seconds()), 0.5f);
         const bool haveI = I > kFloor && meter.seconds() >= 3.0;
+        // e.g. Spotify: -1 dBTP, but -2 dBTP once the master is louder than the target
+        const bool loudMaster = haveI && pf.loudCeiling < 0.f && I > target + pf.tol;
+        const float ceil = loudMaster ? std::fmin (userCeil, pf.loudCeiling) : userCeil;
         send (P_GAIN, haveI ? clampf (target - I, -40.f, 40.f) : 0.f);
         send (P_TPHEAD, tpDb > kFloor ? clampf (ceil - tpDb, -20.f, 80.f) : 0.f);
         send (P_TPOVER, tpDb > ceil ? 1.f : 0.f, 0.5f);
@@ -238,18 +247,20 @@ struct Plugin
 
         // status lines
         char t[40];
-        const int mode = kPlatforms[program].mode;
+        const int mode = pf.mode;
         const float diff = I - target;
         if (get (P_PAUSE) > 0.5f) std::snprintf (t, sizeof t, "Paused");
         else if (! haveI) std::snprintf (t, sizeof t, "Measuring...");
-        else if (std::fabs (diff) <= 0.5f) std::snprintf (t, sizeof t, "On target");
+        else if (mode == 3) std::snprintf (t, sizeof t, "Not normalized: plays as is");
+        else if (std::fabs (diff) <= pf.tol) std::snprintf (t, sizeof t, "On target");
         else if (diff > 0) std::snprintf (t, sizeof t, mode == 2 ? "%.1f LU above target" : "Turned down %.1f dB", (double) diff);
         else if (mode == 1) std::snprintf (t, sizeof t, "Turned up %.1f dB", (double) -diff);
         else if (mode == 0) std::snprintf (t, sizeof t, "Plays %.1f dB quieter", (double) -diff);
         else std::snprintf (t, sizeof t, "%.1f LU below target", (double) -diff);
         setText (statusText, P_STATUS, statusGen, t);
         if (tpDb <= kFloor) std::snprintf (t, sizeof t, "True peak --");
-        else if (tpDb > ceil) std::snprintf (t, sizeof t, "Peaks over ceiling by %.1f dB", (double) (tpDb - ceil));
+        else if (tpDb > ceil) std::snprintf (t, sizeof t, loudMaster ? "Loud master: peaks %.1f over -2" : "Peaks over ceiling by %.1f dB",
+                                             (double) (tpDb - ceil));
         else std::snprintf (t, sizeof t, "Peaks OK, %.1f dB headroom", (double) (ceil - tpDb));
         setText (tpText, P_TPSTATUS, tpGen, t);
 
@@ -357,7 +368,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "Da Lufs Plug", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "RadioReady Audio", 32); return 1;
-        case effGetVendorVersion: return 1002;
+        case effGetVendorVersion: return 1003;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effSetProcessPrecision: return val == 0 ? 1 : 0;
@@ -390,6 +401,6 @@ LM_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('D' << 24) | ('L' << 16) | ('P' << 8) | 'G';   // 'DLPG' = 0x444c5047
-    fx.version = 1002;
+    fx.version = 1003;
     return &fx;
 }
