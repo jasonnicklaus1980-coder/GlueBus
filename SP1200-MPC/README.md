@@ -14,7 +14,7 @@ The DSP is the SP-1200 signal path in hardware order, each stage its own module 
 - Noise at each stage, calibrated to the published 90 dB (A) S/N; HISS, HUM, GROUND, DIGITAL / ANALOG / CONVERTER
   NOISE, NOISE COLOR, NOISE LEVEL.
 - Component variation with repeatable "units"; ECO / NORMAL / ACCURATE / REFERENCE quality.
-- Four skin pages: **SP-1200** (10 sliders + output, mode, machine, decay, quality), **CIRCUIT** (every stage's controls
+- Four skin pages: **SP-1200** (8 sliders numbered like the hardware's: Input, Pitch, Decay, Drive, SSM, Hiss, Output, Mix; plus output, mode, machine, quality), **CIRCUIT** (every stage's controls
   and bypasses), **NOISE**, **ANALYZER** (input / output spectrum, 4-tap scope, alias meter). See `docs/skin-preview-*.png`.
 - 54 factory presets.
 

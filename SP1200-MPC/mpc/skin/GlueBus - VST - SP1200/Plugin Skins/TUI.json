@@ -89,7 +89,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 88 408",
+                  "bounds": "0 0 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -127,7 +127,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "0 2 88 22",
+                  "bounds": "0 2 100 22",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -157,7 +157,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "-121 28 330 330",
+                  "bounds": "-115 28 330 330",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -195,7 +195,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "0 368 88 24",
+                  "bounds": "0 368 100 24",
                   "additionalInvalidatingHandles": []
                 }
               }
@@ -983,7 +983,7 @@
                         "version": 1,
                         "name": "Titillium Web",
                         "style": "SemiBold",
-                        "height": 15.0
+                        "height": 13.0
                       },
                       "colour": "ffc4e878",
                       "justification": "horizontallyCentred verticallyCentred",
@@ -3069,37 +3069,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "22 96 88 408",
-                  "additionalInvalidatingHandles": []
-                }
-              },
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "DRIVE",
-                  "type": "spSlider",
-                  "data": {
-                    "version": 1,
-                    "handleName": "Data"
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": [
-                    {
-                      "key": "Data",
-                      "value": "Parameter 1"
-                    }
-                  ]
-                },
-                "bounds": {
-                  "version": 2,
-                  "acceptsHWFocus": "Yes",
-                  "showWhenDataModelInvalid": "Hide",
-                  "whenVisible": "Always",
-                  "boundsType": "Absolute",
-                  "bounds": "113 96 88 408",
+                  "bounds": "26 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3129,7 +3099,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "204 96 88 408",
+                  "bounds": "139 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3137,7 +3107,7 @@
                 "version": 2,
                 "componentData": {
                   "version": 1,
-                  "name": "SAMPLE RATE",
+                  "name": "DECAY",
                   "type": "spSlider",
                   "data": {
                     "version": 1,
@@ -3149,7 +3119,7 @@
                   "map": [
                     {
                       "key": "Data",
-                      "value": "Parameter 3"
+                      "value": "Parameter 12"
                     }
                   ]
                 },
@@ -3159,7 +3129,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "295 96 88 408",
+                  "bounds": "252 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3167,7 +3137,7 @@
                 "version": 2,
                 "componentData": {
                   "version": 1,
-                  "name": "BITS",
+                  "name": "DRIVE",
                   "type": "spSlider",
                   "data": {
                     "version": 1,
@@ -3179,7 +3149,7 @@
                   "map": [
                     {
                       "key": "Data",
-                      "value": "Parameter 4"
+                      "value": "Parameter 1"
                     }
                   ]
                 },
@@ -3189,7 +3159,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "386 96 88 408",
+                  "bounds": "365 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3219,37 +3189,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "477 96 88 408",
-                  "additionalInvalidatingHandles": []
-                }
-              },
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "ANALOG",
-                  "type": "spSlider",
-                  "data": {
-                    "version": 1,
-                    "handleName": "Data"
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": [
-                    {
-                      "key": "Data",
-                      "value": "Parameter 6"
-                    }
-                  ]
-                },
-                "bounds": {
-                  "version": 2,
-                  "acceptsHWFocus": "Yes",
-                  "showWhenDataModelInvalid": "Hide",
-                  "whenVisible": "Always",
-                  "boundsType": "Absolute",
-                  "bounds": "568 96 88 408",
+                  "bounds": "478 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3279,7 +3219,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "659 96 88 408",
+                  "bounds": "591 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3309,7 +3249,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "750 96 88 408",
+                  "bounds": "704 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3339,7 +3279,7 @@
                   "showWhenDataModelInvalid": "Hide",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "841 96 88 408",
+                  "bounds": "817 96 100 408",
                   "additionalInvalidatingHandles": []
                 }
               },
@@ -3647,7 +3587,7 @@
                 "version": 2,
                 "componentData": {
                   "version": 1,
-                  "name": "Decay",
+                  "name": "Pitch Range",
                   "type": "spBox98x36",
                   "data": {
                     "version": 1,
@@ -3659,7 +3599,7 @@
                   "map": [
                     {
                       "key": "Data",
-                      "value": "Parameter 12"
+                      "value": "Parameter 18"
                     }
                   ]
                 },
@@ -4630,7 +4570,7 @@
                 "version": 2,
                 "componentData": {
                   "version": 1,
-                  "name": "Machine",
+                  "name": "Analog",
                   "type": "spBox180x40",
                   "data": {
                     "version": 1,
@@ -4642,7 +4582,7 @@
                   "map": [
                     {
                       "key": "Data",
-                      "value": "Parameter 16"
+                      "value": "Parameter 6"
                     }
                   ]
                 },

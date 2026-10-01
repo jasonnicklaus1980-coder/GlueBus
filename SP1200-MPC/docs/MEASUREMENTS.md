@@ -94,8 +94,8 @@ Latency: **40 samples** (reported to the host; the dry path is delayed to match)
 
 | quality | CPU (x86, one core) |
 |---|---|
-| ECO | 2.62 % |
-| NORMAL | 2.83 % |
-| ACCURATE | 4.42 % |
-| REFERENCE | 6.90 % |
+| ECO | 2.56 % |
+| NORMAL | 2.96 % |
+| ACCURATE | 4.45 % |
+| REFERENCE | 6.77 % |
 

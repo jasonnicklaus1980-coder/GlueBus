@@ -141,16 +141,16 @@ def load_keys():
 P = load_keys()
 
 # ---------- layout ----------
-SLIDERS = [("input", "INPUT", ["-24", "0", "+24"]), ("drive", "DRIVE", ["0", "+12", "+24"]),
-           ("pitch", "PITCH", ["-12", "0", "+12"]), ("srate", "SAMPLE RATE", ["4k", "26k", "48k"]),
-           ("bits", "BITS", ["4", "12", "16"]), ("ssm", "SSM", ["-12", "0", "+18"]),
-           ("analog", "ANALOG", ["0", "100", "200"]), ("hiss", "HISS", ["OFF", "HW", "+30"]),
+# eight sliders, numbered 1-8 like the hardware's. PITCH and DECAY are what the SP-1200's sliders set in TUNE/DECAY mode.
+SLIDERS = [("input", "INPUT", ["-24", "0", "+24"]), ("pitch", "PITCH", ["-12", "0", "+12"]),
+           ("decay", "DECAY", ["20ms", "0.3s", "OFF"]), ("drive", "DRIVE", ["0", "+12", "+24"]),
+           ("ssm", "SSM", ["-12", "0", "+18"]), ("hiss", "HISS", ["OFF", "HW", "+30"]),
            ("output", "OUTPUT", ["-24", "0", "+12"]), ("mix", "MIX", ["0", "", "100"])]
 # slider position (0..1) of each printed mark, mirroring the plugin's mappings
 def mark_pos(key, j):
-    return {"input": [0, .5, 1], "drive": [0, .5, 1], "pitch": [0, .5, 1], "srate": [0, math.log(26040 / 4000) / math.log(12), 1],
-            "bits": [0, 8 / 12, 1], "ssm": [0, 12 / 30, 1], "analog": [0, .5, 1], "hiss": [0, 60 / 90, 1], "output": [0, 24 / 36, 1], "mix": [0, .5, 1]}[key][j]
-SX0, SPITCH, BOXW, BOXH = 22, 91, 88, 408
+    return {"input": [0, .5, 1], "drive": [0, .5, 1], "pitch": [0, .5, 1], "decay": [0, math.log(0.3 / 0.02) / math.log(4 / 0.02), 1],
+            "ssm": [0, 12 / 30, 1], "hiss": [0, 60 / 90, 1], "output": [0, 24 / 36, 1], "mix": [0, .5, 1]}[key][j]
+SX0, SPITCH, BOXW, BOXH = 26, 113, 100, 408
 SLIDER_Y = 96
 RIGHT_X = 948
 TABS = ["SP-1200", "CIRCUIT", "NOISE", "ANALYZER"]
@@ -271,7 +271,7 @@ for i, (key, lab, _) in enumerate(SLIDERS):
 radio(T, "channel", ["OUT 1-2", "OUT 3-4", "OUT 5-6", "OUT 7-8"], RIGHT_X + 10, 100, 148, 2, "OUTPUT CHANNEL")
 radio(T, "mode", ["45>33", "PITCH", "REPLAY"], RIGHT_X + 10, 210, 98, 3, "TUNE MODE")
 radio(T, "machine", ["SP-1200", "SP-12", "S1200 REF"], RIGHT_X + 10, 274, 98, 3, "MACHINE")
-box(T, "Decay", "decay", RIGHT_X + 10, 348, 98, 36, "DECAY", 15)
+box(T, "Pitch Range", "range", RIGHT_X + 10, 348, 98, 36, "PITCH RANGE", 13)
 box(T, "Dyn Sweep", "sweep", RIGHT_X + 114, 348, 98, 36, "DYN SWEEP", 15)
 box(T, "Dyn Floor", "floor", RIGHT_X + 218, 348, 96, 36, "DYN FLOOR", 15)
 toggle(T, "Bypass", "bypass", RIGHT_X + 4, 412, "BYPASS")
@@ -309,7 +309,7 @@ toggle(T, "SSM Stage", "ssmon", 1018, 402, "SSM STAGE")
 toggle(T, "Analog Stages", "analogon", 30, 534, "ANALOG STAGES")
 toggle(T, "Digital Stages", "digitalon", 164, 534, "DIGITAL STAGES")
 box(T, "Quality", "quality", 320, 540, 180, 40, "QUALITY")
-box(T, "Machine", "machine", 520, 540, 180, 40, "MACHINE")
+box(T, "Analog", "analog", 520, 540, 180, 40, "ANALOG (NONLINEARITY)")
 text(T, "Signal Path", "info", 720, 548, 540, 26, 14)
 BG_ITEMS[T].append(("lcd", 714, 538, 552, 46, None))
 
@@ -351,8 +351,8 @@ text(T, "Signal Path", "info", 640, 530, 576, 28, 16)
 BG_ITEMS[T].append(("lcd", 58, 516, 1162, 56, None))
 
 QL = {
-    "SP-1200": ["input", "drive", "pitch", "srate", "bits", "ssm", "analog", "hiss", "output", "mix", "channel", "mode", "decay", "sweep", "floor", "machine"],
-    "CIRCUIT": ["headroom", "knee", "aaf", "srate", "bits", "qmode", "convn", "pitch", "alias", "level", "settle", "recon", "ssm", "ssmres", "outhead", "quality"],
+    "SP-1200": ["input", "pitch", "decay", "drive", "ssm", "hiss", "output", "mix", "channel", "mode", "machine", "range", "sweep", "floor", "quality", "srate"],
+    "CIRCUIT": ["headroom", "knee", "aaf", "srate", "bits", "qmode", "convn", "pitch", "alias", "level", "settle", "recon", "ssm", "ssmres", "outhead", "analog"],
     "NOISE": ["hiss", "anan", "convn", "dign", "hum", "ground", "ncolor", "nlevel", "variation", "unit", "mains", "drive", "input", "output", "mix", "pitch"],
     "ANALYZER": ["tap", "scopems", "input", "drive", "pitch", "srate", "bits", "ssm", "analog", "hiss", "output", "mix", "channel", "mode", "alias", "recon"],
 }
