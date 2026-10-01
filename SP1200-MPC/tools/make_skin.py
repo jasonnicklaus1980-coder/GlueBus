@@ -267,11 +267,8 @@ def background(tab):
             d.line([x0, y, x1, y], fill=mix(BODY, PRINT, 0.5 if j in (0, 5, 10) else 0.28), width=1)
         for i, (key, lab) in enumerate(SLIDERS):
             cx = SX0 + i * SPITCH + BOXW / 2
-            kx, ky = cx - 46, SLIDER_Y + FH + 2                       # a black key under each slider, named like a pad label
-            d.rounded_rectangle([kx + 2, ky + 3, kx + 94, ky + 44], radius=3, fill=(40, 44, 56))
-            d.rounded_rectangle([kx, ky, kx + 92, ky + 40], radius=3, fill=(22, 22, 24), outline=(70, 70, 76))
-            text_c(d, cx, ky + 20, lab, font(14), PRINT)
-            text_c(d, cx, ky + 54, str(i + 1), font(12, "DejaVuSans.ttf"), PRINT_DIM)
+            text_c(d, cx, SLIDER_Y + FH + 12, lab, font(15, "DejaVuSans.ttf"), PRINT)   # printed on the panel, no pads
+            text_c(d, cx, SLIDER_Y + FH + 36, str(i + 1), font(13), PRINT_DIM)
         text_c(d, 1188 + KEY_W / 2, 92 + KEY_H - 8, "Bypass", font(11, "DejaVuSans.ttf"), PRINT)
     for item in BG_ITEMS[tab]:
         k = item[0]
