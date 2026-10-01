@@ -1,119 +1,130 @@
-// SP1200 - 12-bit / 26.04 kHz sampling-drum-machine character insert for Akai MPC OS (Gen1, 32-bit ARM),
-// built from the GlueBus components (same dependency-free VST2 core, parameter model, host notification,
-// packaging and skin pipeline). Needs only libc/libm. No GUI: MPC draws the slider skin from /sdcard/Synths.
+// SP1200 2.0 - a software model of the E-mu SP-1200 signal path, as a native MPC OS VST2 insert (Gen1, 32-bit ARM).
+// Built from the GlueBus components (dependency-free VST2 core, parameter model, host notification, packaging, skin
+// pipeline). Needs only libc/libm. MPC draws the skin from /sdcard/Synths.
 //
-// Signal path (modelled on the SP-1200 circuit, see docs/CIRCUIT.md):
-//   input level > ADC (hard clip at full scale, 12-bit two's-complement truncation, no anti-alias filter)
-//   > sample memory > drop-sample playback at the 26.04 kHz DAC clock (tuning = read-rate, no interpolation)
-//   > decay (digital, before the DAC) > 12-bit DAC with zero-order hold
-//   > output-channel filter: Out 1-2 SSM2044 dynamic 4-pole VCF, Out 3-4 fixed ~7.5 kHz, Out 5-6 fixed ~10 kHz,
-//     Out 7-8 unfiltered > output amp > mix / volume
+// The DSP lives in src/sp/ (one header per stage, see docs/CIRCUIT.md):
+//   AnalogInput > ADC (Quantizer12Bit) > SamplerMemory > PlaybackEngine (PitchEngine) > DAC > ReconstructionFilter
+//   (SSMModel on Out 1-2) > AnalogOutput, with NoiseModel sources at their stages, HardwareVariation for tolerances,
+//   AliasingEngine for the stage options, Analyzer for the screen's spectrum and scope.
+// This file: parameters, factory presets (VST programs), the screen readouts, and the VST2 entry points.
+#include "sp/Model.h"
 #include "vst2.h"
 #include <atomic>
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <new>
 
 #define SP_EXPORT extern "C" __attribute__((visibility("default")))
 
 namespace
 {
-// Parameter indices: the skin (tools/make_skin.py) and Q-Link maps bind to these numbers.
-// P_TUNE..P_VOLUME are the eight front-panel sliders (left to right).
+using namespace sp;
+
 enum ParamId
 {
-    P_INPUT, P_TUNE, P_DECAY, P_CHANNEL, P_SWEEP, P_FLOOR, P_MIX, P_VOLUME, P_MODE, P_BYPASS,
+    P_INPUT, P_DRIVE, P_PITCH, P_SRATE, P_BITS, P_SSM, P_ANALOG, P_HISS, P_OUTPUT, P_MIX,
+    P_CHANNEL, P_MODE, P_DECAY, P_SWEEP, P_FLOOR, P_BYPASS,
+    P_MACHINE, P_QUALITY, P_RANGE, P_HEADROOM, P_KNEE, P_AAF, P_QMODE, P_CONVN, P_ALIAS, P_RECON, P_LEVEL,
+    P_SSMRES, P_SSMPATH, P_ANALOGON, P_DIGITALON, P_SSMON, P_AMPSON, P_FILTON, P_OUTHEAD, P_SETTLE,
+    P_HUM, P_MAINS, P_GROUND, P_DIGN, P_ANAN, P_NCOLOR, P_NLEVEL, P_VARIATION, P_UNIT,
+    P_ANALYZER, P_TAP, P_SCOPEMS, P_FREEZE,
+    P_SPECIN0, P_SPECOUT0 = P_SPECIN0 + 16, P_SCOPE0 = P_SPECOUT0 + 16, P_INFO = P_SCOPE0 + 32, P_ALIASTXT,
     P_COUNT
 };
-enum Kind { K_FLOAT, K_CHOICE, K_BOOL, K_LOG };
-enum Fmt  { F_NUM, F_HZ, F_SEC, F_DECAY, F_TUNE };
+enum Kind { K_FLOAT, K_CHOICE, K_BOOL, K_LOG, K_READ, K_TEXT };
+enum Fmt { F_DB, F_DBOFF, F_ST, F_HZ, F_BITS, F_PCT, F_SEC, F_DECAY, F_NUM, F_LEVEL, F_COLOR, F_UNIT };
 
-// ---- hardware constants ----
-constexpr double kSpRate    = 26040.0;   // SP-1200 sample / DAC clock (Hz)
-constexpr float  kFull      = 2048.f;    // 12-bit two's complement: -2048 .. +2047
-constexpr float  kDecayOff  = 4.f;       // decay slider at the top = no decay
-constexpr float  kOut34Hz   = 7500.f;    // fixed output filters, measured on the hardware (approx.)
-constexpr float  kOut56Hz   = 10000.f;
-constexpr float  kDynTopHz  = 12000.f;   // SSM2044 on Out 1-2: fully open just after a hit...
-constexpr float  kSsmRes    = 0.55f;     // ...fixed low resonance set by the feedback resistor (k of 4)
-constexpr int    kPsBits    = 12, kPsLen = 1 << kPsBits, kPsMask = kPsLen - 1;   // pitch-mode sample memory (157 ms)
-constexpr float  kPsWin     = 2048.f;    // pitch-mode splice window in SP samples (79 ms)
-constexpr float  kPsXfade   = 0.2f;      // share of the window spent crossfading between the two read heads
-constexpr float  kPsFade    = 0.0038f;   // per-SP-sample step of the tune-0 <-> read-heads fade (~10 ms)
-
-const char* const kChannelNames[] { "Out 1-2 Dyn", "Out 3-4", "Out 5-6", "Out 7-8" };
-const char* const kModeNames[]    { "45>33 Grit", "Pitch" };
+const char* const kChannels[] { "Out 1-2 Dyn", "Out 3-4", "Out 5-6", "Out 7-8" };
+const char* const kModes[] { "45>33 Grit", "Pitch", "Replay" };
+const char* const kMachines[] { "SP-1200", "SP-12", "S1200 Ref" };
+const char* const kQualities[] { "Eco", "Normal", "Accurate", "Reference" };
+const char* const kRanges[] { "HW -8..+7", "Ext -12..+12" };
+const char* const kQModes[] { "Mid-tread", "Truncate" };
+const char* const kAliases[] { "Authentic", "Enhanced", "Bypass" };
+const char* const kRecons[] { "Analog ZOH", "Raw Steps", "Ideal LPF" };
+const char* const kPaths[] { "Out 1-2 (HW)", "All Outputs" };
+const char* const kMains[] { "60 Hz", "50 Hz" };
+const char* const kTaps[] { "Input", "Post-ADC", "Post-DAC", "Output" };
+const char* const kScopeMs[] { "1 ms", "2 ms", "5 ms", "10 ms", "20 ms" };
+const float kScopeVals[] { 1, 2, 5, 10, 20 };
 
 struct ParamDef
 {
-    const char* name; const char* unit; Kind kind;
-    float lo, hi, step, def;
-    const char* const* choices; int n; Fmt fmt; const char* numFmt;
+    const char* key; const char* name; const char* unit; Kind kind; float lo, hi, step, def;
+    const char* const* choices; int n; Fmt fmt;
 };
-
-#define CH(names) names, (int) (sizeof (names) / sizeof (names[0]))
-const ParamDef kParams[P_COUNT] =
+#define CH(a) a, (int) (sizeof (a) / sizeof (a[0]))
+ParamDef kParams[P_COUNT];
+char readNames[P_COUNT][24], readKeys[P_COUNT][16];
+void initParams()
 {
-    { "Input",     "dB", K_FLOAT, -24.f, 12.f, 0.1f,  0.f,    nullptr, 0, F_NUM,  "%+.1f" },
-    { "Tune",      "st", K_FLOAT, -12.f,  7.f, 1.f,   0.f,    nullptr, 0, F_TUNE, "" },
-    { "Decay",     "",   K_LOG,   0.02f, kDecayOff, 0.f, kDecayOff, nullptr, 0, F_DECAY, "" },
-    { "Channel",   "",   K_CHOICE, 0.f,   3.f, 1.f,   2.f,    CH (kChannelNames), F_NUM, "" },
-    { "Dyn Sweep", "",   K_LOG,   0.001f, 0.25f, 0.f, 0.012f, nullptr, 0, F_SEC,  "" },
-    { "Dyn Floor", "",   K_LOG,   100.f, 2000.f, 0.f, 250.f,  nullptr, 0, F_HZ,   "" },
-    { "Mix",       "%",  K_FLOAT,   0.f, 100.f, 1.f, 100.f,   nullptr, 0, F_NUM,  "%.0f" },
-    { "Volume",    "dB", K_FLOAT, -24.f,  12.f, 0.1f, 0.f,    nullptr, 0, F_NUM,  "%+.1f" },
-    { "Tune Mode", "",   K_CHOICE, 0.f,   1.f, 1.f,   0.f,    CH (kModeNames), F_NUM, "" },
-    { "Bypass",    "",   K_BOOL,   0.f,   1.f, 1.f,   0.f,    nullptr, 0, F_NUM,  "" },
-};
-
-// ---- factory presets: defaults + overrides ----
-struct Ov { int id; float v; };
-struct Preset { const char* name; const Ov* ov; int n; };
-#define PRESET(sym, ...) const Ov sym[] = { __VA_ARGS__ };
-#define ENTRY(name, sym) { name, sym, (int) (sizeof (sym) / sizeof (sym[0])) }
-
-PRESET (pInit,      { P_CHANNEL, 2 })
-PRESET (pClean,     { P_CHANNEL, 3 })
-PRESET (pDusty,     { P_CHANNEL, 1 })
-PRESET (pTom,       { P_CHANNEL, 0 }, { P_SWEEP, 0.03f }, { P_FLOOR, 300.f })
-PRESET (pKick,      { P_CHANNEL, 0 }, { P_SWEEP, 0.06f }, { P_FLOOR, 180.f }, { P_INPUT, 3.f })
-PRESET (p4533,      { P_CHANNEL, 1 }, { P_TUNE, -5.f }, { P_MODE, 0 })       // 45 rpm sampled, tuned down to 33
-PRESET (pPitchDn,   { P_CHANNEL, 2 }, { P_TUNE, -4.f }, { P_MODE, 1 })
-PRESET (pChop,      { P_CHANNEL, 2 }, { P_DECAY, 0.25f })
-PRESET (pHat,       { P_CHANNEL, 3 }, { P_DECAY, 0.08f })
-PRESET (pCrunch,    { P_CHANNEL, 1 }, { P_TUNE, -12.f }, { P_MODE, 0 })
-PRESET (pUp7,       { P_CHANNEL, 3 }, { P_TUNE, 7.f }, { P_MODE, 1 })
-PRESET (pHot,       { P_CHANNEL, 2 }, { P_INPUT, 9.f }, { P_VOLUME, -6.f })
-PRESET (pParallel,  { P_CHANNEL, 1 }, { P_TUNE, -7.f }, { P_MODE, 0 }, { P_MIX, 50.f })
-
-const Preset kPresets[] =
-{
-    ENTRY ("Init Out 5-6", pInit),      ENTRY ("Clean Out 7-8", pClean),    ENTRY ("Dusty Out 3-4", pDusty),
-    ENTRY ("Tom Dyn Out 1", pTom),      ENTRY ("Kick Dyn Thump", pKick),    ENTRY ("45 to 33 Break", p4533),
-    ENTRY ("Pitch Down -4", pPitchDn),  ENTRY ("Chop Decay", pChop),        ENTRY ("Tight Hat Decay", pHat),
-    ENTRY ("Crunch -12", pCrunch),      ENTRY ("Up +7 Pitch", pUp7),        ENTRY ("Hot Input Clip", pHot),
-    ENTRY ("Parallel Dirt", pParallel),
-};
-constexpr int kNumPresets = (int) (sizeof (kPresets) / sizeof (kPresets[0]));
-
-inline float clampf (float x, float lo, float hi) { return x < lo ? lo : (x > hi ? hi : x); }
-inline float flush (float x) { return std::fabs (x) < 1e-20f ? 0.f : x; }
-inline float fromDb (float db) { return std::exp2 (db * 0.16609640f); }
-inline float softSat (float x)   // tanh-like rational approximation, exact +-1 beyond |x|=3
-{
-    if (x >= 3.f) return 1.f;
-    if (x <= -3.f) return -1.f;
-    const float x2 = x * x;
-    return x * (27.f + x2) / (27.f + 9.f * x2);
-}
-// 12-bit converter: clip at full scale, truncate (floor) to the two's-complement code, back to float
-inline float q12 (float x)
-{
-    float c = std::floor (x * kFull);
-    c = c < -kFull ? -kFull : (c > kFull - 1.f ? kFull - 1.f : c);
-    return c * (1.f / kFull);
+    auto f = [] (int i, const char* key, const char* name, const char* unit, Kind k, float lo, float hi, float step, float def, Fmt fm)
+    { kParams[i] = { key, name, unit, k, lo, hi, step, def, nullptr, 0, fm }; };
+    auto c = [] (int i, const char* key, const char* name, const char* const* ch, int n, int def)
+    { kParams[i] = { key, name, "", K_CHOICE, 0, (float) (n - 1), 1, (float) def, ch, n, F_NUM }; };
+    f (P_INPUT, "input", "Input", "dB", K_FLOAT, -24, 24, 0.1f, 0, F_DB);
+    f (P_DRIVE, "drive", "Drive", "dB", K_FLOAT, 0, 24, 0.1f, 0, F_DB);
+    f (P_PITCH, "pitch", "Pitch", "st", K_FLOAT, -12, 12, 1, 0, F_ST);
+    f (P_SRATE, "srate", "Sample Rate", "Hz", K_LOG, 4000, 48000, 0, 26040, F_HZ);
+    f (P_BITS, "bits", "Bits", "bit", K_FLOAT, 4, 16, 1, 12, F_BITS);
+    f (P_SSM, "ssm", "SSM Char", "dB", K_FLOAT, -12, 18, 0.1f, 0, F_DB);
+    f (P_ANALOG, "analog", "Analog", "%", K_FLOAT, 0, 200, 1, 100, F_PCT);
+    f (P_HISS, "hiss", "Hiss", "dB", K_FLOAT, -60, 30, 0.5f, 0, F_DBOFF);
+    f (P_OUTPUT, "output", "Output", "dB", K_FLOAT, -24, 12, 0.1f, 0, F_DB);
+    f (P_MIX, "mix", "Mix", "%", K_FLOAT, 0, 100, 1, 100, F_PCT);
+    c (P_CHANNEL, "channel", "Output Channel", CH (kChannels), 2);
+    c (P_MODE, "mode", "Tune Mode", CH (kModes), 0);
+    f (P_DECAY, "decay", "Decay", "", K_LOG, 0.02f, kDecayOff, 0, kDecayOff, F_DECAY);
+    f (P_SWEEP, "sweep", "Dyn Sweep", "", K_LOG, 0.001f, 0.25f, 0, 0.012f, F_SEC);
+    f (P_FLOOR, "floor", "Dyn Floor", "Hz", K_LOG, 100, 2000, 0, 250, F_HZ);
+    f (P_BYPASS, "bypass", "Bypass", "", K_BOOL, 0, 1, 1, 0, F_NUM);
+    c (P_MACHINE, "machine", "Machine", CH (kMachines), 0);
+    c (P_QUALITY, "quality", "Quality", CH (kQualities), 2);
+    c (P_RANGE, "range", "Pitch Range", CH (kRanges), 0);
+    f (P_HEADROOM, "headroom", "Input Headroom", "dB", K_FLOAT, 0, 24, 0.5f, 8, F_DB);
+    f (P_KNEE, "knee", "Input Knee", "%", K_FLOAT, 0, 100, 1, 30, F_PCT);
+    f (P_AAF, "aaf", "Anti-Alias Filter", "Hz", K_LOG, 4000, 22000, 0, 15000, F_HZ);
+    c (P_QMODE, "qmode", "Quantizer", CH (kQModes), 0);
+    f (P_CONVN, "convn", "Converter Noise", "dB", K_FLOAT, -60, 30, 0.5f, 0, F_DBOFF);
+    c (P_ALIAS, "alias", "Alias", CH (kAliases), 0);
+    c (P_RECON, "recon", "Reconstruction", CH (kRecons), 0);
+    f (P_LEVEL, "level", "Voice Level", "", K_FLOAT, 0, 255, 1, 255, F_LEVEL);
+    f (P_SSMRES, "ssmres", "SSM Resonance", "%", K_FLOAT, 0, 100, 1, 0, F_PCT);
+    c (P_SSMPATH, "ssmpath", "SSM Path", CH (kPaths), 0);
+    f (P_ANALOGON, "analogon", "Analog Stages", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_DIGITALON, "digitalon", "Digital Stages", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_SSMON, "ssmon", "SSM Stage", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_AMPSON, "ampson", "Amp Stages", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_FILTON, "filton", "Filters", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_OUTHEAD, "outhead", "Output Headroom", "dB", K_FLOAT, 0, 24, 0.5f, 12, F_DB);
+    f (P_SETTLE, "settle", "S/H Settling", "%", K_FLOAT, 5, 100, 1, 100, F_PCT);
+    f (P_HUM, "hum", "Hum", "dB", K_FLOAT, -60, 30, 0.5f, -60, F_DBOFF);
+    c (P_MAINS, "mains", "Mains", CH (kMains), 0);
+    f (P_GROUND, "ground", "Ground", "dB", K_FLOAT, -60, 30, 0.5f, -60, F_DBOFF);
+    f (P_DIGN, "dign", "Digital Noise", "dB", K_FLOAT, -60, 30, 0.5f, -60, F_DBOFF);
+    f (P_ANAN, "anan", "Analog Noise", "dB", K_FLOAT, -60, 30, 0.5f, 0, F_DBOFF);
+    f (P_NCOLOR, "ncolor", "Noise Color", "", K_FLOAT, -100, 100, 1, 0, F_COLOR);
+    f (P_NLEVEL, "nlevel", "Noise Level", "dB", K_FLOAT, -60, 12, 0.5f, 0, F_DBOFF);
+    f (P_VARIATION, "variation", "Component Var", "%", K_FLOAT, 0, 100, 1, 0, F_PCT);
+    f (P_UNIT, "unit", "Unit", "", K_FLOAT, 1, 16, 1, 1, F_UNIT);
+    f (P_ANALYZER, "analyzer", "Analyzer", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    c (P_TAP, "tap", "Scope Tap", CH (kTaps), 2);
+    c (P_SCOPEMS, "scopems", "Scope Time", CH (kScopeMs), 1);
+    f (P_FREEZE, "freeze", "Freeze", "", K_BOOL, 0, 1, 1, 0, F_NUM);
+    for (int k = 0; k < 16; ++k)
+    {
+        std::snprintf (readKeys[P_SPECIN0 + k], 16, "specin%d", k); std::snprintf (readNames[P_SPECIN0 + k], 24, "Spectrum In %d", k + 1);
+        std::snprintf (readKeys[P_SPECOUT0 + k], 16, "specout%d", k); std::snprintf (readNames[P_SPECOUT0 + k], 24, "Spectrum Out %d", k + 1);
+        kParams[P_SPECIN0 + k] = { readKeys[P_SPECIN0 + k], readNames[P_SPECIN0 + k], "", K_READ, 0, 1, 0, 0, nullptr, 0, F_NUM };
+        kParams[P_SPECOUT0 + k] = { readKeys[P_SPECOUT0 + k], readNames[P_SPECOUT0 + k], "", K_READ, 0, 1, 0, 0, nullptr, 0, F_NUM };
+    }
+    for (int k = 0; k < 32; ++k)
+    {
+        std::snprintf (readKeys[P_SCOPE0 + k], 16, "scope%d", k); std::snprintf (readNames[P_SCOPE0 + k], 24, "Scope %d", k + 1);
+        kParams[P_SCOPE0 + k] = { readKeys[P_SCOPE0 + k], readNames[P_SCOPE0 + k], "", K_READ, 0, 1, 0, 0, nullptr, 0, F_NUM };
+    }
+    kParams[P_INFO] = { "info", "Signal Path", "", K_TEXT, 0, 1000, 0, 0, nullptr, 0, F_NUM };
+    kParams[P_ALIASTXT] = { "aliastxt", "Images / Alias", "", K_TEXT, 0, 1000, 0, 0, nullptr, 0, F_NUM };
 }
 
 float toPlain (const ParamDef& d, float norm)
@@ -139,44 +150,94 @@ void copyStr (void* dst, const char* src, size_t max = 24)
     std::strncpy ((char*) dst, src, max - 1);
     ((char*) dst)[max - 1] = 0;
 }
-void fmtHz (char* out, size_t max, float hz)
-{
-    if (hz < 1000.f) std::snprintf (out, max, "%.0f Hz", (double) hz);
-    else             std::snprintf (out, max, "%.1f kHz", (double) (hz * 0.001f));
-}
-void fmtSec (char* out, size_t max, float s)
-{
-    if (s < 1.f) std::snprintf (out, max, "%.0f ms", (double) (s * 1000.f));
-    else         std::snprintf (out, max, "%.2f s", (double) s);
-}
 
-// ---- SSM2044-style 4-pole OTA low-pass: zero-delay-feedback ladder, OTA (tanh) input stage, fixed resonance ----
-struct Ssm2044
+// ---------------------------------------------------------------------------------------------- presets
+struct Ov { int id; float v; };
+struct Preset { const char* name; const Ov* ov; int n; };
+#define PRESET(sym, ...) const Ov sym[] = { __VA_ARGS__ };
+#define ENTRY(name, sym) { name, sym, (int) (sizeof (sym) / sizeof (sym[0])) }
+const Ov pNone[] = { { P_MIX, 100 } };
+PRESET (pDrums, { P_CHANNEL, 3 }, { P_INPUT, 3 }, { P_DRIVE, 3 })
+PRESET (pKick, { P_CHANNEL, 0 }, { P_SWEEP, 0.06f }, { P_FLOOR, 180 }, { P_INPUT, 3 }, { P_SSM, 3 })
+PRESET (pSnare, { P_CHANNEL, 2 }, { P_DECAY, 0.25f }, { P_DRIVE, 4 })
+PRESET (pHats, { P_CHANNEL, 3 }, { P_DECAY, 0.08f })
+PRESET (pBreak, { P_CHANNEL, 2 }, { P_MODE, 0 }, { P_PITCH, -2 }, { P_INPUT, 2 })
+PRESET (pVinyl, { P_CHANNEL, 1 }, { P_PITCH, -5 }, { P_HISS, 6 }, { P_ANAN, 3 })
+PRESET (pSoul, { P_CHANNEL, 1 }, { P_PITCH, -5 }, { P_DRIVE, 3 })
+PRESET (pJazz, { P_CHANNEL, 1 }, { P_PITCH, -3 }, { P_HISS, 3 })
+PRESET (pBass, { P_CHANNEL, 0 }, { P_FLOOR, 400 }, { P_SWEEP, 0.25f }, { P_SSM, 6 })
+PRESET (pVocal, { P_CHANNEL, 2 }, { P_PITCH, -2 })
+PRESET (pPiano, { P_CHANNEL, 2 }, { P_PITCH, -4 })
+PRESET (pStrings, { P_CHANNEL, 1 }, { P_PITCH, -5 }, { P_HISS, 3 })
+PRESET (pChop, { P_CHANNEL, 2 }, { P_DECAY, 0.25f })
+PRESET (pPitchUp, { P_MODE, 1 }, { P_PITCH, 5 }, { P_CHANNEL, 3 })
+PRESET (pPitchDn, { P_MODE, 1 }, { P_PITCH, -5 }, { P_CHANNEL, 3 })
+PRESET (pCrunch, { P_PITCH, -8 }, { P_CHANNEL, 3 }, { P_INPUT, 3 })
+PRESET (pAlias, { P_CHANNEL, 3 }, { P_AAF, 22000 }, { P_PITCH, -7 })
+PRESET (pHiss, { P_HISS, 12 }, { P_ANAN, 6 })
+PRESET (pMax, { P_MACHINE, 2 }, { P_PITCH, -8 }, { P_INPUT, 6 }, { P_DRIVE, 9 }, { P_CHANNEL, 3 })
+PRESET (pReplayUp, { P_MODE, 2 }, { P_PITCH, 7 }, { P_CHANNEL, 3 })
+PRESET (pReplayDn, { P_MODE, 2 }, { P_PITCH, -8 }, { P_CHANNEL, 3 })
+PRESET (pSp12, { P_MACHINE, 1 })
+PRESET (pSp12Drums, { P_MACHINE, 1 }, { P_CHANNEL, 3 }, { P_INPUT, 3 })
+PRESET (pRef, { P_MACHINE, 2 })
+PRESET (pRefDown, { P_MACHINE, 2 }, { P_PITCH, -5 })
+PRESET (pSsmWarm, { P_CHANNEL, 0 }, { P_FLOOR, 1200 }, { P_SWEEP, 0.25f }, { P_SSM, 6 })
+PRESET (pSsmDrive, { P_CHANNEL, 0 }, { P_SSM, 12 }, { P_FLOOR, 2000 })
+PRESET (pSsmPunch, { P_CHANNEL, 0 }, { P_SWEEP, 0.03f }, { P_FLOOR, 300 }, { P_SSM, 6 })
+PRESET (pSsmAnalog, { P_SSMPATH, 1 }, { P_SSM, 9 }, { P_ANALOG, 140 })
+PRESET (pSsmOut, { P_CHANNEL, 0 }, { P_DRIVE, 9 }, { P_SSM, 6 })
+PRESET (pMpc, { P_SRATE, 40000 }, { P_CHANNEL, 3 }, { P_AAF, 18000 })
+PRESET (pMpcBus, { P_SRATE, 40000 }, { P_CHANNEL, 3 }, { P_AAF, 18000 }, { P_DRIVE, 6 })
+PRESET (pMpcSample, { P_SRATE, 40000 }, { P_AAF, 18000 }, { P_PITCH, -2 })
+PRESET (pMpcVinyl, { P_SRATE, 40000 }, { P_AAF, 18000 }, { P_HISS, 6 }, { P_HUM, -6 }, { P_PITCH, -3 })
+PRESET (pMpcBass, { P_SRATE, 40000 }, { P_AAF, 18000 }, { P_CHANNEL, 1 }, { P_DRIVE, 4 })
+PRESET (pLofiHiss, { P_HISS, 15 }, { P_NCOLOR, -50 }, { P_ANAN, 6 })
+PRESET (pLofiDust, { P_HISS, 9 }, { P_GROUND, -6 }, { P_PITCH, -5 }, { P_CHANNEL, 1 })
+PRESET (pLofiDigital, { P_BITS, 8 }, { P_DIGN, 12 }, { P_SRATE, 16000 })
+PRESET (pLofiCrunch, { P_BITS, 8 }, { P_SRATE, 11025 }, { P_AAF, 22000 }, { P_DRIVE, 6 })
+PRESET (pLofiMachine, { P_HUM, 0 }, { P_GROUND, 0 }, { P_HISS, 6 }, { P_VARIATION, 80 }, { P_PITCH, -4 })
+PRESET (pClean12, { P_CHANNEL, 3 }, { P_ANALOG, 0 }, { P_HISS, -60 }, { P_ANAN, -60 })
+PRESET (pAnalogOnly, { P_DIGITALON, 0 }, { P_DRIVE, 9 })
+PRESET (pDigitalOnly, { P_ANALOGON, 0 })
+PRESET (pHot, { P_INPUT, 9 }, { P_OUTPUT, -6 })
+PRESET (pParallel, { P_PITCH, -7 }, { P_MIX, 50 })
+PRESET (pTom, { P_CHANNEL, 0 }, { P_SWEEP, 0.03f }, { P_FLOOR, 300 })
+PRESET (pDusty, { P_CHANNEL, 1 })
+PRESET (pUnit7, { P_VARIATION, 100 }, { P_UNIT, 7 })
+PRESET (pUnit12, { P_VARIATION, 70 }, { P_UNIT, 12 }, { P_HUM, -12 })
+PRESET (p4533, { P_PITCH, -5 }, { P_CHANNEL, 1 })
+PRESET (pRaw, { P_CHANNEL, 3 }, { P_RECON, 1 })
+PRESET (pIdeal, { P_RECON, 2 })
+PRESET (pRefQ, { P_QUALITY, 3 })
+const Preset kPresets[] =
 {
-    float s[4] {};
-    float G = 1.f;
-    void clear() { s[0] = s[1] = s[2] = s[3] = 0.f; }
-    void setCutoff (float hz, float fs)
+    ENTRY ("SP-1200 Hardware", pNone), ENTRY ("SP-1200 Drums", pDrums), ENTRY ("SP-1200 Kick", pKick), ENTRY ("SP-1200 Snare", pSnare),
+    ENTRY ("SP-1200 Hats", pHats), ENTRY ("SP-1200 Break", pBreak), ENTRY ("SP-1200 Vinyl", pVinyl), ENTRY ("SP-1200 Soul", pSoul),
+    ENTRY ("SP-1200 Jazz", pJazz), ENTRY ("SP-1200 Bass", pBass), ENTRY ("SP-1200 Vocal", pVocal), ENTRY ("SP-1200 Piano", pPiano),
+    ENTRY ("SP-1200 Strings", pStrings), ENTRY ("SP-1200 Chop", pChop), ENTRY ("SP-1200 Pitch Up", pPitchUp), ENTRY ("SP-1200 Pitch Down", pPitchDn),
+    ENTRY ("SP-1200 Crunch", pCrunch), ENTRY ("SP-1200 Alias", pAlias), ENTRY ("SP-1200 Hiss", pHiss), ENTRY ("SP-1200 Maximum Grit", pMax),
+    ENTRY ("SP-1200 Replay +7", pReplayUp), ENTRY ("SP-1200 Replay -8", pReplayDn), ENTRY ("SP-12 Hardware", pSp12), ENTRY ("SP-12 Drums", pSp12Drums),
+    ENTRY ("S1200 Reference", pRef), ENTRY ("S1200 Pitch Down", pRefDown), ENTRY ("SSM Warm", pSsmWarm), ENTRY ("SSM Drive", pSsmDrive),
+    ENTRY ("SSM Punch", pSsmPunch), ENTRY ("SSM Analog", pSsmAnalog), ENTRY ("SSM Output", pSsmOut), ENTRY ("MPC Style", pMpc),
+    ENTRY ("MPC Drum Bus", pMpcBus), ENTRY ("MPC Sample", pMpcSample), ENTRY ("MPC Vinyl", pMpcVinyl), ENTRY ("MPC Bass", pMpcBass),
+    ENTRY ("Lofi Hiss", pLofiHiss), ENTRY ("Lofi Dust", pLofiDust), ENTRY ("Lofi Digital", pLofiDigital), ENTRY ("Lofi Crunch", pLofiCrunch),
+    ENTRY ("Lofi Machine", pLofiMachine), ENTRY ("Clean 12-Bit", pClean12), ENTRY ("Analog Only", pAnalogOnly), ENTRY ("Digital Only", pDigitalOnly),
+    ENTRY ("Hot Input Clip", pHot), ENTRY ("Parallel Dirt", pParallel), ENTRY ("Tom Dyn Out 1", pTom), ENTRY ("Dusty Out 3-4", pDusty),
+    ENTRY ("Vintage Unit #7", pUnit7), ENTRY ("Vintage Unit #12", pUnit12), ENTRY ("45 to 33 Break", p4533), ENTRY ("Out 7-8 Raw Steps", pRaw),
+    ENTRY ("Ideal Recon (non-HW)", pIdeal), ENTRY ("Reference Quality", pRefQ),
+};
+constexpr int kNumPresets = (int) (sizeof (kPresets) / sizeof (kPresets[0]));
+
+// ---------------------------------------------------------------------------------------------- plugin
+struct Text
+{
+    char buf[2][96] {}; std::atomic<int> live { 0 };
+    const char* get() const { return buf[live.load()]; }
+    bool publish (const char* s)
     {
-        hz = clampf (hz, 20.f, 0.45f * fs);
-        const float g = std::tan (3.14159265f * hz / fs);
-        G = g / (1.f + g);
-    }
-    inline float run (float x)
-    {
-        const float b = 1.f - G;
-        const float G2 = G * G, G3 = G2 * G, G4 = G3 * G;
-        const float sigma = G3 * b * s[0] + G2 * b * s[1] + G * b * s[2] + b * s[3];
-        const float y4 = (G4 * x + sigma) / (1.f + kSsmRes * G4);
-        float u = softSat (0.8f * (x - kSsmRes * y4)) * 1.25f;          // OTA differential pair
-        for (int i = 0; i < 4; ++i)
-        {
-            const float v = (u - s[i]) * G;
-            const float y = v + s[i];
-            s[i] = flush (y + v);
-            u = y;
-        }
-        return u * (1.f + kSsmRes);                                      // passband gain back to unity
+        if (std::strcmp (get(), s) == 0) return false;
+        const int idle = 1 - live.load(); std::snprintf (buf[idle], sizeof buf[idle], "%s", s); live.store (idle); return true;
     }
 };
 
@@ -184,198 +245,149 @@ struct Plugin
 {
     AEffect fx {};
     audioMasterCallback master = nullptr;
-
-    std::atomic<float> v[P_COUNT];     // plain (un-normalised) parameter values, used by the DSP and display
-    std::atomic<float> nv[P_COUNT];    // exact normalised positions the host set. Returned unrounded, so small
-                                       // Q-Link / touch moves on stepped sliders (Tune, Output) accumulate
-                                       // instead of being rounded back to the same step
+    std::atomic<float> v[P_COUNT], nv[P_COUNT];
+    float sent[P_COUNT];
     int program = 0;
     float sr = 44100.f;
+    Model model;
+    Text info, aliasTxt; int infoGen = 0, aliasGen = 0;
+    int displayCountdown = 0;
 
-    // DSP state (audio thread only)
-    double adcPhase = 0.0, dacPhase = 0.0;
-    float held[2] {}, dac[2] {};
-    float mem[2][kPsLen] {};  int wpos = 0;  float psDelay = 0.f, psMix = 0.f;
-    float envFast = 0.f, envSlow = 0.f, decayGain = 1.f, dynEnv = 0.f;
-    int holdoff = 0;
-    Ssm2044 filt[2];
-    float sIn = 1.f, sVol = 1.f, sMix = 1.f;
-    int lastChannel = -1;
-    bool snap = true;
-
-    Plugin() { for (int i = 0; i < P_COUNT; ++i) setPlain (i, kParams[i].def); }
-
+    Plugin() { for (int i = 0; i < P_COUNT; ++i) { setPlain (i, kParams[i].def); sent[i] = 1e9f; } model.prepare (sr); }
     void setPlain (int i, float plain) { v[i].store (plain); nv[i].store (toNorm (kParams[i], plain)); }
     void setNorm (int i, float norm)
     {
+        const ParamDef& d = kParams[i];
+        if (d.kind == K_READ || d.kind == K_TEXT) return;
         norm = clampf (norm, 0.f, 1.f);
-        nv[i].store (norm); v[i].store (toPlain (kParams[i], norm));
+        nv[i].store (norm); v[i].store (toPlain (d, norm));       // exact host position kept (stepped Q-Link moves add up)
     }
-
+    float get (int i) const { return v[i].load(); }
     void applyPreset (int i)
     {
         if (i < 0 || i >= kNumPresets) return;
         program = i;
-        for (int p = 0; p < P_COUNT; ++p) if (p != P_BYPASS) setPlain (p, kParams[p].def);
+        for (int p = 0; p < P_COUNT; ++p)
+            if (p != P_BYPASS && p != P_ANALYZER && p != P_TAP && p != P_SCOPEMS && p != P_FREEZE && kParams[p].kind != K_READ && kParams[p].kind != K_TEXT)
+                setPlain (p, kParams[p].def);
         for (int k = 0; k < kPresets[i].n; ++k) setPlain (kPresets[i].ov[k].id, kPresets[i].ov[k].v);
     }
-
-    // Tell the host every parameter changed (after a preset load), then ask it to refresh its display.
     void notifyHostAll()
     {
         if (master == nullptr) return;
-        for (int i = 0; i < P_COUNT; ++i)
-            master (&fx, 0 /* audioMasterAutomate */, i, 0, nullptr, nv[i].load());
-        master (&fx, 42 /* audioMasterUpdateDisplay */, 0, 0, nullptr, 0.f);
+        for (int i = 0; i < P_COUNT; ++i) if (kParams[i].kind != K_READ && kParams[i].kind != K_TEXT) master (&fx, audioMasterAutomate, i, 0, nullptr, nv[i].load());
+        master (&fx, audioMasterUpdateDisplay, 0, 0, nullptr, 0.f);
     }
-
-    void reset()
+    Settings settings() const
     {
-        adcPhase = dacPhase = 0.0;
-        for (int c = 0; c < 2; ++c) { held[c] = dac[c] = 0.f; filt[c].clear(); std::memset (mem[c], 0, sizeof mem[c]); }
-        wpos = 0; psDelay = 0.f; psMix = 0.f;
-        envFast = envSlow = 0.f; decayGain = 1.f; dynEnv = 0.f; holdoff = 0;
-        snap = true; lastChannel = -1;
+        Settings s;
+        s.inputDb = get (P_INPUT); s.driveDb = get (P_DRIVE); s.pitch = get (P_PITCH); s.srate = get (P_SRATE); s.bits = get (P_BITS);
+        s.ssmDb = get (P_SSM); s.analog = get (P_ANALOG) * 0.01f; s.hissDb = get (P_HISS); s.outDb = get (P_OUTPUT); s.mix = get (P_MIX) * 0.01f;
+        s.channel = (int) get (P_CHANNEL); s.mode = (int) get (P_MODE); s.decay = get (P_DECAY); s.sweep = get (P_SWEEP); s.floorHz = get (P_FLOOR);
+        s.bypass = get (P_BYPASS) > 0.5f; s.machine = (int) get (P_MACHINE); s.quality = (int) get (P_QUALITY); s.hwRange = get (P_RANGE) < 0.5f;
+        s.headroomDb = get (P_HEADROOM); s.knee = get (P_KNEE) * 0.01f; s.aaHz = get (P_AAF); s.qmode = (int) get (P_QMODE); s.convDb = get (P_CONVN);
+        s.alias = (int) get (P_ALIAS); s.recon = (int) get (P_RECON); s.level8 = (int) get (P_LEVEL); s.ssmRes = get (P_SSMRES) * 0.01f;
+        s.ssmAll = get (P_SSMPATH) > 0.5f; s.analogOn = get (P_ANALOGON) > 0.5f; s.digitalOn = get (P_DIGITALON) > 0.5f; s.ssmOn = get (P_SSMON) > 0.5f;
+        s.ampsOn = get (P_AMPSON) > 0.5f; s.filtersOn = get (P_FILTON) > 0.5f; s.outHeadDb = get (P_OUTHEAD); s.settle = get (P_SETTLE) * 0.01f;
+        s.humDb = get (P_HUM); s.hum50 = get (P_MAINS) > 0.5f; s.groundDb = get (P_GROUND); s.digDb = get (P_DIGN); s.anaDb = get (P_ANAN);
+        s.color = get (P_NCOLOR) * 0.01f; s.noiseDb = get (P_NLEVEL); s.variation = get (P_VARIATION) * 0.01f; s.unit = (int) get (P_UNIT);
+        s.analyzer = get (P_ANALYZER) > 0.5f; s.tap = (int) get (P_TAP); s.scopeMs = kScopeVals[clampi ((int) get (P_SCOPEMS), 0, 4)];
+        s.freeze = get (P_FREEZE) > 0.5f;
+        return s;
     }
 
+    // ---------------------------------------------------------------- screen readouts (audio thread)
+    void send (int i, float plain, float thr)
+    {
+        setPlain (i, plain);
+        if (std::fabs (plain - sent[i]) < thr) return;
+        sent[i] = plain;
+        if (master != nullptr) master (&fx, audioMasterAutomate, i, 0, nullptr, nv[i].load());
+    }
+    void setText (Text& t, int param, int& gen, const char* s)
+    {
+        if (! t.publish (s)) return;
+        gen = (gen + 1) % 1000;
+        send (param, (float) gen, 0.5f);
+    }
+    static int specLevel (float db) { return clampi ((int) std::lround ((db + 84.f) / 84.f * 10.f), 0, 10); }
+    static int scopeLevel (float x) { return clampi ((int) std::lround (x * 5.f) + 5, 0, 10); }
+    void updateDisplay (const Settings& s)
+    {
+        char t[96];
+        const double F = s.machine == MA_SP12 ? kSp12Rate : clampd (s.srate, 4000.0, 48000.0);
+        const int semis = PitchEngine::clampSemis (s.pitch, s.hwRange);
+        const double capture = s.mode == PM_GRIT ? F * PitchEngine::ratio (semis) : F;
+        std::snprintf (t, sizeof t, "SAMPLE %.2fk  DAC %.2fk  %d-BIT  %+d ST  %s", capture / 1000, F / 1000, (int) std::lround (s.bits), semis, kModes[clampi (s.mode, 0, 2)]);
+        setText (info, P_INFO, infoGen, t);
+        if (! s.analyzer) return;
+        if (! s.freeze) model.an.captureScope (s.scopeMs);
+        for (int k = 0; k < 16; ++k)
+        {
+            send (P_SPECIN0 + k, (float) (specLevel (model.an.bandIn[2 * k]) * 11 + specLevel (model.an.bandIn[2 * k + 1])) / 127.f, 0.5f / 127.f);
+            send (P_SPECOUT0 + k, (float) (specLevel (model.an.bandOut[2 * k]) * 11 + specLevel (model.an.bandOut[2 * k + 1])) / 127.f, 0.5f / 127.f);
+        }
+        for (int k = 0; k < 32; ++k)
+            send (P_SCOPE0 + k, (float) (scopeLevel (model.an.scope[2 * k]) * 11 + scopeLevel (model.an.scope[2 * k + 1])) / 127.f, 0.5f / 127.f);
+        // energy of the output above the converter's Nyquist (images + aliases that land there), relative to the total
+        const double nyq = std::fmin (capture, F) * 0.5;
+        double above = 0, total = 0;
+        for (int b = 0; b < Analyzer::kBands; ++b)
+        {
+            const double fc = 40.0 * std::pow (500.0, (b + 0.5) / Analyzer::kBands);
+            const double p = std::pow (10.0, model.an.bandOut[b] / 10.0);
+            total += p; if (fc > nyq) above += p;
+        }
+        if (total < 1e-9) std::snprintf (t, sizeof t, "ABOVE %.1f kHz: --", nyq / 1000);
+        else std::snprintf (t, sizeof t, "ABOVE %.1f kHz: %.0f dB", nyq / 1000, 10 * std::log10 (above / total + 1e-12));
+        setText (aliasTxt, P_ALIASTXT, aliasGen, t);
+    }
+    void process (const float* inL, const float* inR, float* outL, float* outR, int n)
+    {
+        const Settings s = settings();
+        model.process (inL, inR, outL, outR, n, s);
+        displayCountdown -= n;
+        if (displayCountdown <= 0) { displayCountdown += (int) (sr / 15.f); updateDisplay (s); }
+    }
     void display (int idx, char* out, size_t max) const
     {
         const ParamDef& d = kParams[idx];
         const float p = v[idx].load();
-        if (d.kind == K_CHOICE) { std::snprintf (out, max, "%s", d.choices[(int) clampf (p, 0.f, (float) (d.n - 1))]); return; }
-        if (d.kind == K_BOOL)   { std::snprintf (out, max, "%s", p >= 0.5f ? "On" : "Off"); return; }
+        if (idx == P_INFO) { std::snprintf (out, max, "%s", info.get()); return; }
+        if (idx == P_ALIASTXT) { std::snprintf (out, max, "%s", aliasTxt.get()); return; }
+        if (d.kind == K_READ) { std::snprintf (out, max, "%.2f", (double) p); return; }
+        if (d.kind == K_CHOICE) { std::snprintf (out, max, "%s", d.choices[clampi ((int) p, 0, d.n - 1)]); return; }
+        if (d.kind == K_BOOL) { std::snprintf (out, max, "%s", p >= 0.5f ? "On" : "Off"); return; }
         switch (d.fmt)
         {
-            case F_TUNE:  if (p > -0.5f && p < 0.5f) std::snprintf (out, max, "0"); else std::snprintf (out, max, "%+.0f", (double) p); return;
-            case F_DECAY: if (p >= kDecayOff * 0.98f) std::snprintf (out, max, "Off"); else fmtSec (out, max, p); return;
-            case F_SEC:   fmtSec (out, max, p); return;
-            case F_HZ:    fmtHz (out, max, p); return;
-            default:      std::snprintf (out, max, d.numFmt, (double) p); return;
-        }
-    }
-
-    void process (const float* inL, const float* inR, float* outL, float* outR, int n)
-    {
-        if (v[P_BYPASS].load() > 0.5f)
-        {
-            if (outL != inL) std::memcpy (outL, inL, sizeof (float) * (size_t) n);
-            if (outR != inR) std::memcpy (outR, inR, sizeof (float) * (size_t) n);
-            snap = true;
-            return;
-        }
-
-        const float tuneSt  = v[P_TUNE].load();
-        const bool  pitchMode = v[P_MODE].load() > 0.5f;
-        const bool  retune  = tuneSt < -0.5f || tuneSt > 0.5f;
-        const float ratio   = std::exp2 (tuneSt / 12.f);                      // equal-tempered semitone steps
-        const double dacInc = kSpRate / sr;
-        const double adcInc = (pitchMode ? 1.0 : (double) ratio) * dacInc;    // grit: sample at 26.04 kHz x ratio
-        const float decayS  = v[P_DECAY].load();
-        const bool  decayOn = decayS < kDecayOff * 0.98f;
-        const float decayK  = std::exp (-6.9078f / (decayS * sr));             // -60 dB after the slider time
-        const int   channel = (int) v[P_CHANNEL].load();
-        const float sweepK  = std::exp (-1.f / (v[P_SWEEP].load() * sr));
-        const float floorHz = v[P_FLOOR].load();
-        const float fastK   = std::exp (-1.f / (0.004f * sr));
-        const float slowK   = std::exp (-1.f / (0.08f * sr));
-        const int   holdN   = (int) (0.04f * sr);
-
-        if (channel != lastChannel)   // filter state is kept (clearing it would click); only the cutoff changes
-        {
-            const float hz = channel == 1 ? kOut34Hz : (channel == 2 ? kOut56Hz : kDynTopHz);
-            filt[0].setCutoff (hz, sr); filt[1].G = filt[0].G;
-            lastChannel = channel;
-        }
-
-        const float tIn  = fromDb (v[P_INPUT].load());
-        const float tVol = fromDb (v[P_VOLUME].load());
-        const float tMix = v[P_MIX].load() * 0.01f;
-        if (snap) { sIn = tIn; sVol = tVol; sMix = tMix; snap = false; }
-        const float sm = 1.f - std::exp (-1.f / (0.02f * sr));
-        const float dynSpan = std::log2 (kDynTopHz / floorHz);
-
-        for (int i = 0; i < n; ++i)
-        {
-            sIn += (tIn - sIn) * sm;  sVol += (tVol - sVol) * sm;  sMix += (tMix - sMix) * sm;
-            const float x[2] { inL[i] * sIn, inR[i] * sIn };
-
-            // ---- hit detector (stereo-linked): drives the decay envelope and the Out 1-2 filter envelope ----
-            const float lev = std::fmax (std::fabs (x[0]), std::fabs (x[1]));
-            envFast = flush (lev > envFast ? lev : envFast * fastK);
-            envSlow = flush (slowK * envSlow + (1.f - slowK) * lev);
-            if (holdoff > 0) --holdoff;
-            else if (envFast > 0.01f && envFast > 2.f * envSlow) { decayGain = 1.f; dynEnv = 1.f; holdoff = holdN; }
-            decayGain = decayOn ? flush (decayGain * decayK) : 1.f;
-            dynEnv = flush (dynEnv * sweepK);
-
-            // ---- ADC: sample-and-hold, no anti-alias filter, 12-bit ----
-            adcPhase += adcInc;
-            if (! pitchMode)
-                while (adcPhase >= 1.0) { adcPhase -= 1.0; held[0] = q12 (x[0]); held[1] = q12 (x[1]); }
-            else if (adcPhase >= 1.0) adcPhase -= std::floor (adcPhase);
-
-            // ---- DAC clock (26.04 kHz): drop-sample playback, decay, 12-bit DAC, zero-order hold ----
-            dacPhase += dacInc;
-            while (dacPhase >= 1.0)
+            case F_DB: std::snprintf (out, max, "%+.1f dB", (double) p); return;
+            case F_DBOFF: if (p <= -59.9f) std::snprintf (out, max, "Off"); else std::snprintf (out, max, "%+.1f dB", (double) p); return;
+            case F_ST:
             {
-                dacPhase -= 1.0;
-                float smp[2] { held[0], held[1] };
-                if (pitchMode)
-                {
-                    mem[0][wpos] = q12 (x[0]); mem[1][wpos] = q12 (x[1]);
-                    // tune 0 plays the incoming sample directly; moving Tune off 0 (or back) fades to the
-                    // read heads over ~10 ms instead of switching, which would click
-                    psMix += ((retune ? 1.f : 0.f) - psMix) * kPsFade;
-                    if (psMix < 1e-4f) { psMix = 0.f; smp[0] = mem[0][wpos]; smp[1] = mem[1][wpos]; }
-                    else
-                    {
-                        // two drop-sample read heads (no interpolation) sweeping through memory; one plays solo
-                        // (exact pitch) and they crossfade only for kPsXfade of the time, away from each wrap
-                        psDelay += 1.f - ratio;
-                        while (psDelay < 0.f) psDelay += kPsWin;
-                        while (psDelay >= kPsWin) psDelay -= kPsWin;
-                        const float d2 = psDelay + kPsWin * 0.5f >= kPsWin ? psDelay - kPsWin * 0.5f : psDelay + kPsWin * 0.5f;
-                        const int r1 = (wpos - (int) psDelay) & kPsMask, r2 = (wpos - (int) d2) & kPsMask;
-                        const float tri = 1.f - std::fabs (2.f * psDelay / kPsWin - 1.f);
-                        const float g1 = clampf ((tri - 0.5f) / kPsXfade + 0.5f, 0.f, 1.f), g2 = 1.f - g1;
-                        for (int c = 0; c < 2; ++c)
-                            smp[c] = mem[c][wpos] + psMix * (mem[c][r1] * g1 + mem[c][r2] * g2 - mem[c][wpos]);
-                    }
-                    wpos = (wpos + 1) & kPsMask;
-                }
-                dac[0] = q12 (smp[0] * decayGain);
-                dac[1] = q12 (smp[1] * decayGain);
+                const bool hw = get (P_RANGE) < 0.5f; const int st = (int) std::lround (p), c = PitchEngine::clampSemis (p, hw);
+                if (c != st) std::snprintf (out, max, "%+d (HW %+d)", st, c); else if (st == 0) std::snprintf (out, max, "0"); else std::snprintf (out, max, "%+d", st);
+                return;
             }
-
-            // ---- output channel filter ----
-            float y[2] { dac[0], dac[1] };
-            if (channel == 0)
-            {
-                // SSM2044 VCF: opens on each hit, sweeps down to the floor trim (Z80-generated AR envelope)
-                const float hz = floorHz * std::exp2 (dynSpan * dynEnv);
-                filt[0].setCutoff (hz, sr); filt[1].G = filt[0].G;
-            }
-            // filters run on every output so switching between them is seamless; Out 7-8 takes the unfiltered DAC
-            const float fl = filt[0].run (y[0]), fr = filt[1].run (y[1]);
-            if (channel != 3) { y[0] = fl; y[1] = fr; }
-
-            // output amplifier: gentle op-amp rounding, then mix + volume slider
-            y[0] = softSat (y[0] * 0.5f) * 2.f;
-            y[1] = softSat (y[1] * 0.5f) * 2.f;
-            const float dryG = 1.f - sMix;          // exact at both ends: mix 100 = pure DAC staircase, 0 = dry
-            outL[i] = (y[0] * sMix + inL[i] * dryG) * sVol;
-            outR[i] = (y[1] * sMix + inR[i] * dryG) * sVol;
+            case F_HZ:
+                if (idx == P_AAF && p >= 21900.f) { std::snprintf (out, max, "Off"); return; }
+                if (idx == P_SRATE && std::fabs (p - 26040.f) < 60.f) { std::snprintf (out, max, "26.04 kHz HW"); return; }
+                if (p >= 1000.f) std::snprintf (out, max, "%.2f kHz", (double) p / 1000); else std::snprintf (out, max, "%.0f Hz", (double) p);
+                return;
+            case F_BITS: { const int b = (int) std::lround (p); std::snprintf (out, max, b == 12 ? "12 bit HW" : "%d bit", b); return; }
+            case F_PCT: std::snprintf (out, max, "%.0f %%", (double) p); return;
+            case F_SEC: if (p < 1.f) std::snprintf (out, max, "%.0f ms", (double) p * 1000); else std::snprintf (out, max, "%.2f s", (double) p); return;
+            case F_DECAY: if (p >= kDecayOff * 0.98f) std::snprintf (out, max, "Off"); else if (p < 1.f) std::snprintf (out, max, "%.0f ms", (double) p * 1000); else std::snprintf (out, max, "%.2f s", (double) p); return;
+            case F_LEVEL: std::snprintf (out, max, "%d / 255", (int) p); return;
+            case F_COLOR: if (std::fabs (p) < 0.5f) std::snprintf (out, max, "White"); else std::snprintf (out, max, "%s %.0f", p < 0 ? "Dark" : "Bright", (double) std::fabs (p)); return;
+            case F_UNIT: std::snprintf (out, max, "#%d", (int) p); return;
+            default: std::snprintf (out, max, "%.2f", (double) p); return;
         }
     }
 };
 
-// ---- VST2 entry points ----
-void processReplacing (AEffect* e, float** in, float** out, int32_t n)
-{
-    static_cast<Plugin*> (e->object)->process (in[0], in[1], out[0], out[1], n);
-}
-
-void processAccumulating (AEffect* e, float** in, float** out, int32_t n)   // legacy VST2 process()
+// ---------------------------------------------------------------------------------------------- VST2 entry points
+void processReplacing (AEffect* e, float** in, float** out, int32_t n) { static_cast<Plugin*> (e->object)->process (in[0], in[1], out[0], out[1], n); }
+void processAccumulating (AEffect* e, float** in, float** out, int32_t n)
 {
     float tl[256], tr[256];
     Plugin* p = static_cast<Plugin*> (e->object);
@@ -386,58 +398,43 @@ void processAccumulating (AEffect* e, float** in, float** out, int32_t n)   // l
         for (int32_t i = 0; i < m; ++i) { out[0][pos + i] += tl[i]; out[1][pos + i] += tr[i]; }
     }
 }
-
-void setParameter (AEffect* e, int32_t i, float norm)
-{
-    if (i < 0 || i >= P_COUNT) return;
-    static_cast<Plugin*> (e->object)->setNorm (i, norm);
-}
-
-float getParameter (AEffect* e, int32_t i)
-{
-    if (i < 0 || i >= P_COUNT) return 0.f;
-    return static_cast<Plugin*> (e->object)->nv[i].load();
-}
-
+void setParameter (AEffect* e, int32_t i, float norm) { if (i >= 0 && i < P_COUNT) static_cast<Plugin*> (e->object)->setNorm (i, norm); }
+float getParameter (AEffect* e, int32_t i) { return (i >= 0 && i < P_COUNT) ? static_cast<Plugin*> (e->object)->nv[i].load() : 0.f; }
 intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* ptr, float opt)
 {
     Plugin* p = static_cast<Plugin*> (e->object);
     switch (op)
     {
-        case effClose:            p->~Plugin(); std::free (p); return 0;      // AEffect is embedded in Plugin
+        case effClose:            p->~Plugin(); std::free (p); return 0;
         case effSetProgram:       p->applyPreset ((int) val); p->notifyHostAll(); return 0;
         case effGetProgram:       return p->program;
         case effGetProgramName:   copyStr (ptr, kPresets[p->program].name); return 0;
-        case effGetProgramNameIndexed:
-            if (idx < 0 || idx >= kNumPresets) return 0;
-            copyStr (ptr, kPresets[idx].name); return 1;
+        case effGetProgramNameIndexed: if (idx < 0 || idx >= kNumPresets) return 0; copyStr (ptr, kPresets[idx].name); return 1;
         case effGetParamName:     if (idx >= 0 && idx < P_COUNT) copyStr (ptr, kParams[idx].name); return 0;
-        case effGetParamLabel:    if (idx >= 0 && idx < P_COUNT) copyStr (ptr, kParams[idx].unit); return 0;
-        case effGetParamDisplay:
-            if (idx >= 0 && idx < P_COUNT && ptr != nullptr) { char b[32]; p->display (idx, b, sizeof b); copyStr (ptr, b); }
-            return 0;
-        case effCanBeAutomated:   return (idx >= 0 && idx < P_COUNT) ? 1 : 0;
-        case effSetSampleRate:    if (opt > 1000.f) { p->sr = opt; p->reset(); } return 0;
-        case effMainsChanged:     p->reset(); return 0;
+        case effGetParamLabel:    if (idx >= 0 && idx < P_COUNT) copyStr (ptr, kParams[idx].unit, 8); return 0;
+        case effGetParamDisplay:  if (idx >= 0 && idx < P_COUNT && ptr != nullptr) { char b[96]; p->display (idx, b, sizeof b); copyStr (ptr, b, 64); } return 0;
+        case effCanBeAutomated:   return (idx >= 0 && idx < P_COUNT && kParams[idx].kind != K_READ && kParams[idx].kind != K_TEXT) ? 1 : 0;
+        case effSetSampleRate:    if (opt > 1000.f) { p->sr = opt; p->model.prepare (opt); } return 0;
+        case effMainsChanged:     if (val) p->model.prepare (p->sr); return 0;
         case effSetBypass:        p->setPlain (P_BYPASS, val ? 1.f : 0.f); return 1;
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "SP1200", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1020;
+        case effGetVendorVersion: return 2000;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
-        case effSetProcessPrecision: return val == 0 ? 1 : 0;      // 32-bit float only
-        case effCanDo:
-            if (ptr != nullptr && std::strcmp ((const char*) ptr, "bypass") == 0) return 1;
-            return 0;
+        case effSetProcessPrecision: return val == 0 ? 1 : 0;
+        case effCanDo:            if (ptr != nullptr && std::strcmp ((const char*) ptr, "bypass") == 0) return 1; return 0;
         default: return 0;
     }
 }
+void initOnce() { static bool done = false; if (! done) { initParams(); done = true; } }
 } // namespace
 
 SP_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
 {
+    initOnce();
     void* mem = std::calloc (1, sizeof (Plugin));   // no operator new: keeps libstdc++ out of the link
     if (mem == nullptr) return nullptr;
     Plugin* p = new (mem) Plugin();
@@ -455,9 +452,15 @@ SP_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.numInputs = 2;
     fx.numOutputs = 2;
     fx.flags = effFlagsCanReplacing;
+    fx.initialDelay = kLatency;
     fx.ioRatio = 1.f;
     fx.object = p;
-    fx.uniqueID = ('S' << 24) | ('P' << 16) | ('1' << 8) | '2';   // 'SP12' = 0x53503132
-    fx.version = 1020;
+    fx.uniqueID = ('S' << 24) | ('P' << 16) | ('1' << 8) | '2';   // 'SP12' = 0x53503132 (same plugin, upgraded in place)
+    fx.version = 2000;
     return &fx;
 }
+// stable parameter keys for tools/make_skin.py
+SP_EXPORT const char* SP_ParamKey (int i) { initOnce(); return (i >= 0 && i < P_COUNT) ? kParams[i].key : ""; }
+SP_EXPORT int SP_ParamCount() { return P_COUNT; }
+SP_EXPORT const char* SP_PresetName (int i) { return (i >= 0 && i < kNumPresets) ? kPresets[i].name : ""; }
+SP_EXPORT int SP_PresetCount() { return kNumPresets; }

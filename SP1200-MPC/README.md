@@ -1,33 +1,36 @@
-# SP1200 (MPC)
+# SP1200 2.0 (MPC)
 
-SP-1200 character as a **native MPC OS VST2 insert effect** for the MPC X (and the other Gen1 devices), built from
-the GlueBus components: the same dependency-free VST2 core, parameter/preset model, installer, packaging and skin
-pipeline.
+A circuit-informed **SP-1200 hardware model** as a native MPC OS VST2 insert effect for the MPC X and other Gen1
+devices, built on the GlueBus VST2 core, installer and skin pipeline. Same plugin ID as 1.x, so it upgrades in place.
 
-- **Circuit-based signal path:** input > 12-bit ADC (hard clip, no anti-alias filter) > drop-sample playback on the
-  **26.04 kHz** DAC clock > decay > 12-bit DAC (zero-order hold) > output filter (**Out 1-2** SSM2044 dynamic VCF,
-  **Out 3-4** ~7.5 kHz, **Out 5-6** ~10 kHz, **Out 7-8** unfiltered) > output amp. Details and sources: `docs/CIRCUIT.md`
-- **Tuning:** -12 .. +7 semitones, equal-tempered, in two modes: *45>33 Grit* (the tune changes the sample rate and the
-  pitch stays) and *Pitch* (a drop-sample pitch shift, within ~1 cent in the tests)
-- **Sliders, no pads:** one screen page drawn as the SP-1200's slider bank. Eight vertical faders (Input, Tune, Decay,
-  Output, Dyn Sweep, Dyn Floor, Mix, Volume) sit on Q-Links 1-8, with Tune Mode and Bypass on 9-10. See `docs/skin-preview.png`
-- 13 factory presets as VST programs (Init Out 5-6, Clean Out 7-8, Dusty Out 3-4, Tom Dyn Out 1, Kick Dyn Thump,
-  45 to 33 Break, Pitch Down -4, Chop Decay, Tight Hat Decay, Crunch -12, Up +7 Pitch, Hot Input Clip, Parallel Dirt)
-- Links only libc + libm (highest glibc symbol 2.27). Installs to `/sdcard/vst/sp1200.so`, skin to
-  `/sdcard/Synths/GlueBus - VST - SP1200/`
+The DSP is the SP-1200 signal path in hardware order, each stage its own module (`src/sp/`):
+
+    AnalogInput > ADC (SAR on Quantizer12Bit's ladder) > SamplerMemory > PlaybackEngine / PitchEngine
+    > DAC (12-bit x 8-bit level, S/H) > ReconstructionFilter (ZOH, output filters) / SSMModel (Out 1-2)
+    > AnalogOutput, with NoiseModel, HardwareVariation, AliasingEngine and Analyzer
+
+- 26.04 kHz clock (27.5 kHz for SP-12), real 12-bit SAR conversion, drop-sample pitch (HW -8..+7 st), ZOH images kept
+  without fold-back, 8-bit level DAC decay, SSM2044 dynamic filter on Out 1-2, ~7.5 / ~10 kHz filters on Out 3-4 / 5-6.
+- Noise at each stage, calibrated to the published 90 dB (A) S/N; HISS, HUM, GROUND, DIGITAL / ANALOG / CONVERTER
+  NOISE, NOISE COLOR, NOISE LEVEL.
+- Component variation with repeatable "units"; ECO / NORMAL / ACCURATE / REFERENCE quality.
+- Four skin pages: **SP-1200** (10 sliders + output, mode, machine, decay, quality), **CIRCUIT** (every stage's controls
+  and bypasses), **NOISE**, **ANALYZER** (input / output spectrum, 4-tap scope, alias meter). See `docs/skin-preview-*.png`.
+- 54 factory presets.
+
+Evidence, modelled vs assumed values for every stage: **`docs/CIRCUIT.md`**. Measured behaviour: **`docs/MEASUREMENTS.md`**.
+This is a model built from published specifications, parts lists and owners' measurements, not an exact reproduction,
+and no third-party code, algorithms or presets were used.
 
 ## Build + install
-    make test                         # native x86 build + offline VST2 host test (clock, 12-bit, tuning, filters, decay)
-    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-1.0.2-mpc-armv7.zip
-    ./scripts/deploy.sh <mpc-ip>      # tar-over-ssh, runs install.sh (stop MPC, copy, back up, register, restart)
-    python3 tools/make_skin.py docs/skin-preview.png   # regenerate the skin (needs Pillow)
-On GitHub, every push builds and publishes the zip as a release tagged `sp1200-build-N` (`.github/workflows/sp1200.yml`).
+    make test                         # stage_test (36 DSP checks, writes docs/MEASUREMENTS.md) + host_test (21 VST2 checks)
+    ./scripts/package.sh              # cross-compiles for ARM, verifies the ELF, makes dist/SP1200-2.0.0-mpc-armv7.zip
+    ./scripts/deploy.sh <mpc-ip>      # tar-over-ssh, runs install.sh
+    python3 tools/make_skin.py docs   # regenerate the skin and previews (needs Pillow and a native build)
 Device install steps: `mpc/INSTALL.md`.
 
-## Not covered / unverified
-- Tested on an MPC X: the plugin loads, presets and parameters work. MPC slices filmstrips into square frames
-  (frame height = image width), so the fader strip uses square 330 x 330 frames with the fader centred, the same way
-  other native MPC plugins build sliders. 1.0.0/1.0.1 used tall 76 x 330 frames, and their caps jumped off screen.
-- The Q-Link map assigns only Q-Links 1-10. How MPC treats the unassigned 11-16 is untested.
-- The filter cutoffs and the Out 1-2 envelope come from owners' measurements of the hardware, not from a schematic
-  simulation. Real units vary, and so do their trimmers.
+## Notes
+- Projects saved with 1.x reopen with 2.0, but the parameters changed: check the SP1200 settings in old projects.
+- Latency is 40 samples (reported to the host). CPU on x86 roughly 1.5 to 7 % of one core depending on QUALITY; on
+  the MPC X use ECO or NORMAL if you run several instances.
+- Untested on the device yet: CPU load on the MPC X's ARM, and the analyzer's refresh rate there.

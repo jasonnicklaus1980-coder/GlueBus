@@ -3,11 +3,11 @@
 #   make docker   -> same, built in a linux/arm/v7 container (no cross toolchain needed)
 #   make test     -> builds a native x86 copy and runs test/host_test (no MPC needed)
 CROSS   ?= arm-linux-gnueabihf-
-COMMON  := -O2 -Wall -Wextra -std=c++14 -fno-exceptions -fno-rtti -fvisibility=hidden -fPIC -fno-stack-protector
+COMMON  := -O2 -Wall -Wextra -std=c++17 -fno-exceptions -fno-rtti -fvisibility=hidden -fPIC -fno-stack-protector -fno-threadsafe-statics -Wno-format-truncation
 ARMFLAGS:= -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -mthumb
 # Linked with the C driver (gcc, not g++): no libstdc++/libgcc_s, only libc + libm.
 LDFLAGS := -shared -static-libgcc -Wl,-z,relro,-z,now -Wl,--no-undefined
-SRC     := src/sp1200.cpp src/vst2.h
+SRC     := src/sp1200.cpp src/vst2.h $(wildcard src/sp/*.h)
 
 all: arm
 
@@ -30,11 +30,19 @@ build/native/sp1200.so: $(SRC)
 
 build/native/host_test: test/host_test.cpp src/vst2.h
 	@mkdir -p build/native
-	g++ -O1 -Wall -std=c++14 -Isrc test/host_test.cpp -o $@ -ldl -lm
+	g++ -O1 -Wall -std=c++17 -Isrc test/host_test.cpp -o $@ -ldl -lm
 
-test: native build/native/host_test
+build/native/stage_test: test/stage_test.cpp $(SRC)
+	@mkdir -p build/native
+	g++ -O2 -Wall -std=c++17 -Isrc test/stage_test.cpp -o $@ -lm
+
+stagetest: build/native/stage_test
+	./build/native/stage_test
+
+test: native build/native/host_test build/native/stage_test
+	./build/native/stage_test
 	./build/native/host_test build/native/sp1200.so
 
 clean:
 	rm -rf build dist
-.PHONY: all arm docker native test clean
+.PHONY: all arm docker native test stagetest clean

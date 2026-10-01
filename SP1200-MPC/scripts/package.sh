@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Build sp1200.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip
-# in the same layout as the JV-880 package:  SP1200-1.0.2/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/sp1200.so,...}
+# in the same layout as the JV-880 package:  SP1200-2.0.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,payload/vst/sp1200.so,...}
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.0.2; NAME="SP1200-$VERSION"; SO=build/arm/sp1200.so
+VERSION=2.0.0; NAME="SP1200-$VERSION"; SO=build/arm/sp1200.so
 
 if command -v arm-linux-gnueabihf-g++ >/dev/null; then make arm
 elif command -v docker >/dev/null; then make docker

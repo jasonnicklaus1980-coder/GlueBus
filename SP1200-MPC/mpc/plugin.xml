@@ -1,1 +1,1 @@
-<PLUGIN name="SP1200" descriptiveName="SP1200" format="VST" category="Effect" manufacturer="GlueBus" version="1.0.2" file="/sdcard/vst/sp1200.so" uid="53503132" isInstrument="0" fileTime="0" infoUpdateTime="0" numInputs="2" numOutputs="2" isShell="0"/>
+<PLUGIN name="SP1200" descriptiveName="SP1200" format="VST" category="Effect" manufacturer="GlueBus" version="2.0.0" file="/sdcard/vst/sp1200.so" uid="53503132" isInstrument="0" fileTime="0" infoUpdateTime="0" numInputs="2" numOutputs="2" isShell="0"/>

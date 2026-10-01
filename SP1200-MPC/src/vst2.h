@@ -37,6 +37,7 @@ enum { kEffectMagic = 0x56737450 };      // 'VstP'
 enum { effFlagsHasEditor = 1 << 0, effFlagsCanReplacing = 1 << 4, effFlagsProgramChunks = 1 << 5,
        effFlagsIsSynth = 1 << 8 };
 enum { kPlugCategEffect = 1 };
+enum { audioMasterAutomate = 0, audioMasterUpdateDisplay = 42 };
 
 enum
 {

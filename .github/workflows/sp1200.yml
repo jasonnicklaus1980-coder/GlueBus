@@ -43,10 +43,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: sp1200-build-${{ github.run_number }}
-          name: SP1200 1.0.2 (build ${{ github.run_number }})
+          name: SP1200 2.0.0 (build ${{ github.run_number }})
           make_latest: false    # "latest" stays the GlueBus release
-          files: SP1200-MPC/dist/SP1200-1.0.2-mpc-armv7.zip
+          files: SP1200-MPC/dist/SP1200-2.0.0-mpc-armv7.zip
           body: |
             Install from Terminus (SSH into the MPC as root):
-            1. Upload SP1200-1.0.2-mpc-armv7.zip to /tmp
-            2. cd /tmp && unzip -o SP1200-1.0.2-mpc-armv7.zip && sh SP1200-1.0.2/install.sh
+            1. Upload SP1200-2.0.0-mpc-armv7.zip to /tmp
+            2. cd /tmp && unzip -o SP1200-2.0.0-mpc-armv7.zip && sh SP1200-2.0.0/install.sh
