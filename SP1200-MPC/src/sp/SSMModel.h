@@ -26,15 +26,18 @@ namespace sp
 {
 struct SSMModel
 {
+    static constexpr int kCtl = 4;      // the cutoff is recomputed every 4 host samples and ramped in between
     double fs = 44100.0;                // host rate
     int os = 1;
     float s[4] {};                      // cell states (normalised)
     float y4 = 0.f;
-    float g = 0.1f;                     // per-cell coefficient at the oversampled rate
+    float g = 0.1f, gStep = 0.f;        // per-cell coefficient at the oversampled rate, and its per-sample ramp
+    int ctl = 0;
+    float lastCv = -100.f;              // control value of the last coefficient update
     float level = 0.193f;               // signal scale into the cells: x * level = (volts / 2 Vt)
     float offset = 0.f;                 // input offset in the same units
     float res = 0.f;                    // feedback 0..~3.5
-    float amount = 1.f;                 // ANALOG: 0 = linear cells
+    float amount = 1.f, invAmount = 1.f; // ANALOG: 0 = linear cells
     float feed = 0.f, cvLp = 0.f, cvLpA = 0.f;
     Halfband up1, up2, dn1, dn2;
     void prepare (double rate, int oversample)
@@ -42,39 +45,99 @@ struct SSMModel
         fs = rate; os = oversample; reset();
         cvLpA = (float) std::exp (-2.0 * kPi * 30.0 / fs);
     }
-    void reset() { s[0] = s[1] = s[2] = s[3] = 0.f; y4 = 0.f; up1.reset(); up2.reset(); dn1.reset(); dn2.reset(); cvLp = -1.f; }
-    void setCutoff (float hz)
+    void reset() { s[0] = s[1] = s[2] = s[3] = 0.f; y4 = 0.f; up1.reset(); up2.reset(); dn1.reset(); dn2.reset(); cvLp = -1.f; ctl = 0; gStep = 0.f; lastCv = -100.f; }
+    void setAmount (float a) { amount = a; invAmount = a < 1e-3f ? 1.f : 1.f / a; }
+    float coef (float oct) const
     {
-        const double f = clampd (hz, 20.0, fs * os * 0.45);
-        const double w = std::tan (kPi * f / (fs * os));
-        g = (float) w;
+        const double f = clampd (std::exp2 ((double) oct), 20.0, fs * os * 0.45);
+        return (float) std::tan (kPi * f / (fs * os));
     }
-    inline float T (float v) const { return amount < 1e-3f ? v : tanhA (v * amount) / amount; }
-    inline float Td (float v) const { return amount < 1e-3f ? 1.f : tanhAd (v * amount); }
+    void setCutoff (float hz) { g = coef (lastCv = std::log2 (std::fmax (hz, 20.f))); gStep = 0.f; }
+    // tanh-cell transfer T(v) and its slope T'(v) with one division (tanhA / tanhAd scaled by ANALOG)
+    inline void TT (float v, float& t, float& d) const
+    {
+        if (amount < 1e-3f) { t = v; d = 1.f; return; }
+        const float x = v * amount;
+        if (x >= 3.f || x <= -3.f) { t = (x > 0.f ? 1.f : -1.f) * invAmount; d = 0.f; return; }
+        const float x2 = x * x, inv = 1.f / (27.f + 9.f * x2);
+        t = x * (27.f + x2) * inv * invAmount;
+        d = (729.f - 162.f * x2 + 9.f * x2 * x2) * inv * inv;
+    }
+    inline float T (float v) const
+    {
+        if (amount < 1e-3f) return v;
+        const float x = v * amount;
+        if (x >= 3.f || x <= -3.f) return (x > 0.f ? 1.f : -1.f) * invAmount;
+        const float x2 = x * x;
+        return x * (27.f + x2) / (27.f + 9.f * x2) * invAmount;
+    }
     float run1 (float x)
     {
         // input with fixed feedback from the last output (low resonance; one sample of delay is negligible here)
         float u = (x * level + offset) - res * y4;
+        if (amount < 1e-3f)                                                      // ANALOG 0: linear cells
+        {
+            const float k = g / (1.f + g);
+            for (int i = 0; i < 4; ++i) { const float y = s[i] + k * (u - s[i]); s[i] = flush (2.f * y - s[i]); u = y; }
+            y4 = u; return u / level;
+        }
         for (int i = 0; i < 4; ++i)
         {
-            // cell: y = s + g (T(u) - T(y)), T(y) linearised at s -> y = s + g (T(u) - T(s)) / (1 + g T'(s))
-            const float tu = T (u), ts = T (s[i]), d = Td (s[i]);
-            const float y = s[i] + g * (tu - ts) / (1.f + g * d);
+            // cell: y = s + g (T(u) - T(y)), T(y) linearised at s -> y = s + g (T(u) - T(s)) / (1 + g T'(s)).
+            // With T = tanhA (x A) / A, x = v A, a = 27 + 9 xs^2, b = 27 + 9 xu^2 the three fractions share one division:
+            //   y = s + g (nu a - ns b) a / (A b (a^2 + g nd)),  nu = xu (27 + xu^2), ns = xs (27 + xs^2),
+            //   nd = 729 - 162 xs^2 + 9 xs^4  (T'(s) = nd / a^2)
+            const float xs = s[i] * amount, xu = u * amount;
+            float y;
+            if (std::fabs (xs) < 3.f && std::fabs (xu) < 3.f)
+            {
+                const float s2 = xs * xs, u2 = xu * xu;
+                const float A = 27.f + 9.f * s2, B = 27.f + 9.f * u2;
+                const float nu = xu * (27.f + u2), ns = xs * (27.f + s2), nd = 729.f - 162.f * s2 + 9.f * s2 * s2;
+                y = s[i] + g * (nu * A - ns * B) * A / (amount * B * (A * A + g * nd));
+            }
+            else
+            {
+                float ts, d; TT (s[i], ts, d);                                    // a cell in hard saturation
+                y = s[i] + g * (T (u) - ts) / (1.f + g * d);
+            }
             s[i] = flush (2.f * y - s[i]);
             u = y;
         }
         y4 = u;
         return u / level;
     }
-    // x: input sample; cutoffHz: control (may change every sample); returns the output
-    float process (float x, float cutoffHz)
+    // Like process(), but leaves the result at the oversampled rate (os samples in o[]), for a following stage
+    // that runs oversampled too (AnalogOutput::processOS): saves a down / up conversion pair.
+    void processOS (float x, float cvOct, float* o)
     {
-        // control feedthrough: fast CV movements (log cutoff) leak to the output
-        const float cv = std::log2 (std::fmax (cutoffHz, 20.f));
-        if (cvLp < 0.f) cvLp = cv;
-        cvLp = cv + (cvLp - cv) * cvLpA;
-        const float leak = feed * (cv - cvLp);
-        setCutoff (cutoffHz);
+        const float leak = control (cvOct), mk = 1.f + res * 0.25f;
+        if (os == 1) { o[0] = run1 (x) * mk + leak; return; }
+        float a, b;
+        up1.up (x, a, b);
+        if (os == 2) { o[0] = run1 (a) * mk + leak; o[1] = run1 (b) * mk + leak; return; }
+        float a0, a1, b0, b1;
+        up2.up (a, a0, a1); up2.up (b, b0, b1);
+        o[0] = run1 (a0) * mk + leak; o[1] = run1 (a1) * mk + leak; o[2] = run1 (b0) * mk + leak; o[3] = run1 (b1) * mk + leak;
+    }
+    // cutoff control for one host sample; returns the control-feedthrough leak
+    float control (float cvOct)
+    {
+        if (cvLp < 0.f) { cvLp = cvOct; g = coef (cvOct); lastCv = cvOct; }
+        cvLp = cvOct + (cvLp - cvOct) * cvLpA;
+        if (ctl == 0)                                                            // exact at the update points, linear between
+        {
+            if (std::fabs (cvOct - lastCv) > 1e-4f) { gStep = (coef (cvOct) - g) * (1.f / kCtl); lastCv = cvOct; }
+            else gStep = 0.f;                                                    // settled (envelope at its floor): no exp2 / tan
+        }
+        ctl = (ctl + 1) & (kCtl - 1);
+        g += gStep;
+        return feed * (cvOct - cvLp);
+    }
+    // x: input sample; cvOct: cutoff as log2(Hz) (may change every sample); returns the output
+    float process (float x, float cvOct)
+    {
+        const float leak = control (cvOct);                                    // fast CV movements leak to the output
         float y;
         if (os == 1) y = run1 (x);
         else if (os == 2) { float a, b; up1.up (x, a, b); const float ya = run1 (a); y = dn1.down (ya, run1 (b)); }

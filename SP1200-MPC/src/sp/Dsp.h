@@ -146,9 +146,10 @@ struct Halfband
         pu = pu == 0 ? N - 1 : pu - 1;
         zu[pu] = zu[pu + N] = x;
         const float* z = zu + pu;                                                // z[j] = x[n - j]
-        float a = 0, b = 0;
-        for (int k = 0; k < N; k += 2) a += h[k] * z[k / 2];
-        b = h[C] * z[C / 2];                                                     // odd taps: only the centre is non-zero
+        // even taps h[2j], j = 0..11, are symmetric (h[2j] = h[22 - 2j]): fold z[j] with z[11 - j]
+        float a = 0;
+        for (int j = 0; j < 6; ++j) a += h[2 * j] * (z[j] + z[11 - j]);
+        const float b = h[C] * z[C / 2];                                         // odd taps: only the centre is non-zero
         y0 = 2.f * a; y1 = 2.f * b;
     }
     // two input samples -> one output sample
@@ -159,7 +160,7 @@ struct Halfband
         pd = pd == 0 ? N - 1 : pd - 1; zd[pd] = zd[pd + N] = x1;
         const float* z = zd + pd;                                                // z[0] = newest
         float y = h[C] * z[C];
-        for (int k = 0; k < N; k += 2) y += h[k] * z[k];
+        for (int k = 0; k < C; k += 2) y += h[k] * (z[k] + z[N - 1 - k]);      // symmetric taps folded
         return y;
     }
 };

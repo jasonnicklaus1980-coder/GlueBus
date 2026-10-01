@@ -56,7 +56,7 @@ A held DC level decaying (300 ms) falls in **2** discrete steps between 250 and 
 |---|---|---|---|---|
 | Out 3-4 | -0.0 dB | -3.0 dB | -13.3 dB | -23.1 dB |
 | Out 5-6 | -0.0 dB | -0.2 dB | -3.0 dB | -10.4 dB |
-| Out 1-2 | SSM2044 envelope: a 4 kHz burst is 35.6 dB louder in its first ms than after the filter closes | | | |
+| Out 1-2 | SSM2044 envelope: a 4 kHz burst is 35.3 dB louder in its first ms than after the filter closes | | | |
 
 ## 8. Distortion (1 kHz, THD = 2nd-5th harmonics)
 
@@ -73,7 +73,7 @@ A held DC level decaying (300 ms) falls in **2** discrete steps between 250 and 
 ## 9. Bypass checks
 
 - Analog stages off: the 18 kHz -> 8.04 kHz sampling alias stays at **-1.6 dB**.
-- Digital stages off: no sampling alias (**-225.5 dB**), but the analog stages still colour the signal (THD **1.63 %** with DRIVE +18 dB).
+- Digital stages off: no sampling alias (**-225.1 dB**), but the analog stages still colour the signal (THD **1.63 %** with DRIVE +18 dB).
 
 ## 10. Noise (idle, nothing playing)
 
@@ -94,8 +94,8 @@ Latency: **40 samples** (reported to the host; the dry path is delayed to match)
 
 | quality | CPU (x86, one core) |
 |---|---|
-| ECO | 2.56 % |
-| NORMAL | 2.96 % |
-| ACCURATE | 4.45 % |
-| REFERENCE | 6.77 % |
+| ECO | 2.35 % |
+| NORMAL | 2.80 % |
+| ACCURATE | 3.79 % |
+| REFERENCE | 6.02 % |
 

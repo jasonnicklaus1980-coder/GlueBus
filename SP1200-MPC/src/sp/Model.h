@@ -124,7 +124,7 @@ struct Model
             sm.level = 0.193f * dbToGain (s.ssmDb);                              // +-10 mV at full scale, see SSMModel.h
             sm.offset = t.ssmOffset * 0.193f;
             sm.res = 3.6f * clampf (s.ssmRes, 0.f, 1.f);
-            sm.amount = s.analog;
+            sm.setAmount (s.analog);
             sm.feed = 0.0056f * t.ssmFeed;                                       // -45 dBFS per octave of CV movement
         }
         const float aa = s.aaHz;
@@ -155,6 +155,8 @@ struct Model
         const float fastK = (float) std::exp (-1.0 / (0.004 * fs)), slowK = (float) std::exp (-1.0 / (0.08 * fs));
         const int holdN = (int) (0.04 * fs);
         const float dynTop = 12000.f, dynSpan = std::log2 (dynTop / s.floorHz);
+        float ssmFloorOct[2], ssmAllOct[2];                                      // SSM cutoffs in octaves (log2 Hz)
+        for (int c = 0; c < 2; ++c) { ssmFloorOct[c] = std::log2 (s.floorHz * var.v[c].ssmCut); ssmAllOct[c] = std::log2 (16000.f * var.v[c].ssmCut); }
         const float nl = dbToGain (s.noiseDb) * (s.noiseDb <= -59.9f ? 0.f : 1.f);
         auto lvl = [&] (float db, float base) { return db <= -59.9f ? 0.f : dbToGain (db + base) * nl; };
         NoiseLevels L;
@@ -254,20 +256,22 @@ struct Model
                 {
                     const VoiceTolerances& t = var.v[c];
                     const bool filt = s.filtersOn;
+                    // the SSM and the output amp share one oversampled section (no down / up between them)
+                    float os[4]; bool ssmRan = false;
                     if (s.channel == 0)
                     {
                         if (s.ssmOn)
                         {
-                            const float hz = s.floorHz * t.ssmCut * std::exp2 (dynSpan * dynEnv);
-                            v = ssm[c].process (v + (L.ssm > 0.f ? noise[c].white() * L.ssm * t.noise : 0.f), filt ? hz : 20000.f);
+                            const float oct = filt ? ssmFloorOct[c] + dynSpan * dynEnv : 14.2877f;          // log2 (20 kHz) with filters off
+                            ssm[c].processOS (v + (L.ssm > 0.f ? noise[c].white() * L.ssm * t.noise : 0.f), oct, os); ssmRan = true;
                         }
                     }
                     else
                     {
                         if (s.channel != 3 && filt) v = ofilt[c].tick (v + (L.filters > 0.f ? noise[c].white() * L.filters * t.noise : 0.f));
-                        if (s.ssmAll && s.ssmOn) v = ssm[c].process (v, 16000.f * t.ssmCut);    // non-hardware option
+                        if (s.ssmAll && s.ssmOn) { ssm[c].processOS (v, ssmAllOct[c], os); ssmRan = true; }    // non-hardware option
                     }
-                    v = aout[c].process (v, drive);
+                    v = ssmRan ? aout[c].processOS (os, drive) : aout[c].process (v, drive);
                     if (L.hiss > 0.f) v += noise[c].hiss (L.color) * L.hiss * t.noise;
                     v += hum[c] * L.hum + gnd[c] * L.ground;
                 }

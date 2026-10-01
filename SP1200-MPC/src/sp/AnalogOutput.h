@@ -41,6 +41,18 @@ struct AnalogOutput
         u += asym * u * u;
         return rail (u, knee * 0.5f) / g;
     }
+    // input already oversampled (os samples, from SSMModel::processOS): stage at that rate, then down to the host rate
+    float processOS (const float* in, float drive)
+    {
+        const bool on = ampOn && amount >= 1e-3f;
+        float v[4];
+        for (int i = 0; i < os; ++i) v[i] = on ? stage (in[i] * drive) / drive : in[i];
+        float y;
+        if (os == 1) y = v[0];
+        else if (os == 2) y = dn1.down (v[0], v[1]);
+        else y = dn1.down (dn2.down (v[0], v[1]), dn2.down (v[2], v[3]));
+        return coupling.hp (y);
+    }
     float process (float x, float drive)
     {
         float y = x;
