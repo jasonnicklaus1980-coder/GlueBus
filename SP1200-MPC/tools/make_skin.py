@@ -80,10 +80,18 @@ def fader_frame(t):
     d.rectangle([cx - cw + 3 * s, cy - 1.5 * s, cx + cw - 3 * s, cy + 1.5 * s], fill=rgba(PRINT))   # white index line
     return im.resize((FW, FH), Image.LANCZOS)
 
-def fader_strip():
-    strip = Image.new("RGBA", (FS, FS * FRAMES), (0, 0, 0, 0))
-    for f in range(FRAMES): strip.paste(fader_frame(f / (FRAMES - 1)), ((FS - FW) // 2, f * FS + (FS - FH) // 2))
-    return strip
+# The MPC can't load very tall images (the GPU's texture limit): a 128-frame strip of 250 x 250 frames (32 000 px)
+# lost its upper frames on the device, so the cap vanished as the slider went up. Each slider is drawn as two halves
+# (top / bottom, 125 x 125 square frames), each strip 64 frames = 8000 px, under the limit.
+FADER_FRAMES = 64
+def fader_halves():
+    HALF = FH // 2
+    top = Image.new("RGBA", (HALF, HALF * FADER_FRAMES), (0, 0, 0, 0)); bot = top.copy()
+    x0 = (HALF - FW) // 2
+    for f in range(FADER_FRAMES):
+        fr = fader_frame(f / (FADER_FRAMES - 1))
+        top.paste(fr.crop((0, 0, FW, HALF)), (x0, f * HALF)); bot.paste(fr.crop((0, HALF, FW, 2 * HALF)), (x0, f * HALF))
+    return top, bot
 
 def key_image(on, w, h, label=None, red=False):
     """A square SP-1200 key: an LED above a cream (or red) key, the label printed under it."""
@@ -147,6 +155,7 @@ FW, FH = 76, 250
 FS = FH
 FY = 24
 TRAVEL0, TRAVEL1 = 24, FH - 24
+HALF = FH // 2
 TABS = ["PERFORM", "SETUP"]
 SLIDERS = [("input", "INPUT"), ("pitch", "PITCH"), ("decay", "DECAY"), ("drive", "DRIVE"),
            ("ssm", "SSM"), ("hiss", "HISS"), ("output", "OUTPUT"), ("mix", "MIX")]
@@ -207,10 +216,10 @@ BG_ITEMS[T].append(("lcd", 806, 98, 360, 52, None))
 text(T, "Display", "info", 812, 103, 348, 42, 14)
 red_key(T, "Bypass", "bypass", 1188, 92)
 section(T, 24, 1256, 180, "Performance")
-img("sp_fader.png", fader_strip())
-defn("spSlider", definition(CTRL(), [focus((0, 0, BOXW, BOXH)),
-     comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "sp_fader.png", "numFrames": NUMFRAMES, "invert": False,
-          "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((BOXW - FS) // 2, FY, FS, FS))),
+_top, _bot = fader_halves(); img("sp_fader_top.png", _top); img("sp_fader_bot.png", _bot)
+fknob = lambda image, y: comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": image, "numFrames": FADER_FRAMES - 1,
+                              "invert": False, "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((BOXW - HALF) // 2, y, HALF, HALF)))
+defn("spSlider", definition(CTRL(), [focus((0, 0, BOXW, BOXH)), fknob("sp_fader_top.png", FY), fknob("sp_fader_bot.png", FY + HALF),
      label("Value", 14, VALUE_COL, (0, 0, BOXW, 22), case="Upper Case")]))
 for i, (key, lab) in enumerate(SLIDERS):
     place(T, lab, "spSlider", P[key], SX0 + i * SPITCH, SLIDER_Y - FY, BOXW, BOXH, "slider", key)
@@ -376,8 +385,9 @@ def preview(outdir):
             x, y, w, h = int(pl["x"]), int(pl["y"]), int(pl["w"]), int(pl["h"]); p = pl["param"]; v = vals[p]
             k = pl["kind"]
             if k == "slider":
-                strip = im_("sp_fader.png"); fr = round(v * NUMFRAMES); fx0 = (FS - FW) // 2
-                im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(x + (BOXW - FW) / 2), y + FY))
+                fr = round(v * (FADER_FRAMES - 1))
+                for k2, name in enumerate(("sp_fader_top.png", "sp_fader_bot.png")):
+                    im.alpha_composite(im_(name).crop((0, fr * HALF, HALF, fr * HALF + HALF)), (int(x + (BOXW - HALF) / 2), y + FY + k2 * HALF))
                 text_c(d, x + w / 2, y + 11, txt[p].upper(), font(12), (255, 255, 255))
             elif k == "key":
                 key, i = pl["extra"]; n = len([q for q in PLACED[tab] if q["kind"] == "key" and q["extra"][0] == key])

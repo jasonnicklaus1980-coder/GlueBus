@@ -846,8 +846,8 @@
                   "data": {
                     "version": 5,
                     "knobType": "FilmStrip",
-                    "filmStrip": "sp_fader.png",
-                    "numFrames": 127,
+                    "filmStrip": "sp_fader_top.png",
+                    "numFrames": 63,
                     "invert": false,
                     "dragOrientation": "Vertical",
                     "handleName": "Data"
@@ -863,7 +863,37 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "-75 24 250 250",
+                  "bounds": "-13 24 125 125",
+                  "additionalInvalidatingHandles": []
+                }
+              },
+              {
+                "version": 2,
+                "componentData": {
+                  "version": 1,
+                  "name": "Knob",
+                  "type": "Knob",
+                  "data": {
+                    "version": 5,
+                    "knobType": "FilmStrip",
+                    "filmStrip": "sp_fader_bot.png",
+                    "numFrames": 63,
+                    "invert": false,
+                    "dragOrientation": "Vertical",
+                    "handleName": "Data"
+                  }
+                },
+                "handle remapping": {
+                  "version": 1,
+                  "map": []
+                },
+                "bounds": {
+                  "version": 2,
+                  "acceptsHWFocus": "No",
+                  "showWhenDataModelInvalid": "Show",
+                  "whenVisible": "Always",
+                  "boundsType": "Absolute",
+                  "bounds": "-13 149 125 125",
                   "additionalInvalidatingHandles": []
                 }
               },
