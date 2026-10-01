@@ -277,7 +277,7 @@ Adds no processing of its own. It only chooses how the stages above run.
 **Oscilloscope.**
 - One tap at a time: INPUT, POST-ADC (the held codes), POST-DAC (the staircase) or OUTPUT.
 - Rising-zero trigger, 1 to 20 ms window.
-- Shown on the skin as filmstrip bars.
+- Off by default and not on the screen pages; it runs when the Analyzer parameter is on and feeds the readout parameters.
 
 **Alias meter.** Shows the level of the images / aliases above the effective Nyquist.
 

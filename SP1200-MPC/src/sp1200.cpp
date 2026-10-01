@@ -107,7 +107,7 @@ void initParams()
     f (P_NLEVEL, "nlevel", "Noise Level", "dB", K_FLOAT, -60, 12, 0.5f, 0, F_DBOFF);
     f (P_VARIATION, "variation", "Component Var", "%", K_FLOAT, 0, 100, 1, 0, F_PCT);
     f (P_UNIT, "unit", "Unit", "", K_FLOAT, 1, 16, 1, 1, F_UNIT);
-    f (P_ANALYZER, "analyzer", "Analyzer", "", K_BOOL, 0, 1, 1, 1, F_NUM);
+    f (P_ANALYZER, "analyzer", "Analyzer", "", K_BOOL, 0, 1, 1, 0, F_NUM);   // off: no screen page shows it (saves CPU)
     c (P_TAP, "tap", "Scope Tap", CH (kTaps), 2);
     c (P_SCOPEMS, "scopems", "Scope Time", CH (kScopeMs), 1);
     f (P_FREEZE, "freeze", "Freeze", "", K_BOOL, 0, 1, 1, 0, F_NUM);

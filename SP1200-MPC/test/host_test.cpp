@@ -102,6 +102,8 @@ int main (int argc, char** argv)
     std::printf ("[readouts]\n");
     {
         D (effSetProgram, 0, 0);
+        CHECK (getN ("analyzer") < 0.5f, "analyzer off by default (no screen page shows it)");
+        setN ("analyzer", 1.f);
         automates = 0;
         std::vector<float> s (SR), s2;
         for (size_t i = 0; i < s.size(); ++i) s[i] = (float) (0.5 * std::sin (2 * M_PI * 1000 * i / SR));

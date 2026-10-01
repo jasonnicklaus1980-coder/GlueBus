@@ -41,7 +41,7 @@ struct Settings
     float outHeadDb = 12, settle = 1.f;
     float humDb = -60, groundDb = -60, digDb = -60, anaDb = 0, color = 0, noiseDb = 0; bool hum50 = false;
     float variation = 0; int unit = 1;
-    bool analyzer = true; int tap = 2; float scopeMs = 2; bool freeze = false;
+    bool analyzer = false; int tap = 2; float scopeMs = 2; bool freeze = false;
 };
 
 struct Model

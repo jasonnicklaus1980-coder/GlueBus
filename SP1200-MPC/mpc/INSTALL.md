@@ -1,7 +1,7 @@
 # SP1200 2.0.0
 
 A circuit-informed SP-1200 hardware model (12-bit SAR converter, 26.04 kHz drop-sample playback, 8-bit level DAC,
-zero-order hold, SSM2044 / fixed output filters, staged noise) as a native MPC OS VST2 insert effect, with a four-page skin. Loaded by MPC's built-in plugin host.
+zero-order hold, SSM2044 / fixed output filters, staged noise) as a native MPC OS VST2 insert effect, with a two-page skin drawn like the SP-1200's front panel. Loaded by MPC's built-in plugin host.
 
 ## Requirements
 - A first-generation MPC OS standalone device (32-bit ARM: MPC X, Live / Live II, One, Key 61, Force).
@@ -19,10 +19,14 @@ Add `-y` to skip the confirmation prompt. It can sit next to GlueBus; the two do
 Then add **SP1200** as an insert (on a drum program, pad, track or bus) from the plugin browser.
 
 ## Controls
-Five pages (tabs). The Q-Links follow the page you are on.
+Two pages (tabs), drawn like the SP-1200's front panel. The Q-Links follow the page you are on.
 
-**SP-1200**: only the eight sliders, numbered 1-8 like the hardware's (Q-Links 1-8)
-| Q-Link | Control | |
+**PERFORM**
+- *Output* keys 1-2 / 3-4 / 5-6 / 7-8, *Tune Mode* keys 45>33 / Pitch / Replay, *Machine* keys SP-1200 / SP-12 / S1200,
+  the display and the red *Bypass* key.
+- *Performance*: the eight sliders, numbered 1-8 like the hardware's (Q-Links 1-8):
+
+| Q-Link | Slider | |
 |---|---|---|
 | 1 | Input | -24 .. +24 dB into the input stage and converter (clips like the hardware) |
 | 2 | Pitch | semitones; HW range -8 .. +7, Ext -12 .. +12 (Pitch Range) |
@@ -33,18 +37,17 @@ Five pages (tabs). The Q-Links follow the page you are on.
 | 7 | Output | -24 .. +12 dB |
 | 8 | Mix | dry / SP (dry is latency-matched) |
 
-Pitch and Decay are what the SP-1200's sliders set in TUNE/DECAY mode.
+Q-Links 9-12: Output, Tune Mode, Machine, Bypass.
 
-**SETUP**: Output Channel, Tune Mode, Pitch Range, Decay, Dyn Sweep, Dyn Floor, Machine, Quality, Bypass, and the
-signal-path / alias readout (Q-Links 1-8 = the setup controls, 9-15 = the sliders, 16 = Bypass). Sample Rate, Bits and Analog
-(nonlinearity of the analog stages) are on the CIRCUIT page.
-Output Channel: Out 1-2 (SSM2044 dynamic filter), 3-4 (~7.5 kHz), 5-6 (~10 kHz), 7-8 (unfiltered).
+**SETUP**: Sample Rate, Bits, Pitch Range; the Out 1-2 dynamic filter (Sweep, Floor, Resonance); Analog, Variation,
+Unit; Quality, Noise Level, Reconstruction; and the display.
+
+The rest of the model (per-stage circuit settings, each noise source, the analyzer) is in MPC's parameter list and
+the presets. The analyzer is off by default.
+
+Output: Out 1-2 (SSM2044 dynamic filter), 3-4 (~7.5 kHz), 5-6 (~10 kHz), 7-8 (unfiltered).
 Tune Mode: 45>33 Grit (pitch kept, sample rate changes), Pitch (live drop-sample shift), Replay (each hit replays at
 the tuned rate, the hardware's behaviour; best on drums). Quality: Eco / Normal / Accurate (default) / Reference.
-
-**CIRCUIT**: per-stage controls and stage bypasses (Analog / Digital / SSM / Amp / Filters), quantizer, alias,
-reconstruction, level DAC, S/H settling. **NOISE**: every noise source, component variation and unit.
-**ANALYZER**: input and output spectrum, scope with a selectable tap, alias meter.
 
 The 54 factory presets are the plugin's programs. `docs/CIRCUIT.md` explains each stage.
 
