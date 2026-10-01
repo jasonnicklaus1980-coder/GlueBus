@@ -19,9 +19,9 @@ Add `-y` to skip the confirmation prompt. It can sit next to GlueBus; the two do
 Then add **SP1200** as an insert (on a drum program, pad, track or bus) from the plugin browser.
 
 ## Controls
-Four pages (tabs). Q-Links 1-16 follow the page you are on.
+Five pages (tabs). The Q-Links follow the page you are on.
 
-**SP-1200**: eight sliders, numbered 1-8 like the hardware's (Q-Links 1-8)
+**SP-1200**: only the eight sliders, numbered 1-8 like the hardware's (Q-Links 1-8)
 | Q-Link | Control | |
 |---|---|---|
 | 1 | Input | -24 .. +24 dB into the input stage and converter (clips like the hardware) |
@@ -32,9 +32,11 @@ Four pages (tabs). Q-Links 1-16 follow the page you are on.
 | 6 | Hiss | output-stage hiss (HW = calibrated default) |
 | 7 | Output | -24 .. +12 dB |
 | 8 | Mix | dry / SP (dry is latency-matched) |
-| 9-16 | Output Channel, Tune Mode, Machine, Pitch Range, Dyn Sweep, Dyn Floor, Quality, Sample Rate | |
 
-Pitch and Decay are what the SP-1200's sliders set in TUNE/DECAY mode. Sample Rate, Bits and Analog
+Pitch and Decay are what the SP-1200's sliders set in TUNE/DECAY mode.
+
+**SETUP**: Output Channel, Tune Mode, Pitch Range, Decay, Dyn Sweep, Dyn Floor, Machine, Quality, Bypass, and the
+signal-path / alias readout (Q-Links 1-8 = the setup controls, 9-15 = the sliders, 16 = Bypass). Sample Rate, Bits and Analog
 (nonlinearity of the analog stages) are on the CIRCUIT page.
 Output Channel: Out 1-2 (SSM2044 dynamic filter), 3-4 (~7.5 kHz), 5-6 (~10 kHz), 7-8 (unfiltered).
 Tune Mode: 45>33 Grit (pitch kept, sample rate changes), Pitch (live drop-sample shift), Replay (each hit replays at

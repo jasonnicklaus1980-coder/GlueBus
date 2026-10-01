@@ -150,10 +150,10 @@ SLIDERS = [("input", "INPUT", ["-24", "0", "+24"]), ("pitch", "PITCH", ["-12", "
 def mark_pos(key, j):
     return {"input": [0, .5, 1], "drive": [0, .5, 1], "pitch": [0, .5, 1], "decay": [0, math.log(0.3 / 0.02) / math.log(4 / 0.02), 1],
             "ssm": [0, 12 / 30, 1], "hiss": [0, 60 / 90, 1], "output": [0, 24 / 36, 1], "mix": [0, .5, 1]}[key][j]
-SX0, SPITCH, BOXW, BOXH = 26, 113, 100, 408
+SX0, SPITCH, BOXW, BOXH = 47, 155, 100, 408
 SLIDER_Y = 96
 RIGHT_X = 948
-TABS = ["SP-1200", "CIRCUIT", "NOISE", "ANALYZER"]
+TABS = ["SP-1200", "SETUP", "CIRCUIT", "NOISE", "ANALYZER"]
 
 def panel_bg(title_right):
     random.seed(12)
@@ -268,17 +268,23 @@ defn("spSlider", definition(CTRL(), [focus((0, 0, BOXW, BOXH)), label("Name", 14
      label("Value", 12, VALUE_COL, (0, FY + FH + 10, BOXW, 24), case="Upper Case")]))
 for i, (key, lab, _) in enumerate(SLIDERS):
     place(T, lab, "spSlider", P[key], SX0 + i * SPITCH, SLIDER_Y, BOXW, BOXH, "slider", key)
-radio(T, "channel", ["OUT 1-2", "OUT 3-4", "OUT 5-6", "OUT 7-8"], RIGHT_X + 10, 100, 148, 2, "OUTPUT CHANNEL")
-radio(T, "mode", ["45>33", "PITCH", "REPLAY"], RIGHT_X + 10, 210, 98, 3, "TUNE MODE")
-radio(T, "machine", ["SP-1200", "SP-12", "S1200 REF"], RIGHT_X + 10, 274, 98, 3, "MACHINE")
-box(T, "Pitch Range", "range", RIGHT_X + 10, 348, 98, 36, "PITCH RANGE", 13)
-box(T, "Dyn Sweep", "sweep", RIGHT_X + 114, 348, 98, 36, "DYN SWEEP", 15)
-box(T, "Dyn Floor", "floor", RIGHT_X + 218, 348, 96, 36, "DYN FLOOR", 15)
-toggle(T, "Bypass", "bypass", RIGHT_X + 4, 412, "BYPASS")
-box(T, "Quality", "quality", RIGHT_X + 150, 418, 164, 40, "QUALITY (CPU)", 16)
-text(T, "Signal Path", "info", RIGHT_X + 10, 500, 304, 26, 13)
-text(T, "Alias Meter", "aliastxt", RIGHT_X + 10, 536, 304, 26, 13)
-BG_ITEMS[T].append(("lcd", RIGHT_X + 6, 490, 312, 82, None))
+
+# ================================================================= SETUP page (the main page is only the eight sliders, like the hardware)
+T = "SETUP"
+BG_ITEMS[T].append(("plate", 18, 80, 640, 610, "OUTPUT AND PLAYBACK"))
+BG_ITEMS[T].append(("plate", 660, 80, 1262, 610, "MACHINE"))
+radio(T, "channel", ["OUT 1-2", "OUT 3-4", "OUT 5-6", "OUT 7-8"], 48, 150, 270, 2, "OUTPUT CHANNEL")
+radio(T, "mode", ["45>33", "PITCH", "REPLAY"], 48, 296, 178, 3, "TUNE MODE")
+box(T, "Pitch Range", "range", 48, 396, 270, 44, "PITCH RANGE")
+box(T, "Decay", "decay", 336, 396, 270, 44, "DECAY")
+box(T, "Dyn Sweep", "sweep", 48, 486, 270, 44, "DYN SWEEP (OUT 1-2)")
+box(T, "Dyn Floor", "floor", 336, 486, 270, 44, "DYN FLOOR (OUT 1-2)")
+radio(T, "machine", ["SP-1200", "SP-12", "S1200 REF"], 690, 150, 178, 3, "MACHINE")
+box(T, "Quality", "quality", 690, 250, 300, 44, "QUALITY (CPU)")
+toggle(T, "Bypass", "bypass", 1060, 246, "BYPASS")
+text(T, "Signal Path", "info", 696, 390, 532, 28, 15)
+text(T, "Alias Meter", "aliastxt", 696, 440, 532, 28, 15)
+BG_ITEMS[T].append(("lcd", 690, 376, 544, 110, None))
 
 # ================================================================= CIRCUIT page
 T = "CIRCUIT"
@@ -351,16 +357,17 @@ text(T, "Signal Path", "info", 640, 530, 576, 28, 16)
 BG_ITEMS[T].append(("lcd", 58, 516, 1162, 56, None))
 
 QL = {
-    "SP-1200": ["input", "pitch", "decay", "drive", "ssm", "hiss", "output", "mix", "channel", "mode", "machine", "range", "sweep", "floor", "quality", "srate"],
+    "SP-1200": ["input", "pitch", "decay", "drive", "ssm", "hiss", "output", "mix"],
+    "SETUP": ["channel", "mode", "range", "decay", "sweep", "floor", "machine", "quality", "input", "pitch", "drive", "ssm", "hiss", "output", "mix", "bypass"],
     "CIRCUIT": ["headroom", "knee", "aaf", "srate", "bits", "qmode", "convn", "pitch", "alias", "level", "settle", "recon", "ssm", "ssmres", "outhead", "analog"],
     "NOISE": ["hiss", "anan", "convn", "dign", "hum", "ground", "ncolor", "nlevel", "variation", "unit", "mains", "drive", "input", "output", "mix", "pitch"],
     "ANALYZER": ["tap", "scopems", "input", "drive", "pitch", "srate", "bits", "ssm", "analog", "hiss", "output", "mix", "channel", "mode", "alias", "recon"],
 }
 
 def background(tab):
-    im, d = panel_bg({"SP-1200": "SLIDERS", "CIRCUIT": "CIRCUIT", "NOISE": "NOISE", "ANALYZER": "ANALYZER"}[tab])
+    im, d = panel_bg({"SP-1200": "SLIDERS", "SETUP": "SETUP", "CIRCUIT": "CIRCUIT", "NOISE": "NOISE", "ANALYZER": "ANALYZER"}[tab])
     if tab == "SP-1200":
-        plate(d, 14, 80, 930, 610)
+        plate(d, 14, 80, 1266, 610)
         f_mark, f_num = font(10), font(20)
         for i, (key, lab, marks) in enumerate(SLIDERS):
             x = SX0 + i * SPITCH; cx = x + BOXW / 2
@@ -374,8 +381,7 @@ def background(tab):
                 tw = d.textlength(m, font=f_mark)
                 d.text((cx - 39 - tw, y - 6), m, font=f_mark, fill=PRINT)
             text_c(d, cx, 592, str(i + 1), f_num, PRINT)
-        d.line([24, 572, 920, 572], fill=(20, 20, 22), width=2)
-        plate(d, RIGHT_X - 6, 80, 1266, 610)
+        d.line([24, 572, 1256, 572], fill=(20, 20, 22), width=2)
     for item in BG_ITEMS[tab]:
         k = item[0]
         if k == "stage":
