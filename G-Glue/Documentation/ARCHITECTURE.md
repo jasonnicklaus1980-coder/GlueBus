@@ -19,9 +19,13 @@ Per sample, at the oversampled rate (1x / 2x / 4x; 2x by default):
    image rejection −151 dB, flat to 20 kHz at 44.1 kHz, and zero added latency.
 3. **Sidechain HPF**: 2nd-order Butterworth at 30 / 60 / 90 / 120 / 150 / 200 Hz. It filters only the detector, never
    the audio.
-4. **Linked detector**: the louder channel's peak and the stereo RMS (10 ms), blended in dB. RMS is offset by +3 dB
-   so a sine reads at its peak. Peak-only and RMS-only modes exist as an engine option.
-5. **Soft-knee gain computer**: ratio 2:1 / 4:1 / 10:1, with a knee of 8 / 6 / 4 dB that follows the ratio.
+4. **Linked detector**: a true-peak full-wave detector per channel; the louder channel controls both (the published
+   G-series behaviour). RMS and peak/RMS blend modes exist as engine options.
+5. **Feedback side-chain** (default, as in the classic console bus compressor): the detector hears the signal after
+   gain reduction. A slope of (R - 1) on that level gives a static R:1 ratio, and the knee softens the harder it is
+   driven. The soft knee (8 / 6 / 4 dB at 2:1 / 4:1 / 10:1) moves with the ratio, so lower ratios start compressing
+   lower. The attack constant is scaled by (1 + k) so measured attack times match the panel values.
+   Feed-forward is available as an engine option.
 6. **Ballistics** in dB, with separate attack and release:
    - attack 0.1–30 ms; release 0.1 / 0.3 / 0.6 / 1.2 s (time constants)
    - **AUTO**: a fast stage (100 ms release) plus a slow stage that follows the static curve with a 0.5 s attack and
@@ -31,8 +35,8 @@ Per sample, at the oversampled rate (1x / 2x / 4x; 2x by default):
 8. **Analog stage** (optional, 15 ms crossfade): an original asymmetric soft-saturation curve
    (`tanh(0.35x + bias) − tanh(bias)`, normalised to unity slope). The bias grows with gain reduction, so harder
    compression adds a little more even-order colour. Only the added harmonics pass through an 8 Hz DC blocker, so the
-   clean signal is untouched. Measured at −6 dBFS: 2nd harmonic −40.7 dB, 3rd −53 dB, level change −0.04 dB, and
-   transient peaks within 0.3 dB.
+   clean signal is untouched. ANALOG also adds the console's low noise floor (−92 dBFS RMS). Measured at −6 dBFS:
+   2nd harmonic −40.7 dB, 3rd −53 dB, level change −0.04 dB, and transient peaks within 0.3 dB.
 9. **Parallel mix** of dry and compressed signals. Both pass through the same oversampling, so there's no comb
    filtering.
 10. **Output gain**, then **output protection**: transparent below −0.5 dBFS, then a smooth knee that never exceeds

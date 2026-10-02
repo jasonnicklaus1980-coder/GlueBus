@@ -12,15 +12,22 @@
 #include "Filters.h"
 #include "Halfband.h"
 #include <atomic>
+#include <cstdint>
 
 namespace gglue
 {
 enum class Detector { Peak, Rms, Blend };
+enum class Topology { Feedback, Feedforward };
 
+// Defaults follow the published behaviour of the classic G-series console bus compressor:
+// a true-peak full-wave detector per channel (the louder channel controls both), in a feedback side-chain
+// (the detector hears the signal after gain reduction), with a ratio-dependent soft knee and dual-stage auto release.
 struct EngineConfig
 {
-    int oversampling = 2;                 // 1, 2 or 4
-    Detector detector = Detector::Blend;  // Blend = average of the peak and RMS levels (in dB)
+    int oversampling = 2;                       // 1, 2 or 4
+    Detector detector = Detector::Peak;         // Peak (true-peak full-wave), Rms, or Blend of the two (in dB)
+    Topology topology = Topology::Feedback;     // Feedback: detector after the gain cell; Feedforward: before it
+    float analogNoiseDb = -92.f;                // ANALOG: console noise floor, RMS dBFS
 };
 
 class Engine
@@ -79,6 +86,9 @@ private:
     float autoFastRelease = 0.f, autoSlowAttack = 0.f, autoSlowRelease = 0.f;
     bool autoRelease = true;
     float blockMaxGr = 0.f;
+    float lastGr = 0.f;                                   // feedback side-chain: gain reduction of the previous sample
+    uint32_t noiseState[2] { 0x9e3779b9u, 0x7f4a7c15u };  // ANALOG noise floor
+    float noiseAmp = 0.f;
 
     // meters
     float inMeter = -120.f, outMeter = -120.f, meterFallPerSample = 0.f;

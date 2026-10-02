@@ -7,13 +7,13 @@ GGlue_artefacts/Release/VST3/G-Glue Bus Compressor.vst3
   ok   host parameter IDs stable across instances (602006635, 1065963785, 740224584 ...)
   ok   readable values in the host: threshold "-10.0 dB", release "AUTO"
   ok   host bypass is mapped to the plugin's Bypass parameter
-  ok   44.1 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   48.0 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   88.2 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   96.0 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   threshold +10 dB: no compression (-0.00 dB)
-  ok   threshold -30 dB: -17.7 dB of compression
-  ok   threshold automated every block on a 100 Hz sine: largest step 0.0002 (no zipper noise)
+  ok   44.1 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   48.0 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   88.2 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   96.0 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   threshold +10 dB: no compression (-0.02 dB)
+  ok   threshold -30 dB: -17.0 dB of compression
+  ok   threshold automated every block on a 100 Hz sine: largest step 0.0003 (no zipper noise)
   ok   host bypass switches the plugin's Bypass parameter: ON
   ok   Bypass ON: output = input (max difference 1e-08)
   ok   65 factory presets exposed as host programs
@@ -29,13 +29,13 @@ GGlue_artefacts/Release/VST/libG-Glue Bus Compressor.so
   ok   host parameter IDs stable across instances (0, 1, 2 ...)
   ok   readable values in the host: threshold "-10.0 dB", release "AUTO"
   ok   host bypass is mapped to the plugin's Bypass parameter
-  ok   44.1 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   48.0 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   88.2 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   96.0 kHz: a -0.9 dBFS sine comes out -6.5 dB (defaults: -10 dB, 4:1)
-  ok   threshold +10 dB: no compression (-0.00 dB)
-  ok   threshold -30 dB: -17.7 dB of compression
-  ok   threshold automated every block on a 100 Hz sine: largest step 0.0002 (no zipper noise)
+  ok   44.1 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   48.0 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   88.2 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   96.0 kHz: a -0.9 dBFS sine comes out -6.2 dB (defaults: -10 dB, 4:1)
+  ok   threshold +10 dB: no compression (-0.02 dB)
+  ok   threshold -30 dB: -17.0 dB of compression
+  ok   threshold automated every block on a 100 Hz sine: largest step 0.0003 (no zipper noise)
   ok   host bypass switches the plugin's Bypass parameter: ON
   ok   Bypass ON: output = input (max difference 1e-08)
   ok   65 factory presets exposed as host programs

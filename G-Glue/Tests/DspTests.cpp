@@ -143,13 +143,18 @@ int main (int argc, char** argv)
                "defaults: threshold -10 dB, 4:1, AUTO release, mix 100 %%");
     }
 
-    std::printf ("Silence\n");
+    std::printf ("Silence and analog noise floor\n");
     {
-        Engine e; ParamValues v = defaultValues(); v[kAnalog] = 1; v[kMakeup] = 24; fresh (e, fs48, v);
+        Engine e; ParamValues v = defaultValues(); v[kMakeup] = 24; fresh (e, fs48, v);
         Buf b (48000);
         run (e, b);
         double m = 0; for (size_t i = 0; i < b.size(); ++i) m = std::max (m, (double) std::max (std::fabs (b.l[i]), std::fabs (b.r[i])));
-        CHECK (m == 0.0 && e.gainReductionDb.load() == 0.f, "silence in -> exact silence out (analog on, +24 dB makeup), GR 0");
+        CHECK (m == 0.0 && e.gainReductionDb.load() == 0.f, "ANALOG off: silence in -> exact silence out (+24 dB makeup), GR 0");
+        v[kMakeup] = 0; v[kAnalog] = 1; fresh (e, fs48, v);
+        Buf n (96000);
+        run (e, n);
+        const double floorDb = db (rms (n.l, 4800, n.size()));
+        CHECK (floorDb > -96 && floorDb < -88, "ANALOG on: console noise floor %.1f dBFS RMS (target -92)", floorDb);
     }
 
     std::printf ("Threshold and ratio (static curve, 1 kHz sine)\n");

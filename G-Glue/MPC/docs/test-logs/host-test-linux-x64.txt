@@ -6,12 +6,12 @@ Loading (like MPC OS: dlopen + VSTPluginMain)
   ok   the 11 compressor parameters are automatable, readouts are not
   ok   screen texts: -10.0 dB, AUTO, 4:1, OFF
 Audio
-  ok   44.1 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
-  ok   48.0 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
-  ok   88.2 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
-  ok   96.0 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
-  ok   threshold +10 dB: no compression (-0.00 dB)
-  ok   GR needle: 21.5 dB (position 1.00), 31 screen updates in 1 s (only when the frame changes)
+  ok   44.1 kHz: -0.9 dBFS sine comes out -6.2 dB (defaults -10 dB, 4:1)
+  ok   48.0 kHz: -0.9 dBFS sine comes out -6.2 dB (defaults -10 dB, 4:1)
+  ok   88.2 kHz: -0.9 dBFS sine comes out -6.2 dB (defaults -10 dB, 4:1)
+  ok   96.0 kHz: -0.9 dBFS sine comes out -6.2 dB (defaults -10 dB, 4:1)
+  ok   threshold +10 dB: no compression (-0.02 dB)
+  ok   GR needle: 20.8 dB (position 1.00), 33 screen updates in 1 s (only when the frame changes)
   ok   input meter -1 dB, output meter -22 dB
   ok   6 s of silence after 21 dB of GR (AUTO release): needle back to 0.1 dB
 Bypass and automation
@@ -38,7 +38,7 @@ Programs and project state
   ok   buttons ignored for 2.5 s after a project load
 Robustness
   ok   NaN / inf / +18 dBFS / denormal input: output finite and within 0 dBFS
-  CPU: 0.108 s for 10 s of stereo 48 kHz audio (2x oversampling, analog on) = 1.08 % of one core of this machine
+  CPU: 0.092 s for 10 s of stereo 48 kHz audio (2x oversampling, analog on) = 0.92 % of one core of this machine
   ok   under 10 % of one core
 
 35 checks, 0 failed

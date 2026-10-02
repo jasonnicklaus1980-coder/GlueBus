@@ -61,6 +61,8 @@ void Engine::prepare (double sampleRate, int numChannels)
     sAnalog.setup (15.0, fs);
     sBypass.setup (15.0, fs);
     rmsCoef = (float) std::exp (-1.0 / (0.010 * osRate));            // 10 ms RMS window
+    // uniform noise has RMS 1/sqrt(3); the down-sampler removes the top half of the oversampled band
+    noiseAmp = (float) (std::pow (10.0, config.analogNoiseDb / 20.0) * std::sqrt (3.0) * std::sqrt ((double) os));
     meterFallPerSample = (float) (24.0 / fs);                         // 24 dB/s
     coefDirty = true;
     updateCoefficients();
@@ -70,7 +72,7 @@ void Engine::prepare (double sampleRate, int numChannels)
 void Engine::reset()
 {
     for (auto& c : ch) c.reset();
-    rmsState = 0.f; grFast = grSlow = 0.f; blockMaxGr = 0.f;
+    rmsState = 0.f; grFast = grSlow = 0.f; blockMaxGr = 0.f; lastGr = 0.f;
     const int ri = (int) params[kRatio];
     sThreshold.reset (params[kThreshold]);
     sSlope.reset (1.f - 1.f / kRatios[ri]);
@@ -113,7 +115,11 @@ void Engine::updateCoefficients()
     auto coefFor = [this] (double seconds) { return (float) std::exp (-1.0 / (seconds * osRate)); };
     attackCoef = coefFor (kAttackMs[(int) params[kAttack]] * 0.001);
     const int ri = (int) params[kRelease];
+    const bool wasAuto = autoRelease;
     autoRelease = ri == kReleaseAuto;
+    // switching the release mode must not move the gain: continue from the gain actually applied
+    if (wasAuto && ! autoRelease) grFast = std::min (grFast, grSlow);
+    if (! wasAuto && autoRelease) grSlow = grFast;
     releaseCoef = coefFor (autoRelease ? 0.6 : kReleaseSec[ri]);
     // AUTO: a fast stage (100 ms) recovers from short peaks; a slow stage follows the static curve with a 0.5 s attack,
     // so it only builds up under sustained compression, and releases over 1.2 s. The deeper of the two is used,
@@ -144,14 +150,23 @@ inline float Engine::processOversampled (float& l, float& r, bool stereo, int su
     }
 
     // ---- soft-knee gain computer (dB, <= 0)
-    const float over = level - sThreshold.current, knee = sKnee.current, slope = sSlope.current;
+    // Feedforward: the curve acts on the input level with slope (1 - 1/R).
+    // Feedback: the detector hears the output (input + current gain reduction), and a slope of (R - 1) on that level
+    // gives the same static R:1 ratio; the knee then softens the harder it is driven, as the classic design does.
+    const bool feedback = config.topology == Topology::Feedback;
+    const float slope = sSlope.current, knee = sKnee.current;
+    const float k = feedback ? slope / (1.f - slope) : slope;
+    const float over = (feedback ? level + lastGr : level) - sThreshold.current;
     float target;
     if (2.f * over <= -knee) target = 0.f;
-    else if (2.f * over >= knee) target = -slope * over;
-    else { const float t = over + 0.5f * knee; target = -slope * t * t / (2.f * knee); }
+    else if (2.f * over >= knee) target = -k * over;
+    else { const float t = over + 0.5f * knee; target = -k * t * t / (2.f * knee); }
 
-    // ---- ballistics (decoupled, in dB)
-    if (target < grFast) grFast = target + (grFast - target) * attackCoef;
+    // ---- ballistics (decoupled, in dB). A feedback loop speeds the gain cell up by (1 + k), so its attack
+    // constant is stretched by the same factor: the measured attack then matches the front-panel value. This also keeps
+    // the loop inside its stability limit ((1 - a)(1 + k) < 2) at every setting.
+    const float aCoef = feedback ? 1.f - (1.f - attackCoef) / (1.f + k) : attackCoef;
+    if (target < grFast) grFast = target + (grFast - target) * aCoef;
     else grFast = target + (grFast - target) * (autoRelease ? autoFastRelease : releaseCoef);
     float gr = grFast;
     if (autoRelease)
@@ -159,6 +174,7 @@ inline float Engine::processOversampled (float& l, float& r, bool stereo, int su
         grSlow = target + (grSlow - target) * (target < grSlow ? autoSlowAttack : autoSlowRelease);
         gr = std::min (grFast, grSlow);
     }
+    lastGr = gr;
     if (gr < blockMaxGr) blockMaxGr = gr;
 
     // ---- gain, analog stage, parallel mix, output
@@ -180,8 +196,15 @@ inline float Engine::processOversampled (float& l, float& r, bool stereo, int su
             wr += analog * ch[1].analogDc.process (ar - wr);
         }
     }
-    l = protect ((dryL + mix * (wl - dryL)) * outputGain);
-    if (stereo) r = protect ((dryR + mix * (wr - dryR)) * outputGain);
+    float nl = 0.f, nr = 0.f;
+    if (analog > 0.f)                                     // ANALOG: the console's low noise floor
+    {
+        auto rnd = [] (uint32_t& x) { x ^= x << 13; x ^= x >> 17; x ^= x << 5; return (float) (int32_t) x * (1.f / 2147483648.f); };
+        nl = analog * noiseAmp * rnd (noiseState[0]);
+        nr = analog * noiseAmp * rnd (noiseState[1]);
+    }
+    l = protect ((dryL + mix * (wl - dryL) + nl) * outputGain);
+    if (stereo) r = protect ((dryR + mix * (wr - dryR) + nr) * outputGain);
     return gr;
 }
 
@@ -284,7 +307,7 @@ void Engine::sanitizeState()
     if (! ok)
     {
         for (auto& c : ch) c.reset();
-        rmsState = 0.f; grFast = grSlow = 0.f;
+        rmsState = 0.f; grFast = grSlow = 0.f; lastGr = 0.f;
     }
 }
 } // namespace gglue
