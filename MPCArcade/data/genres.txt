@@ -1,0 +1,521 @@
+# MPC Arcade genre table (for the Categories view). Clones inherit their parent's genre.
+# "@driver Genre" sets the default for a whole MAME driver file; "name Genre" overrides one parent set.
+# A catver.ini placed in MAME/dats/ overrides this table on the device.
+@1942 Shoot 'em up
+@1943 Shoot 'em up
+@asteroid Shoot 'em up
+@astrocde Action
+@btime Maze
+@bublbobl Platform
+@carpolo Sports
+@centiped Shoot 'em up
+@circus Action
+@contra Run & Gun
+@cps1 Action
+@cps2 Fighting
+@ddragon Beat 'em up
+@dkong Platform
+@exidy Action
+@firetrk Racing
+@galaga Shoot 'em up
+@galaxian Shoot 'em up
+@gauntlet Action
+@gridlee Action
+@gyruss Shoot 'em up
+@karnov Platform
+@ladybug Maze
+@m72 Shoot 'em up
+@mappy Maze
+@midyunit Fighting
+@missile Shoot 'em up
+@mrdo Maze
+@mw8080bw Shoot 'em up
+@neogeo Fighting
+@pacman Maze
+@polepos Racing
+@polyplay Action
+@pooyan Shoot 'em up
+@rastan Platform
+@segaorun Racing
+@segas16b Action
+@sf Fighting
+@simpsons Beat 'em up
+@snk Run & Gun
+@sprint2 Racing
+@supertnk Shoot 'em up
+@taito_f2 Action
+@tempest Shoot 'em up
+@timeplt Shoot 'em up
+@tmnt Beat 'em up
+@toaplan2 Shoot 'em up
+@williams Shoot 'em up
+@zaxxon Shoot 'em up
+# asteroid / astrocde / btime
+llander Action
+robby Maze
+wow Maze
+gorf Shoot 'em up
+seawolf2 Shoot 'em up
+spacezap Shoot 'em up
+demndrgn Action
+profpac Maze
+ebases Sports
+tenpindx Sports
+brubber Maze
+lnc Maze
+mmonkey Maze
+disco Maze
+zoar Shoot 'em up
+tisland Platform
+protenn Sports
+sdtennis Sports
+wtennis Sports
+# centiped
+warlords Action
+bullsdrt Sports
+mazeinv Maze
+# circus / exidy
+circus Action
+robotbwl Sports
+crash Racing
+ripcord Action
+mtrap Maze
+pepper2 Maze
+sidetrac Maze
+targ Maze
+spectar Maze
+venture Action
+teetert Action
+hardhat Maze
+fax Quiz & Board
+# cps1
+1941 Shoot 'em up
+3wonders Platform
+captcomm Beat 'em up
+cawing Shoot 'em up
+cworld2j Quiz & Board
+dino Beat 'em up
+dynwar Beat 'em up
+ffight Beat 'em up
+forgottn Run & Gun
+ganbare Quiz & Board
+ghouls Platform
+gulunpa Puzzle
+knights Beat 'em up
+kod Beat 'em up
+mbombrd Fighting
+megaman Fighting
+mercs Run & Gun
+msword Beat 'em up
+mtwins Platform
+nemo Platform
+pang3 Puzzle
+pnickj Puzzle
+pokonyan Puzzle
+punisher Beat 'em up
+qad Quiz & Board
+qtono2j Quiz & Board
+sf2 Fighting
+sf2ce Fighting
+sf2hf Fighting
+sfzch Fighting
+slammast Fighting
+strider Platform
+unsquad Shoot 'em up
+varth Shoot 'em up
+willow Platform
+wof Beat 'em up
+wofch Beat 'em up
+# cps2
+1944 Shoot 'em up
+19xx Shoot 'em up
+armwar Beat 'em up
+avsp Beat 'em up
+batcir Beat 'em up
+choko Puzzle
+csclub Sports
+ddsom Beat 'em up
+ddtod Beat 'em up
+dimahoo Shoot 'em up
+ecofghtr Shoot 'em up
+gigawing Shoot 'em up
+mmatrix Shoot 'em up
+mpang Puzzle
+progear Shoot 'em up
+pzloop2 Puzzle
+qndream Quiz & Board
+sgemf Fighting
+spf2t Puzzle
+# ddragon
+darktowr Platform
+stoffy Puzzle
+toffy Puzzle
+tstrike Beat 'em up
+# dkong
+8ballact Sports
+drakton Platform
+spclforc Shoot 'em up
+spcfrcii Shoot 'em up
+shootgal Action
+strtheat Racing
+# galaga / mappy / galaxian
+digdug Maze
+bosco Shoot 'em up
+digdug2 Action
+grobda Action
+motos Action
+todruaga Maze
+amidar Maze
+anteater Maze
+frogger Action
+jumpbug Platform
+ckongcv Platform
+ckongg Platform
+ckonggx Platform
+ckongis Platform
+ckongmc Platform
+ckongmc2 Platform
+ckongs Platform
+kong Platform
+losttomb Maze
+mimonkey Maze
+monsterz Maze
+dingo Maze
+bongo Platform
+calipso Action
+checkman Maze
+superbon Maze
+tazmania Maze
+thepitm Maze
+turtles Maze
+catacomb Maze
+bagmanm2 Maze
+bagmanmc Maze
+fourplay Puzzle
+highroll Quiz & Board
+luctoday Quiz & Board
+porter Maze
+portera Maze
+streakng Maze
+levers Puzzle
+armorcar Maze
+# gauntlet / karnov / ladybug
+vindctr2 Action
+chelnov Platform
+wndrplnt Platform
+cavenger Shoot 'em up
+sraider Shoot 'em up
+# m72
+loht Action
+poundfor Fighting
+hharry Platform
+ltswords Beat 'em up
+bchopper Shoot 'em up
+cosmccop Shoot 'em up
+# midyunit
+narc Run & Gun
+smashtv Shoot 'em up
+totcarn Shoot 'em up
+trog Maze
+strkforc Shoot 'em up
+term2 Shoot 'em up
+hiimpact Sports
+shimpact Sports
+# mw8080bw
+280zzzap Racing
+boothill Action
+gunfight Action
+desertgu Action
+bowler Sports
+shuffle Sports
+tornbase Sports
+einning Sports
+checkmat Maze
+maze Maze
+clowns Action
+lagunar Racing
+dplay Sports
+m4 Action
+# neogeo
+2020bb Sports
+3countb Fighting
+alpham2 Shoot 'em up
+androdun Shoot 'em up
+b2b Platform
+bakatono Quiz & Board
+bangbead Sports
+bjourney Platform
+blazstar Shoot 'em up
+breakers Fighting
+breakrev Fighting
+bstars Sports
+bstars2 Sports
+burningf Beat 'em up
+crsword Action
+crswd2bl Action
+ctomaday Shoot 'em up
+cyberlip Run & Gun
+diggerma Maze
+fbfrenzy Sports
+flipshot Sports
+ganryu Platform
+ghostlop Puzzle
+goalx3 Sports
+gpilots Shoot 'em up
+gururin Puzzle
+irrmaze Puzzle
+janshin Quiz & Board
+jockeygp Quiz & Board
+joyjoy Puzzle
+kabukikl Fighting
+karnovr Fighting
+kizuna Fighting
+lasthope Shoot 'em up
+lbowling Sports
+legendos Beat 'em up
+lresort Run & Gun
+magdrop2 Puzzle
+magdrop3 Puzzle
+maglord Platform
+mahretsu Quiz & Board
+marukodq Quiz & Board
+miexchng Puzzle
+minasan Quiz & Board
+moshougi Quiz & Board
+mslug Run & Gun
+mslug2 Run & Gun
+mslug3 Run & Gun
+mslug4 Run & Gun
+mslug5 Run & Gun
+mslugx Run & Gun
+mutnat Beat 'em up
+nam1975 Run & Gun
+ncombat Beat 'em up
+ncommand Run & Gun
+neobombe Maze
+neocup98 Sports
+neodrift Racing
+neomrdo Maze
+ninjamas Fighting
+nitd Puzzle
+overtop Racing
+panicbom Puzzle
+pbobbl2n Puzzle
+pbobblen Puzzle
+pgoal Sports
+pnyaa Puzzle
+popbounc Puzzle
+preisle2 Shoot 'em up
+pspikes2 Sports
+pulstar Shoot 'em up
+puzzledp Puzzle
+quizdai2 Quiz & Board
+quizdais Quiz & Board
+quizkof Quiz & Board
+ridhero Racing
+roboarmy Beat 'em up
+s1945p Shoot 'em up
+sbp Puzzle
+sdodgeb Sports
+sengoku Beat 'em up
+sengoku2 Beat 'em up
+sengoku3 Beat 'em up
+shocktro Run & Gun
+shocktr2 Run & Gun
+socbrawl Sports
+sonicwi2 Shoot 'em up
+sonicwi3 Shoot 'em up
+spinmast Platform
+ssideki Sports
+ssideki2 Sports
+ssideki3 Sports
+ssideki4 Sports
+stakwin Quiz & Board
+stakwin2 Quiz & Board
+strhoop Sports
+superspy Beat 'em up
+tophuntr Platform
+tpgolf Sports
+trally Racing
+turfmast Sports
+twinspri Shoot 'em up
+twsoc96 Sports
+viewpoin Shoot 'em up
+vliner Quiz & Board
+wjammers Sports
+zedblade Shoot 'em up
+zintrckb Puzzle
+zupapa Platform
+aes Action
+ng_mv1 Action
+ng_mv2f Action
+ng_mv4f Action
+# pacman
+alibaba Maze
+cannonbp Puzzle
+jumpshot Sports
+ponpoko Platform
+rocktrv2 Quiz & Board
+bigbucks Quiz & Board
+bwcasino Quiz & Board
+woodpeck Maze
+vanvan Maze
+nmouse Maze
+lizwiz Shoot 'em up
+shootbul Sports
+numcrash Puzzle
+drivfrcp Racing
+pengojpm Maze
+pengomc1 Maze
+pengomc2 Maze
+pengopac Maze
+pinguinos Maze
+superabc Maze
+mspactwin Maze
+mrtnt Maze
+porky Maze
+eggor Maze
+beastfp Maze
+eeekkp Maze
+birdiy Maze
+# segas16b
+altbeast Beat 'em up
+goldnaxe Beat 'em up
+ddux Beat 'em up
+riotcity Beat 'em up
+shinobi2 Platform
+shinobi3 Platform
+shinobi4 Platform
+shinobi5 Platform
+shinobi6 Platform
+shinobi2d Platform
+wb3 Platform
+cotton Shoot 'em up
+aurail Shoot 'em up
+aliensyn Run & Gun
+atomicp Puzzle
+bullet Shoot 'em up
+defense Shoot 'em up
+fantzn2x Shoot 'em up
+fantzoneta Shoot 'em up
+sdib Shoot 'em up
+sdibl Shoot 'em up
+sdibl2 Shoot 'em up
+sdibl3 Shoot 'em up
+sdibl4 Shoot 'em up
+sdibl5 Shoot 'em up
+sdibl6 Shoot 'em up
+sjryuko Quiz & Board
+snapper Maze
+sonicbom Shoot 'em up
+tetris1 Puzzle
+tetris1d Puzzle
+tetris2 Puzzle
+tetris2d Puzzle
+tetrbx Puzzle
+timescan Sports
+fpoint Puzzle
+passsht Sports
+dunkshot Sports
+exctleag Sports
+mvp Sports
+hwchamp Fighting
+wrestwar Fighting
+suprleag Sports
+tturf Run & Gun
+ultracin Quiz & Board
+dfjail Action
+eswat Run & Gun
+lockonph Shoot 'em up
+toryumon Puzzle
+ryukyu Puzzle
+bayroute Run & Gun
+afightere Shoot 'em up
+afighterf Shoot 'em up
+afighterg Shoot 'em up
+afighterh Shoot 'em up
+aceattac Sports
+# snk
+athena Platform
+ikari Run & Gun
+victroad Run & Gun
+gwar Run & Gun
+tnk3 Run & Gun
+psychos Run & Gun
+chopper Shoot 'em up
+aso Shoot 'em up
+madcrash Shoot 'em up
+vangrd2 Shoot 'em up
+bermudat Run & Gun
+worldwar Run & Gun
+hal21 Shoot 'em up
+jcross Shoot 'em up
+marvins Maze
+sgladiat Sports
+fitegolf Sports
+fsoccer Sports
+tdfever Sports
+countryc Sports
+# sprint2 / taito_f2 / timeplt / tmnt / toaplan2 / williams / zaxxon
+dominos Puzzle
+cameltry Puzzle
+deadconx Run & Gun
+dinorex Fighting
+dondokod Platform
+driftout Racing
+euroch92 Sports
+finalb Fighting
+footchmp Sports
+growl Beat 'em up
+gunfront Shoot 'em up
+koshien Sports
+liquidk Platform
+megablst Shoot 'em up
+metalb Shoot 'em up
+mjnquest Quiz & Board
+ninjak Beat 'em up
+pulirula Beat 'em up
+qcrayon Quiz & Board
+qcrayon2 Quiz & Board
+qjinsei Quiz & Board
+qtorimon Quiz & Board
+quizhq Quiz & Board
+qzchikyu Quiz & Board
+qzquest Quiz & Board
+solfigtr Fighting
+ssi Shoot 'em up
+thundfox Run & Gun
+yesnoj Quiz & Board
+yuyugogo Quiz & Board
+bikkuric Puzzle
+chkun Puzzle
+cuebrick Puzzle
+glfgreat Sports
+prmrsocr Sports
+punkshot Sports
+qgakumon Quiz & Board
+lgtnfght Beat 'em up
+mia Run & Gun
+thndrx2 Shoot 'em up
+blswhstl Shoot 'em up
+kingdmgp Shoot 'em up
+nprobowl Sports
+othldrby Quiz & Board
+pipibibs Maze
+pwrkick Quiz & Board
+snowbro2 Platform
+tekipaki Puzzle
+fixeight Run & Gun
+ghox Action
+enmadaio Quiz & Board
+playball Sports
+lottofun Quiz & Board
+spdball Sports
+bubbles Action
+joust Action
+joust2 Action
+splat Action
+tshoot Shoot 'em up
+congo Shoot 'em up
+razmataz Shoot 'em up
+ixion Shoot 'em up
