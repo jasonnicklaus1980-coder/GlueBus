@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Generate the G-Glue MPC screen skin (TUI.json pipeline shared by the GlueBus / RadioReady MPC plugins) + preview.
+"""Generate the G-Glue MPC screen skin: a premium large-format-console look (TUI.json pipeline of the GlueBus MPC
+plugins) + a preview rendered from the real plugin.
 
-One landscape page, in the desktop G-Glue look (charcoal brushed plate, screws, white print):
-  left:  IN meter, analog gain-reduction needle meter, OUT meter; preset browser (PREV / PRESET / NEXT / FAV),
-         LOAD SAVE DELETE A/B COPY, current preset + status lines, BYPASS
-  right: 72 px knobs THRESHOLD MAKEUP ATTACK RELEASE RATIO / SC FILTER MIX INPUT OUTPUT + ANALOG switch, Q-Link legend
-
-MPC rules (proven on an MPC X by the other plugins here): filmstrip frames are square (image width = frame height),
-at most 72 px with 128 frames (9216 px strips); larger displays are split into square tiles that all follow the same
-parameter. numFrames = last frame index. Skin folder = "<vendor> - VST - <plugin name>".
-Parameter indices come from the built plugin (GG_ParamKey), so build/native/gglue.so must exist (make native).
+Design (console-inspired, original artwork; no third-party names, logos or graphics):
+  toolbar   black bar: G-GLUE logo, recessed preset display with < > and favourite, LOAD, A/B COPY SAVE DELETE
+  module 1  METERS & I/O: precision LED ladders with printed dB scales, backlit black-face gain-reduction meter in a
+            chrome bezel; INPUT / MIX / OUTPUT knobs; square illuminated ANALOG and BYPASS switches
+  module 2  COMPRESSOR: THRESHOLD MAKE-UP RATIO / ATTACK RELEASE S/C HPF, knurled knobs with colour-coded caps and
+            printed scales, value windows, Q-Link numbers beside every control
+  footer    status line and current preset / A-B slot
+MPC rules (proven on an MPC X by the other plugins here): filmstrip frames are square, at most 72 px with 128 frames
+(9216 px strips); bigger displays are square tiles following one parameter; numFrames = last frame index;
+skin folder "<vendor> - VST - <plugin name>". Indices come from the built plugin: run `make native` first.
 Usage: python3 tools/make_skin.py [preview-dir]
 """
 import ctypes, json, math, os, random, shutil, sys
@@ -21,84 +23,126 @@ OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 LIB = os.path.join(ROOT, "build", "native", "gglue.so")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 4
-VERSION = "1.0.0.0"
-FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
+VERSION = "1.1.0.0"
+FONT_DIRS = ["/usr/share/fonts/truetype/liberation", "/usr/share/fonts/truetype/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 
-def font(size, name="DejaVuSans-Bold.ttf"):
+def font(size, bold=True):
+    names = ["LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "Arial Bold.ttf"] if bold else ["LiberationSans-Regular.ttf", "DejaVuSans.ttf", "Arial.ttf"]
     for d in FONT_DIRS:
-        p = os.path.join(d, name)
-        if os.path.exists(p): return ImageFont.truetype(p, int(size))
+        for n in names:
+            p = os.path.join(d, n)
+            if os.path.exists(p): return ImageFont.truetype(p, max(1, int(round(size))))
     return ImageFont.load_default()
-def rgba(c, a=255): return (c[0], c[1], c[2], a)
+def rgba(c, a=255): return (int(c[0]), int(c[1]), int(c[2]), a)
 def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 def hexcol(c, a=255): return "%02x%02x%02x%02x" % (a, c[0], c[1], c[2])
 def text_c(d, cx, cy, s, f, fill):
     b = d.textbbox((0, 0), s, font=f); d.text((cx - (b[2] - b[0]) / 2 - b[0], cy - (b[3] - b[1]) / 2 - b[1]), s, font=f, fill=fill)
+def spaced(d, x, y, s, f, fill, track=1.0, anchor="l"):
+    """letter-spaced silkscreen text; anchor l / c; returns the width"""
+    widths = [d.textlength(ch, font=f) for ch in s]
+    total = sum(widths) + track * (len(s) - 1)
+    if anchor == "c": x -= total / 2
+    for ch, w in zip(s, widths):
+        d.text((x, y), ch, font=f, fill=fill); x += w + track
+    return total
 
-# palette (same as the desktop GUI)
-PLATE_T, PLATE_B = (44, 45, 49), (27, 28, 31)
-PRINT, DIM, ACCENT, RED = (233, 233, 236), (154, 156, 163), (226, 160, 58), (224, 65, 47)
-FACE, INK = (241, 234, 216), (29, 29, 31)
+# ---------------------------------------------------------------- palette (console)
+EDGE, SEAM = (86, 88, 93), (9, 9, 10)
+PRINT, DIM, FAINT = (236, 236, 238), (150, 152, 158), (96, 98, 104)
+LED_RED, LED_AMBER, LED_GREEN = (255, 58, 38), (255, 178, 42), (72, 224, 112)
+CAPS = {"red": (196, 50, 42), "blue": (46, 96, 172), "grey": (160, 162, 166), "green": (58, 138, 84),
+        "yellow": (220, 174, 44), "black": (30, 30, 32)}
 
-# ---------- parameter indices from the plugin ----------
+# ---------------------------------------------------------------- parameters (from the plugin)
 def load_keys():
     lib = ctypes.CDLL(LIB)
     lib.GG_ParamKey.restype = ctypes.c_char_p; lib.GG_ParamKey.argtypes = [ctypes.c_int]; lib.GG_ParamCount.restype = ctypes.c_int
     return {lib.GG_ParamKey(i).decode(): i for i in range(lib.GG_ParamCount())}
 P = load_keys()
 
-# ---------- layout ----------
-MX, MY, MTILE, MCOLS, MROWS = 84, 84, 72, 6, 2          # GR meter: 432 x 144 in 72 px tiles
+# ---------------------------------------------------------------- layout
+TOOL_H, FOOT_Y = 60, 598
+MOD1 = (12, 70, 600, 590)               # METERS & I/O
+MOD2 = (612, 70, 1268, 590)             # COMPRESSOR
+MTILE, MCOLS, MROWS = 72, 6, 2
 MW, MH = MTILE * MCOLS, MTILE * MROWS
-LTILE, LSEG = 24, 12                                     # LED meters: 24 x 144 in 24 px tiles, 12 segments of 4 dB
-IN_X, OUT_X, LY = 44, MX + MW + 16, MY
-KX0, KY = 604, (92, 292)                                  # knob grid
-KW, KH, KS = 132, 160, 72                                 # knob cell, knob size
-KNOBS = [["threshold", "makeup", "attack", "release", "ratio"], ["scfilter", "mix", "input", "output", None]]
-CAPTION = {"threshold": "THRESHOLD", "makeup": "MAKEUP", "attack": "ATTACK", "release": "RELEASE", "ratio": "RATIO",
-           "scfilter": "SC FILTER", "mix": "MIX", "input": "INPUT", "output": "OUTPUT", "analog": "ANALOG", "bypass": "BYPASS"}
-SCALE = {"threshold": ["-30", "+10"], "makeup": ["0", "+24"], "attack": [".1", ".3", "1", "3", "10", "30"],
+MX, MY = 96, 112                          # GR meter
+LTILE, LROWS, LSEG = 24, 6, 16            # LED ladders: 24 x 144, 16 segments of 3 dB
+IN_X, OUT_X, LY = 36, 552, MY
+KS = 72                                   # knob filmstrip size
+CW, CH = 150, 160                         # knob component box: knob at (39, 26), value window at y 124..148
+KNOB_Y0 = 26
+# key: (caption, cap colour, x centre, box top y, Q-Link number)
+KNOBS = {
+    "threshold": ("THRESHOLD", "red", 721, 140, 1), "makeup": ("MAKE-UP", "grey", 939, 140, 2), "ratio": ("RATIO", "black", 1157, 140, 5),
+    "attack": ("ATTACK", "blue", 721, 374, 3), "release": ("RELEASE", "blue", 939, 374, 4), "scfilter": ("S/C HPF", "green", 1157, 374, 6),
+    "input": ("INPUT", "grey", 112, 314, 8), "mix": ("MIX", "yellow", 306, 314, 7), "output": ("OUTPUT", "grey", 500, 314, 9)}
+SCALE = {"threshold": ["-30", "-20", "-10", "0", "+10"], "makeup": ["0", "6", "12", "18", "24"], "attack": [".1", ".3", "1", "3", "10", "30"],
          "release": [".1", ".3", ".6", "1.2", "A"], "ratio": ["2", "4", "10"], "scfilter": ["OFF", "30", "60", "90", "120", "150", "200"],
-         "mix": ["0", "100"], "input": ["-24", "+24"], "output": ["-24", "+24"]}
+         "mix": ["0", "25", "50", "75", "100"], "input": ["-24", "-12", "0", "+12", "+24"], "output": ["-24", "-12", "0", "+12", "+24"]}
 STEPS = {"attack": 6, "release": 5, "ratio": 3, "scfilter": 7}
-ANG0, ANG1 = -135.0, 135.0
+UNITS = {"threshold": "dB", "makeup": "dB", "attack": "ms", "release": "s", "ratio": "", "scfilter": "Hz", "mix": "%", "input": "dB", "output": "dB"}
+SWITCHES = {"analog": ("ANALOG", LED_AMBER, 214, 500, 10), "bypass": ("BYPASS", LED_RED, 398, 500, 11)}   # square 60 px caps
+SW = 60
+ANG0, ANG1 = -140.0, 140.0
 def ang_xy(cx, cy, r, deg):
     a = math.radians(deg - 90); return cx + r * math.cos(a), cy + r * math.sin(a)
-def knob_centre(row, col): return KX0 + col * KW + KW / 2, KY[row] + 24 + KS / 2
+def knob_box(key):
+    _, _, cx, top, _ = KNOBS[key]; return cx - CW / 2, top
+def knob_centre(key):
+    x, y = knob_box(key); return x + CW / 2, y + KNOB_Y0 + KS / 2
 
-# ---------- knob filmstrip ----------
-def knob_strip():
-    s = KS * SS; c = s / 2; R = s * 0.46
+# toolbar controls
+TB = {"prev": (284, 12, 40, 36), "browse": (330, 10, 420, 40), "next": (756, 12, 40, 36), "fav": (802, 12, 40, 36),
+      "load": (852, 12, 76, 36), "ab": (968, 12, 64, 36), "copy": (1038, 12, 70, 36), "save": (1114, 12, 70, 36), "delete": (1190, 12, 76, 36)}
+
+# ---------------------------------------------------------------- knobs (one filmstrip per cap colour)
+def knob_strip(cap):
+    s = KS * SS; c = s / 2; R = s * 0.40
     base = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     sh = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-    ImageDraw.Draw(sh).ellipse([c - R, c - R + s * 0.05, c + R, c + R + s * 0.05], fill=(0, 0, 0, 150))
-    base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(s * 0.03)))
+    ImageDraw.Draw(sh).ellipse([c - R * 1.04, c - R * 1.0 + s * 0.045, c + R * 1.04, c + R * 1.04 + s * 0.045], fill=(0, 0, 0, 200))
+    base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(s * 0.035)))
     d = ImageDraw.Draw(base)
-    for yy in range(int(c - R), int(c + R) + 1):                          # skirt: vertical gradient
-        k = (yy - (c - R)) / (2 * R); dx = math.sqrt(max(0.0, R * R - (yy - c) ** 2))
-        d.line([c - dx, yy, c + dx, yy], fill=rgba(mix((60, 61, 66), (16, 17, 19), k)))
-    cap = Image.new("RGBA", (s, s), (0, 0, 0, 0)); cd = ImageDraw.Draw(cap); rc = R * 0.78
-    for i in range(60, 0, -1):                                            # cap: radial highlight from top-left
-        t = i / 60; col = mix((30, 31, 35), (96, 98, 106), (1 - t) ** 1.6)
-        r = rc * t; ox, oy = c - rc * 0.28 * (1 - t), c - rc * 0.36 * (1 - t)
-        cd.ellipse([ox - r, oy - r, ox + r, oy + r], fill=rgba(col))
-    mask = Image.new("L", (s, s), 0); ImageDraw.Draw(mask).ellipse([c - rc, c - rc, c + rc, c + rc], fill=255)
-    capm = Image.new("RGBA", (s, s), (0, 0, 0, 0)); capm.paste(cap, (0, 0), mask)
+    for yy in range(int(c - R), int(c + R) + 1):                # skirt: satin black, lit from above
+        k = min(1.0, max(0.0, (yy - (c - R)) / (2 * R))); dx = math.sqrt(max(0.0, R * R - (yy - c) ** 2))
+        d.line([c - dx, yy, c + dx, yy], fill=rgba(mix((74, 75, 80), (10, 10, 11), k ** 0.8)))
+    rb = R * 0.80                                               # tapered body top
+    body = Image.new("RGBA", (s, s), (0, 0, 0, 0)); bd = ImageDraw.Draw(body)
+    for i in range(48, 0, -1):
+        t = i / 48; r = rb * t
+        bd.ellipse([c - r, c - r - rb * 0.05 * (1 - t), c + r, c + r - rb * 0.05 * (1 - t)], fill=rgba(mix((22, 22, 24), (58, 59, 63), (1 - t) ** 2)))
+    rc = R * 0.52                                               # coloured cap, slightly domed
+    col = CAPS[cap]
+    capim = Image.new("RGBA", (s, s), (0, 0, 0, 0)); cd = ImageDraw.Draw(capim)
+    for i in range(40, 0, -1):
+        t = i / 40; r = rc * t
+        ox, oy = c - rc * 0.22 * (1 - t), c - rc * 0.30 * (1 - t)
+        cd.ellipse([ox - r, oy - r, ox + r, oy + r], fill=rgba(mix(mix(col, (0, 0, 0), 0.30), mix(col, (255, 255, 255), 0.42), (1 - t) ** 1.5)))
     strip = Image.new("RGBA", (KS, KS * FRAMES), (0, 0, 0, 0))
     for f in range(FRAMES):
         im = base.copy(); d = ImageDraw.Draw(im)
         deg = ANG0 + (ANG1 - ANG0) * f / NUMFRAMES
-        for i in range(48):                                               # knurling turns with the knob
-            a = deg + i * 7.5; x0, y0 = ang_xy(c, c, R * 0.85, a); x1, y1 = ang_xy(c, c, R * 0.99, a)
-            d.line([x0, y0, x1, y1], fill=(0, 0, 0, 140), width=SS)
-        im.alpha_composite(capm); d = ImageDraw.Draw(im)
-        d.ellipse([c - rc, c - rc, c + rc, c + rc], outline=(255, 255, 255, 28), width=SS)
-        x0, y0 = ang_xy(c, c, R * 0.42, deg); x1, y1 = ang_xy(c, c, R * 0.97, deg)
-        d.line([x0, y0, x1, y1], fill=rgba(PRINT), width=int(SS * 3.2))
+        for i in range(60):                                     # knurling ridges turn with the knob
+            a = deg + i * 6
+            x0, y0 = ang_xy(c, c, R * 0.86, a); x1, y1 = ang_xy(c, c, R * 1.0, a)
+            d.line([x0, y0, x1, y1], fill=(0, 0, 0, 170), width=int(SS * 0.9))
+            x0, y0 = ang_xy(c, c, R * 0.88, a + 2.2); x1, y1 = ang_xy(c, c, R * 0.99, a + 2.2)
+            d.line([x0, y0, x1, y1], fill=(255, 255, 255, 22), width=int(SS * 0.6))
+        im.alpha_composite(body)
+        d = ImageDraw.Draw(im)
+        d.ellipse([c - rb, c - rb, c + rb, c + rb], outline=(255, 255, 255, 30), width=SS)
+        x0, y0 = ang_xy(c, c, rc * 1.05, deg); x1, y1 = ang_xy(c, c, rb * 0.97, deg)     # pointer on the body
+        d.line([x0, y0, x1, y1], fill=rgba(PRINT), width=int(SS * 2.6))
+        im.alpha_composite(capim)
+        d = ImageDraw.Draw(im)
+        x0, y0 = ang_xy(c, c, rc * 0.15, deg); x1, y1 = ang_xy(c, c, rc * 0.92, deg)     # line across the cap
+        d.line([x0, y0, x1, y1], fill=rgba(PRINT if cap in ("black", "blue", "red", "green") else (24, 24, 26)), width=int(SS * 1.8))
         strip.paste(im.resize((KS, KS), Image.LANCZOS), (0, f * KS))
     return strip
 
-# ---------- GR needle meter (GrScale of GUI/NeedleBallistics.h) ----------
+# ---------------------------------------------------------------- gain-reduction meter (GrScale of GUI/NeedleBallistics.h)
 GR_DB = [0, 1, 2, 3, 5, 7, 10, 15, 20]
 GR_POS = [1.0, 0.885, 0.775, 0.675, 0.53, 0.415, 0.285, 0.125, 0.0]
 def gr_pos(db):
@@ -107,171 +151,243 @@ def gr_pos(db):
     for i in range(1, len(GR_DB)):
         if db <= GR_DB[i]:
             t = (db - GR_DB[i - 1]) / (GR_DB[i] - GR_DB[i - 1]); return GR_POS[i - 1] + t * (GR_POS[i] - GR_POS[i - 1])
-ARC0, ARC1 = -0.86, 0.86
-def meter_geometry(s):
-    inner = (8 * s, 8 * s, MW * s - 8 * s, MH * s - 8 * s)
+ARC0, ARC1 = -0.80, 0.80
+def meter_geom(s):
+    bez = 9 * s
+    inner = (bez, bez, MW * s - bez, MH * s - bez)
     ih = inner[3] - inner[1]
-    pivot = ((inner[0] + inner[2]) / 2, inner[3] + ih * 0.30)
+    pivot = ((inner[0] + inner[2]) / 2, inner[3] + ih * 0.46)
     return inner, ih, pivot
 def arc_pt(pivot, r, pos):
     a = ARC0 + pos * (ARC1 - ARC0); return pivot[0] + r * math.sin(a), pivot[1] - r * math.cos(a)
-def meter_face():
-    s = 3; im = Image.new("RGBA", (MW * s, MH * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([0, 0, MW * s - 1, MH * s - 1], radius=9 * s, fill=rgba((22, 23, 26)))
-    inner, ih, pivot = meter_geometry(s)
-    for yy in range(int(inner[1]), int(inner[3])):                      # warm dial, slightly darker at the bottom
-        k = (yy - inner[1]) / ih; d.line([inner[0], yy, inner[2], yy], fill=rgba(mix(FACE, mix(FACE, (0, 0, 0), 0.18), k)))
-    rs = ih * 1.02
-    pts = [arc_pt(pivot, rs, i / 200) for i in range(201)]; d.line(pts, fill=rgba(INK), width=2 * s)
-    red = [arc_pt(pivot, rs - 3 * s, i / 200 * gr_pos(10)) for i in range(201)]; d.line(red, fill=rgba(RED), width=4 * s)
+def meter_face(s=3):
+    im = Image.new("RGBA", (MW * s, MH * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    for i in range(MH * s):                                     # chrome bezel, lit from the top
+        k = i / (MH * s); d.line([0, i, MW * s, i], fill=rgba(mix((214, 216, 220), (70, 72, 76), k ** 0.7)))
+    m = Image.new("L", im.size, 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, MW * s - 1, MH * s - 1], radius=12 * s, fill=255)
+    clip = Image.new("RGBA", im.size, (0, 0, 0, 0)); clip.paste(im, (0, 0), m); im = clip; d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, MW * s - 1, MH * s - 1], radius=12 * s, outline=(0, 0, 0, 255), width=s)
+    d.rounded_rectangle([4 * s, 4 * s, MW * s - 4 * s, MH * s - 4 * s], radius=9 * s, fill=rgba((16, 16, 18)))
+    inner, ih, pivot = meter_geom(s)
+    face = Image.new("RGBA", im.size, (0, 0, 0, 0)); fd = ImageDraw.Draw(face)       # backlit black face
+    fd.rounded_rectangle(inner, radius=5 * s, fill=rgba((14, 14, 15)))
+    glow = Image.new("RGBA", im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
+    gx, gy = (inner[0] + inner[2]) / 2, inner[1] + ih * 0.55
+    gd.ellipse([gx - MW * s * 0.36, gy - ih * 0.62, gx + MW * s * 0.36, gy + ih * 0.62], fill=(120, 86, 40, 70))
+    face.alpha_composite(glow.filter(ImageFilter.GaussianBlur(ih * 0.25)))
+    mk = Image.new("L", im.size, 0); ImageDraw.Draw(mk).rounded_rectangle(inner, radius=5 * s, fill=255)
+    im.paste(face, (0, 0), mk); d = ImageDraw.Draw(im)
+    rs = ih * 1.22
+    ink = (236, 230, 214)
+    d.line([arc_pt(pivot, rs, i / 240) for i in range(241)], fill=rgba(ink), width=2 * s)
+    d.line([arc_pt(pivot, rs + 4 * s, i / 240 * gr_pos(10)) for i in range(241)], fill=rgba((226, 54, 40)), width=4 * s)
     for db in (4, 6, 8, 9, 12.5, 17.5):
-        p = gr_pos(db); d.line([arc_pt(pivot, rs, p), arc_pt(pivot, rs - 7 * s, p)], fill=rgba(INK), width=s)
-    f = font(13 * s)
+        p = gr_pos(db); d.line([arc_pt(pivot, rs, p), arc_pt(pivot, rs - 7 * s, p)], fill=rgba(ink), width=s)
+    f = font(14 * s)
     for db, p in zip(GR_DB, GR_POS):
-        d.line([arc_pt(pivot, rs + s, p), arc_pt(pivot, rs - 12 * s, p)], fill=rgba(INK), width=2 * s)
-        x, y = arc_pt(pivot, rs + 13 * s, p); text_c(d, x, y, str(db), f, rgba(INK))
-    text_c(d, MW * s / 2, inner[1] + ih * 0.60, "GAIN REDUCTION  dB", font(11 * s), rgba(INK))
-    text_c(d, MW * s / 2, inner[1] + ih * 0.76, "G-GLUE", font(9 * s, "DejaVuSans.ttf"), rgba(mix(INK, FACE, 0.45)))
+        d.line([arc_pt(pivot, rs + 2 * s, p), arc_pt(pivot, rs - 13 * s, p)], fill=rgba(ink), width=2 * s)
+        x, y = arc_pt(pivot, rs + 15 * s, p)
+        text_c(d, x, y, str(db), f, rgba((226, 54, 40) if db >= 10 else ink))
+    text_c(d, (inner[0] + inner[2]) / 2, inner[1] + ih * 0.63, "GAIN  REDUCTION", font(10 * s), rgba(ink))
+    text_c(d, (inner[0] + inner[2]) / 2, inner[1] + ih * 0.75, "dB", font(9 * s, False), rgba(mix(ink, (0, 0, 0), 0.35)))
     return im, s
 def meter_tiles():
     face, s = meter_face()
-    inner, ih, pivot = meter_geometry(s)
+    inner, ih, pivot = meter_geom(s)
     tiles = [Image.new("RGBA", (MTILE, MTILE * FRAMES), (0, 0, 0, 0)) for _ in range(MCOLS * MROWS)]
+    mk = Image.new("L", face.size, 0); ImageDraw.Draw(mk).rounded_rectangle(inner, radius=5 * s, fill=255)
+    zero = Image.new("L", face.size, 0)
+    global GLASS                                                # soft glass sheen across the upper face
+    gl = Image.new("RGBA", face.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(gl)
+    gd.ellipse([inner[0] - (inner[2] - inner[0]) * 0.1, inner[1] - ih * 0.9, inner[2] * 0.75, inner[1] + ih * 0.32], fill=(255, 255, 255, 20))
+    gl = gl.filter(ImageFilter.GaussianBlur(ih * 0.12))
+    GLASS = Image.composite(gl, Image.new("RGBA", face.size, (0, 0, 0, 0)), mk)
     for f in range(FRAMES):
-        im = face.copy(); d = ImageDraw.Draw(im)
-        pos = 1.0 - f / NUMFRAMES                                         # plugin value = 1 - GrScale::position
-        tip = arc_pt(pivot, ih * 1.08, pos)
-        d.line([(pivot[0] + 3 * s, pivot[1] + 2 * s), (tip[0] + 3 * s, tip[1] + 2 * s)], fill=(0, 0, 0, 50), width=3 * s)
-        d.line([pivot, tip], fill=rgba((20, 20, 20)), width=2 * s)
-        mid = (pivot[0] + (tip[0] - pivot[0]) * 0.88, pivot[1] + (tip[1] - pivot[1]) * 0.88)
-        d.line([mid, tip], fill=rgba(RED), width=2 * s)
-        # glass reflection
-        gl = Image.new("RGBA", im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(gl)
-        for yy in range(int(inner[1]), int(inner[1] + ih * 0.42)):
-            a = int(40 * (1 - (yy - inner[1]) / (ih * 0.42))); gd.line([inner[0], yy, inner[2], yy], fill=(255, 255, 255, a))
-        im.alpha_composite(gl)
-        # pivot cover strip along the bottom of the window
-        ImageDraw.Draw(im).rectangle([inner[0], inner[3] - ih * 0.13, inner[2], inner[3]], fill=rgba((26, 26, 28)))
+        im = face.copy()
+        ndl = Image.new("RGBA", im.size, (0, 0, 0, 0)); nd = ImageDraw.Draw(ndl)
+        pos = 1.0 - f / NUMFRAMES                               # plugin value = 1 - GrScale::position
+        tip = arc_pt(pivot, ih * 1.32, pos)
+        nd.line([(pivot[0] + 4 * s, pivot[1] + 3 * s), (tip[0] + 4 * s, tip[1] + 3 * s)], fill=(0, 0, 0, 120), width=3 * s)
+        nd.line([pivot, tip], fill=rgba((244, 240, 230)), width=int(2.2 * s))
+        mid = (pivot[0] + (tip[0] - pivot[0]) * 0.9, pivot[1] + (tip[1] - pivot[1]) * 0.9)
+        nd.line([mid, tip], fill=rgba((255, 84, 52)), width=int(2.4 * s))
+        im.paste(ndl, (0, 0), Image.composite(ndl.split()[3], zero, mk))
+        d = ImageDraw.Draw(im)
+        d.rectangle([inner[0], inner[3] - ih * 0.14, inner[2], inner[3]], fill=rgba((8, 8, 9)))          # pivot housing
+        d.line([inner[0], inner[3] - ih * 0.14, inner[2], inner[3] - ih * 0.14], fill=rgba((60, 60, 64)), width=s)
+        im.alpha_composite(GLASS)
         small = im.resize((MW, MH), Image.LANCZOS)
         for r in range(MROWS):
             for c in range(MCOLS):
                 tiles[r * MCOLS + c].paste(small.crop((c * MTILE, r * MTILE, (c + 1) * MTILE, (r + 1) * MTILE)), (0, f * MTILE))
     return tiles
 
-# ---------- LED level meters ----------
+# ---------------------------------------------------------------- LED ladders (-48 .. 0 dBFS, 3 dB per segment)
+def led_colour(top): return LED_GREEN if top <= -12 else (LED_AMBER if top <= -3 else LED_RED)
 def led_tiles():
-    h = LTILE * 6
-    tiles = [Image.new("RGBA", (LTILE, LTILE * FRAMES), (0, 0, 0, 0)) for _ in range(6)]
-    seg_h = h / LSEG
+    h = LTILE * LROWS; s = 4
+    tiles = [Image.new("RGBA", (LTILE, LTILE * FRAMES), (0, 0, 0, 0)) for _ in range(LROWS)]
+    pitch = h / LSEG
     for f in range(FRAMES):
         db = -48 + 48 * f / NUMFRAMES
-        im = Image.new("RGBA", (LTILE, h), rgba((12, 12, 14))); d = ImageDraw.Draw(im)
+        im = Image.new("RGBA", (LTILE * s, h * s), rgba((6, 6, 7))); d = ImageDraw.Draw(im)
         for i in range(LSEG):
-            top = -48 + 4 * (i + 1)
-            col = (60, 207, 122) if top <= -12 else (ACCENT if top <= -4 else RED)
-            lit = db >= top - 4 + 0.01
-            y1 = h - i * seg_h - 2; y0 = y1 - seg_h + 3
-            d.rectangle([4, y0, LTILE - 5, y1], fill=rgba(col if lit else mix(col, (0, 0, 0), 0.82)))
-        for k in range(6): tiles[k].paste(im.crop((0, k * LTILE, LTILE, (k + 1) * LTILE)), (0, f * LTILE))
+            top = -48 + 3 * (i + 1); col = led_colour(top)
+            lit = db >= top - 3 + 0.01
+            y1 = (h - i * pitch - 1.5) * s; y0 = y1 - (pitch - 2.5) * s
+            if lit:
+                g = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(g).rectangle([3 * s, y0 - s, (LTILE - 3) * s, y1 + s], fill=rgba(col, 110))
+                im.alpha_composite(g.filter(ImageFilter.GaussianBlur(2 * s))); d = ImageDraw.Draw(im)
+                d.rectangle([5 * s, y0, (LTILE - 5) * s, y1], fill=rgba(mix(col, (255, 255, 255), 0.18)))
+            else:
+                d.rectangle([5 * s, y0, (LTILE - 5) * s, y1], fill=rgba(mix(col, (0, 0, 0), 0.84)))
+        small = im.resize((LTILE, h), Image.LANCZOS)
+        for k in range(LROWS): tiles[k].paste(small.crop((0, k * LTILE, LTILE, (k + 1) * LTILE)), (0, f * LTILE))
     return tiles
 
-# ---------- buttons ----------
-def button(lab, on, w, h, led=None, fs=15):
-    s = SS; im = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    off = s if on else 0
-    d.rounded_rectangle([0, 2 * s, w * s - 1, h * s - 1], radius=6 * s, fill=(0, 0, 0, 140))
-    face = Image.new("RGBA", im.size, (0, 0, 0, 0)); fd = ImageDraw.Draw(face)
-    for yy in range(0, (h - 3) * s):
-        k = yy / ((h - 3) * s); fd.line([0, yy + off, w * s, yy + off], fill=rgba(mix((60, 62, 67) if not on else (44, 45, 49), (30, 31, 35), k)))
-    m = Image.new("L", im.size, 0); ImageDraw.Draw(m).rounded_rectangle([0, off, w * s - 1, (h - 3) * s + off], radius=6 * s, fill=255)
-    im.paste(face, (0, 0), m); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([0, off, w * s - 1, (h - 3) * s + off], radius=6 * s, outline=(255, 255, 255, 40), width=s)
-    tx = w * s / 2
-    if led:
-        r = 4.5 * s; lx, ly = 16 * s, (h - 3) * s / 2 + off
-        if on:
-            g = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(g).ellipse([lx - 3 * r, ly - 3 * r, lx + 3 * r, ly + 3 * r], fill=rgba(led, 130))
-            im.alpha_composite(g.filter(ImageFilter.GaussianBlur(3 * s))); d = ImageDraw.Draw(im)
-        d.ellipse([lx - r, ly - r, lx + r, ly + r], fill=rgba(led if on else mix(led, (0, 0, 0), 0.75)), outline=(0, 0, 0, 160), width=s)
-        tx += 8 * s
-    text_c(d, tx, (h - 3) * s / 2 + off, lab, font(fs * s), rgba(PRINT))
-    return im.resize((w, h), Image.LANCZOS)
-def icon_button(kind, w, h):
-    im = button("", False, w, h); s = 4; big = im.resize((w * s, h * s), Image.LANCZOS); d = ImageDraw.Draw(big)
-    cx, cy, r = w * s / 2, (h - 3) * s / 2, min(w, h) * s * 0.2
-    if kind == "prev": d.polygon([(cx + r * 0.8, cy - r), (cx + r * 0.8, cy + r), (cx - r * 0.9, cy)], fill=rgba(PRINT))
-    elif kind == "next": d.polygon([(cx - r * 0.8, cy - r), (cx - r * 0.8, cy + r), (cx + r * 0.9, cy)], fill=rgba(PRINT))
+# ---------------------------------------------------------------- switches and toolbar buttons
+def square_switch(on, led):
+    """console push switch: square cap with a lens that lights up"""
+    s = SS; w = SW; im = Image.new("RGBA", (w * s, w * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, w * s - 1, w * s - 1], radius=5 * s, fill=rgba((8, 8, 9)))
+    off = int(1.5 * s) if on else 0
+    cap = Image.new("RGBA", im.size, (0, 0, 0, 0)); cd = ImageDraw.Draw(cap)
+    for yy in range(4 * s, (w - 4) * s):
+        k = (yy - 4 * s) / ((w - 8) * s); cd.line([4 * s, yy + off, (w - 4) * s, yy + off], fill=rgba(mix((92, 94, 99), (40, 41, 44), k)))
+    mk = Image.new("L", im.size, 0); ImageDraw.Draw(mk).rounded_rectangle([4 * s, 4 * s + off, (w - 4) * s, (w - 4) * s + off], radius=4 * s, fill=255)
+    im.paste(cap, (0, 0), mk); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([4 * s, 4 * s + off, (w - 4) * s, (w - 4) * s + off], radius=4 * s, outline=(255, 255, 255, 46), width=s)
+    lx0, ly0, lx1, ly1 = 12 * s, 14 * s + off, (w - 12) * s, 26 * s + off
+    if on:
+        g = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle([lx0 - 4 * s, ly0 - 4 * s, lx1 + 4 * s, ly1 + 4 * s], radius=4 * s, fill=rgba(led, 160))
+        im.alpha_composite(g.filter(ImageFilter.GaussianBlur(4 * s))); d = ImageDraw.Draw(im)
+        d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, fill=rgba(mix(led, (255, 255, 255), 0.25)))
+        d.rounded_rectangle([lx0 + 2 * s, ly0 + s, lx1 - 2 * s, ly0 + 4 * s], radius=s, fill=(255, 255, 255, 120))
     else:
-        pts = [(cx + (r * 1.25 if i % 2 == 0 else r * 0.5) * math.cos(math.radians(-90 + i * 36)),
-                cy + (r * 1.25 if i % 2 == 0 else r * 0.5) * math.sin(math.radians(-90 + i * 36))) for i in range(10)]
-        d.polygon(pts, fill=rgba(ACCENT))
-    return big.resize((w, h), Image.LANCZOS)
+        d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, fill=rgba(mix(led, (0, 0, 0), 0.78)))
+    d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, outline=(0, 0, 0, 200), width=s)
+    return im.resize((w, w), Image.LANCZOS)
 
-# ---------- background ----------
+def tool_button(lab, w, h, icon=None, accent=None):
+    s = SS; im = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, w * s - 1, h * s - 1], radius=4 * s, fill=rgba((4, 4, 5)))
+    face = Image.new("RGBA", im.size, (0, 0, 0, 0)); fd = ImageDraw.Draw(face)
+    for yy in range(s, (h - 1) * s):
+        k = yy / (h * s); fd.line([s, yy, (w - 1) * s, yy], fill=rgba(mix((66, 67, 71), (34, 35, 38), k)))
+    mk = Image.new("L", im.size, 0); ImageDraw.Draw(mk).rounded_rectangle([s, s, (w - 1) * s, (h - 1) * s], radius=3 * s, fill=255)
+    im.paste(face, (0, 0), mk); d = ImageDraw.Draw(im)
+    d.line([3 * s, s + 1, (w - 3) * s, s + 1], fill=(255, 255, 255, 50), width=s)
+    cx, cy, r = w * s / 2, h * s / 2, min(w, h) * s * 0.2
+    if icon == "prev": d.polygon([(cx + r * 0.8, cy - r), (cx + r * 0.8, cy + r), (cx - r * 0.9, cy)], fill=rgba(PRINT))
+    elif icon == "next": d.polygon([(cx - r * 0.8, cy - r), (cx - r * 0.8, cy + r), (cx + r * 0.9, cy)], fill=rgba(PRINT))
+    elif icon == "fav":
+        pts = [(cx + (r * 1.3 if i % 2 == 0 else r * 0.52) * math.cos(math.radians(-90 + i * 36)),
+                cy + (r * 1.3 if i % 2 == 0 else r * 0.52) * math.sin(math.radians(-90 + i * 36))) for i in range(10)]
+        d.polygon(pts, fill=rgba(LED_AMBER))
+    else:
+        f = font(12 * s); spaced(d, cx, cy - 7 * s, lab, f, rgba(accent or PRINT), track=1.2 * s, anchor="c")
+    return im.resize((w, h), Image.LANCZOS)
+
+# ---------------------------------------------------------------- background
 def screw(d, x, y, r, ang):
-    d.ellipse([x - r - 1, y - r, x + r + 1, y + r + 2], fill=(0, 0, 0))
-    for i in range(int(r), 0, -1):
-        t = i / r; d.ellipse([x - i, y - i, x + i, y + i], fill=mix((205, 206, 210), (92, 94, 101), t))
+    d.ellipse([x - r - 1.5, y - r - 1, x + r + 1.5, y + r + 2], fill=(4, 4, 5))
+    for i in range(int(r * 4), 0, -1):
+        t = i / (r * 4); rr = r * t; d.ellipse([x - rr, y - rr, x + rr, y + rr], fill=mix((40, 41, 44), (122, 124, 130), (1 - t) ** 0.6))
     for a in (ang, ang + 90):
-        dx, dy = math.cos(math.radians(a)) * r * 0.75, math.sin(math.radians(a)) * r * 0.75
-        d.line([x - dx, y - dy, x + dx, y + dy], fill=(38, 39, 43), width=3)
+        dx, dy = math.cos(math.radians(a)) * r * 0.7, math.sin(math.radians(a)) * r * 0.7
+        d.line([x - dx, y - dy, x + dx, y + dy], fill=(10, 10, 11), width=2)
+
+def module(im, box, title):
+    x0, y0, x1, y1 = box; d = ImageDraw.Draw(im)
+    d.rectangle([x0 - 2, y0 - 2, x1 + 2, y1 + 2], fill=SEAM)
+    face = Image.new("RGB", (x1 - x0, y1 - y0)); fd = ImageDraw.Draw(face)
+    for y in range(y1 - y0): fd.line([0, y, x1 - x0, y], fill=mix((50, 51, 55), (37, 38, 41), y / (y1 - y0)))
+    random.seed(x0)
+    tex = Image.new("RGBA", face.size, (0, 0, 0, 0)); td = ImageDraw.Draw(tex)
+    for _ in range(face.size[0] * face.size[1] // 60):           # vertical brushing
+        x = random.randrange(face.size[0]); y = random.randrange(face.size[1]); ln = random.randint(10, 90)
+        td.line([x, y, x, min(face.size[1], y + ln)], fill=(255, 255, 255, random.randint(3, 8)) if random.random() < 0.5 else (0, 0, 0, random.randint(5, 12)))
+    face.paste(tex, (0, 0), tex)
+    im.paste(face, (x0, y0)); d = ImageDraw.Draw(im)
+    d.line([x0, y0, x1 - 1, y0], fill=EDGE); d.line([x0, y0, x0, y1 - 1], fill=(66, 68, 72))
+    d.line([x0, y1 - 1, x1 - 1, y1 - 1], fill=(20, 20, 22)); d.line([x1 - 1, y0, x1 - 1, y1 - 1], fill=(22, 22, 24))
+    for sx, sy in ((x0 + 12, y0 + 12), (x1 - 12, y0 + 12), (x0 + 12, y1 - 12), (x1 - 12, y1 - 12)):
+        screw(d, sx, sy, 5, random.randint(0, 90))
+    f = font(12); tw = spaced(d, (x0 + x1) / 2, y0 + 12, title, f, PRINT, track=2.2, anchor="c")
+    cy = y0 + 19
+    d.line([x0 + 30, cy, (x0 + x1) / 2 - tw / 2 - 12, cy], fill=FAINT)
+    d.line([(x0 + x1) / 2 + tw / 2 + 12, cy, x1 - 30, cy], fill=FAINT)
+
+def qbadge(d, x, y, n):
+    f = font(9); w = 12 + 6 * (len(str(n)) - 1)
+    d.rounded_rectangle([x, y, x + w, y + 12], radius=3, outline=FAINT, fill=(26, 26, 28))
+    text_c(d, x + w / 2 + 0.5, y + 6, str(n), f, DIM)
+
 def background():
-    random.seed(7)
-    im = Image.new("RGB", (W, H)); d = ImageDraw.Draw(im)
-    for y in range(H): d.line([0, y, W, y], fill=mix(PLATE_T, PLATE_B, y / H))
-    tex = Image.new("RGBA", (W, H), (0, 0, 0, 0)); td = ImageDraw.Draw(tex)
-    for _ in range(W * H // 90):
-        y = random.randrange(H); x = random.randrange(W); ln = random.randint(20, 180)
-        td.line([x, y, min(W, x + ln), y], fill=(255, 255, 255, random.randint(4, 11)) if random.random() < 0.5 else (0, 0, 0, random.randint(5, 13)))
-    im.paste(tex, (0, 0), tex); d = ImageDraw.Draw(im)
-    d.rectangle([0, 0, W - 1, H - 1], outline=(0, 0, 0)); d.rectangle([1, 1, W - 2, H - 2], outline=(70, 72, 78))
-    for x, y in ((16, 16), (W - 16, 16), (16, H - 16), (W - 16, H - 16)): screw(d, x, y, 8, random.randint(0, 90))
-    # title
-    title = "G - G L U E"; d.text((44, 16), title, font=font(30), fill=PRINT)
-    d.text((44 + d.textlength(title, font=font(30)) + 18, 28), "B U S   C O M P R E S S O R", font=font(13), fill=DIM)
-    for x0, x1 in ((24, 572), (590, W - 24)):
-        d.line([x0, 66, x1, 66], fill=(10, 10, 12)); d.line([x0, 67, x1, 67], fill=(70, 72, 78))
-    # meter wells and captions
-    for x in (IN_X, OUT_X):
-        d.rounded_rectangle([x - 3, LY - 3, x + LTILE + 2, LY + 6 * LTILE + 2], radius=4, fill=(8, 8, 10))
-    text_c(d, IN_X + LTILE / 2, LY + 6 * LTILE + 14, "IN", font(11), DIM)
-    text_c(d, OUT_X + LTILE / 2, LY + 6 * LTILE + 14, "OUT", font(11), DIM)
-    # preset section panel
-    d.rounded_rectangle([30, 270, 572, 474], radius=10, fill=(22, 23, 26), outline=(64, 66, 72))
-    d.text((44, 256), "P R E S E T", font=font(11), fill=DIM)
-    # knob scales and labels
-    for row, keys in enumerate(KNOBS):
-        for col, key in enumerate(keys):
-            if not key: continue
-            cx, cy = knob_centre(row, col)
-            steps = STEPS.get(key, 11)
-            for i in range(steps):
-                a = ANG0 + (ANG1 - ANG0) * i / (steps - 1); major = key in STEPS or i % 5 == 0
-                x0, y0 = ang_xy(cx, cy, KS / 2 + 3, a); x1, y1 = ang_xy(cx, cy, KS / 2 + (9 if major else 6), a)
-                d.line([x0, y0, x1, y1], fill=PRINT if major else DIM, width=2 if major else 1)
-            labs = SCALE[key]
-            for i, t in enumerate(labs):
-                a = ANG0 + (ANG1 - ANG0) * (i / (len(labs) - 1) if len(labs) > 1 else 0)
-                x, y = ang_xy(cx, cy, KS / 2 + 20, a); text_c(d, x, y, t, font(11), DIM)
-    # value windows under the knobs
-    for row, keys in enumerate(KNOBS):
-        for col, key in enumerate(keys):
-            if key:
-                x = KX0 + col * KW; y = KY[row]
-                d.rounded_rectangle([x + 18, y + 128, x + KW - 18, y + 154], radius=5, fill=(10, 10, 12), outline=(60, 62, 68))
-    # Q-Link legend
-    d.rounded_rectangle([604, 480, W - 30, 592], radius=10, outline=(64, 66, 72))
-    d.text((620, 468), "Q - L I N K S", font=font(11), fill=DIM)
-    legend = [("1", "THRESHOLD"), ("2", "MAKEUP"), ("3", "ATTACK"), ("4", "RELEASE"), ("5", "RATIO"), ("6", "SC FILTER"),
-              ("7", "MIX"), ("8", "INPUT"), ("9", "OUTPUT"), ("10", "ANALOG"), ("11", "BYPASS"), ("12", "PRESET")]
-    for i, (n, t) in enumerate(legend):
-        x = 624 + (i % 4) * 158; y = 496 + (i // 4) * 30
-        d.text((x, y), n, font=font(13), fill=ACCENT); d.text((x + 28, y), t, font=font(13), fill=PRINT)
-    d.text((44, 596), "Unofficial MPC build: VST2 for MPC OS (Gen1). Presets: /sdcard/G-Glue/Presets",
-           font=font(11, "DejaVuSans.ttf"), fill=DIM)
+    im = Image.new("RGB", (W, H), (20, 20, 22)); d = ImageDraw.Draw(im)
+    for y in range(TOOL_H): d.line([0, y, W, y], fill=mix((34, 34, 37), (12, 12, 13), y / TOOL_H))           # toolbar
+    d.line([0, TOOL_H, W, TOOL_H], fill=(96, 98, 104)); d.line([0, TOOL_H + 1, W, TOOL_H + 1], fill=(0, 0, 0))
+    spaced(d, 22, 13, "G-GLUE", font(27), PRINT, track=3.5)
+    spaced(d, 24, 43, "BUS  COMPRESSOR", font(9), DIM, track=2.2)
+    bx, by, bw, bh = TB["browse"]                                                                           # preset display
+    d.rounded_rectangle([bx - 2, by - 2, bx + bw + 2, by + bh + 2], radius=5, fill=(0, 0, 0))
+    disp = Image.new("RGB", (bw, bh)); dd = ImageDraw.Draw(disp)
+    for y in range(bh): dd.line([0, y, bw, y], fill=mix((10, 12, 14), (22, 25, 28), y / bh))
+    im.paste(disp, (bx, by)); d = ImageDraw.Draw(im)
+    d.line([bx + 4, by + 1, bx + bw - 4, by + 1], fill=(0, 0, 0)); d.line([bx, by + bh, bx + bw, by + bh], fill=(60, 62, 66))
+    spaced(d, bx + 8, by + 3, "PRESET", font(7), FAINT, track=1.2)
+    qbadge(d, bx + bw - 22, by + 3, 12)
+    d.line([948, 14, 948, 46], fill=(56, 58, 62))
+    module(im, MOD1, "METERS  &  I / O"); module(im, MOD2, "COMPRESSOR")
+    d = ImageDraw.Draw(im)
+    for x, side in ((IN_X, 1), (OUT_X, 1)):                                                                 # LED ladders
+        d.rounded_rectangle([x - 4, LY - 4, x + LTILE + 3, LY + LTILE * LROWS + 3], radius=3, fill=(2, 2, 3), outline=(70, 72, 76))
+        for db in range(0, -49, -3):
+            y = LY + LTILE * LROWS * (-db / 48.0)
+            tx = x + LTILE + 6 if side > 0 else x - 6
+            major = db in (0, -6, -12, -24, -36, -48)
+            ln = 4 if major else 2
+            d.line([tx, y, tx + ln * side, y], fill=PRINT if major else FAINT)
+            if major:
+                f = font(9, False); lab = str(db); lw = d.textlength(lab, font=f)
+                d.text((tx + 6 if side > 0 else tx - 6 - lw, y - 6), lab, font=f, fill=PRINT if db >= -12 else DIM)
+    spaced(d, IN_X + LTILE / 2, LY + LTILE * LROWS + 12, "IN", font(10), PRINT, track=1.5, anchor="c")
+    spaced(d, OUT_X + LTILE / 2, LY + LTILE * LROWS + 12, "OUT", font(10), PRINT, track=1.5, anchor="c")
+    d.rounded_rectangle([MX - 3, MY - 3, MX + MW + 2, MY + MH + 3], radius=14, fill=(0, 0, 0))
+    spaced(d, MX + MW / 2, MY + MH + 12, "COMPRESSION", font(10), DIM, track=2.0, anchor="c")
+    for key, (cap, colour, cx, top, q) in KNOBS.items():                                                    # knobs
+        kx, ky = knob_centre(key)
+        tw = spaced(d, kx, top - 22, cap, font(12), PRINT, track=1.6, anchor="c")
+        qbadge(d, kx + tw / 2 + 8, top - 21, q)
+        steps = STEPS.get(key, 21)
+        for i in range(steps):
+            a = ANG0 + (ANG1 - ANG0) * i / (steps - 1)
+            major = key in STEPS or i % 5 == 0
+            r0, r1 = KS / 2 + 4, KS / 2 + (11 if major else 7)
+            x0, y0 = ang_xy(kx, ky, r0, a); x1, y1 = ang_xy(kx, ky, r1, a)
+            d.line([x0, y0, x1, y1], fill=PRINT if major else DIM, width=2 if major else 1)
+        labs = SCALE[key]
+        for i, t in enumerate(labs):
+            a = ANG0 + (ANG1 - ANG0) * i / (len(labs) - 1)
+            x, y = ang_xy(kx, ky, KS / 2 + 24, a)
+            text_c(d, x, y, t, font(10, False), PRINT)
+        if UNITS[key]: text_c(d, kx, ky + KS / 2 + 18, UNITS[key], font(9, False), DIM)
+        bx0, by0 = knob_box(key)
+        d.rounded_rectangle([bx0 + 25, by0 + 124, bx0 + CW - 25, by0 + 148], radius=3, fill=(6, 7, 8), outline=(74, 76, 80))
+        d.line([bx0 + 27, by0 + 125, bx0 + CW - 27, by0 + 125], fill=(0, 0, 0))
+    for key, (cap, led, cx, y, q) in SWITCHES.items():                                                      # switches
+        tw = spaced(d, cx, y - 22, cap, font(12), PRINT, track=1.6, anchor="c")
+        qbadge(d, cx + tw / 2 + 8, y - 21, q)
+        d.rounded_rectangle([cx - SW / 2 - 3, y - 3, cx + SW / 2 + 3, y + SW + 3], radius=7, fill=(70, 72, 77))
+        d.rounded_rectangle([cx - SW / 2 - 2, y - 2, cx + SW / 2 + 2, y + SW + 2], radius=6, fill=(14, 14, 15))
+    text_c(d, 306, 500 + SW + 14, "ANALOG adds programme-dependent even-order colour", font(9, False), FAINT)
+    d.rectangle([0, FOOT_Y, W, H], fill=(12, 12, 13)); d.line([0, FOOT_Y, W, FOOT_Y], fill=(0, 0, 0))     # footer
+    d.line([0, FOOT_Y + 1, W, FOOT_Y + 1], fill=(56, 58, 62))
+    d.line([760, FOOT_Y + 6, 760, H - 6], fill=(44, 46, 50))
+
     return im
 
-# ---------- TUI.json helpers (GlueBus schema) ----------
+# ---------------------------------------------------------------- TUI.json helpers (GlueBus schema)
 NOREMAP = {"version": 1, "map": []}
 def bounds(b, focus="No", show="Show", visible="Always"):
     return {"version": 2, "acceptsHWFocus": focus, "showWhenDataModelInvalid": show, "whenVisible": visible,
@@ -287,28 +403,32 @@ def bgdata(col="0"): return {"version": 1, "focussed": {"version": 1, "colour": 
 def definition(actions, parts, bgcol="0", ignore=False):
     return {"version": 4, "actions": actions, "backgroundData": bgdata(bgcol), "ignoreMousePresses": ignore,
             "disableCoarseDataWheel": False, "repeats": 1, "hideQLinkBounds": True, "componentsData": parts}
-def label(kind, h, colour, b, case="Original"):
+def label(kind, h, colour, b, just="horizontallyCentred verticallyCentred", case="Original"):
     return comp(kind, "Label", {"version": 1, "textStyle": {"version": 1, "font": {"version": 1, "name": "Titillium Web", "style": "SemiBold", "height": float(h)},
-                "colour": colour, "justification": "horizontallyCentred verticallyCentred", "case": case}, "type": kind, "handleName": "Data"}, bounds(b))
+                "colour": colour, "justification": just, "case": case}, "type": kind, "handleName": "Data"}, bounds(b))
 def focus(b):
-    return comp("Focus", "Focus", {"version": 1, "backgroundColour": "00000000", "outlineColour": hexcol(ACCENT), "backgroundInset": 1.0, "outlineThickness": 2.0},
+    return comp("Focus", "Focus", {"version": 1, "backgroundColour": "00000000", "outlineColour": hexcol(PRINT, 200), "backgroundInset": 1.0, "outlineThickness": 1.5},
                 bounds(b, visible="WhenFocussed"))
 CTRL = lambda: [action("Mouse Down", "Q-Link"), action("Double Click", "Show Overlay", "knob overlay"), action("Enter Pressed", "Show Overlay", "knob overlay")]
 TOGGLE = lambda: [action("Mouse Down", "Q-Link"), action("Enter Pressed", "Toggle Switch")]
-def strip(img, x, y, sq, drag="Vertical"):
+def strip(img, x, y, sq):
     return comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": img, "numFrames": NUMFRAMES, "invert": False,
-                "dragOrientation": drag, "handleName": "Data"}, bounds((x, y, sq, sq)))
+                "dragOrientation": "Vertical", "handleName": "Data"}, bounds((x, y, sq, sq)))
 def btn_part(on, off, w, h):
     return comp("Button", "Button", {"version": 2, "onImage": on, "offImage": off, "buttonId": 1, "numButtonsInGroup": 1,
                 "handleName": "Data", "gestureBehaviour": "Instant"}, bounds((0, 0, w, h)))
 
-PLACED = []      # (kind, param, x, y, w, h, extra) for the preview
+PLACED = []
 def place(comps, name, key, param, x, y, w, h, kind, extra=None, touch=False):
     comps.append(comp(name, key, {"version": 1, "handleName": "Data"},
                       bounds((x, y, w, h), focus="Yes" if touch else "No", show="Hide" if touch else "Show"), bindp(param)))
     PLACED.append((kind, param, x, y, w, h, extra))
 
+READOUTS = {"status": (16, FOOT_Y + 2, 736, 26, 14, DIM, "left verticallyCentred"),
+            "preset": (770, FOOT_Y + 2, 494, 26, 15, PRINT, "right verticallyCentred")}
+
 def build():
+    PLACED.clear()
     if os.path.isdir(SKIN_DIR): shutil.rmtree(SKIN_DIR)
     os.makedirs(OUT)
     save = lambda im, n: im.save(os.path.join(OUT, n), optimize=True)
@@ -316,7 +436,6 @@ def build():
     save(background(), "gg_bg.png")
     comps.append(comp("Background", "Image", {"version": 2, "imageType": "Regular", "colour": "0", "image": "gg_bg.png"}, bounds((0, 0, W, H))))
 
-    # GR meter tiles + LED meters (read-only, follow one parameter each)
     for k, t in enumerate(meter_tiles()):
         save(t, f"gg_gr{k}.png")
         defs.append({"key": f"ggGr{k}", "value": definition([], [strip(f"gg_gr{k}.png", 0, 0, MTILE)], ignore=True)})
@@ -327,49 +446,40 @@ def build():
         place(comps, f"In {k}", f"ggLed{k}", P["inmeter"], IN_X, LY + k * LTILE, LTILE, LTILE, "tile", f"gg_led{k}.png")
         place(comps, f"Out {k}", f"ggLed{k}", P["outmeter"], OUT_X, LY + k * LTILE, LTILE, LTILE, "tile", f"gg_led{k}.png")
 
-    # knobs: filmstrip + name + value
-    save(knob_strip(), "gg_knob.png")
-    defs.append({"key": "ggKnob", "value": definition(CTRL(), [
-        focus((0, 0, KW, KH)), strip("gg_knob.png", (KW - KS) / 2, 24, KS),
-        label("Name", 15, hexcol(PRINT), (0, 104, KW, 20)),
-        label("Value", 17, hexcol(ACCENT), (18, 128, KW - 36, 26))])})
-    for row, keys in enumerate(KNOBS):
-        for col, key in enumerate(keys):
-            if key: place(comps, CAPTION[key], "ggKnob", P[key], KX0 + col * KW, KY[row], KW, KH, "knob", key, touch=True)
+    for colour in sorted({v[1] for v in KNOBS.values()}):
+        save(knob_strip(colour), f"gg_knob_{colour}.png")
+        defs.append({"key": f"ggKnob_{colour}", "value": definition(CTRL(), [
+            focus((0, 0, CW, CH)), strip(f"gg_knob_{colour}.png", (CW - KS) / 2, KNOB_Y0, KS),
+            label("Value", 15, hexcol(PRINT), (25, 124, CW - 50, 24))])})
+    for key, (cap, colour, cx, top, q) in KNOBS.items():
+        x, y = knob_box(key)
+        place(comps, cap, f"ggKnob_{colour}", P[key], x, y, CW, CH, "knob", (key, colour), touch=True)
 
-    # switches (ANALOG, BYPASS): LED buttons
-    for key, colour, w, h in (("analog", ACCENT, 112, 46), ("bypass", RED, 200, 52)):
-        save(button(CAPTION[key], True, w, h, colour), f"gg_{key}_on.png"); save(button(CAPTION[key], False, w, h, colour), f"gg_{key}_off.png")
-        defs.append({"key": f"ggSw_{key}", "value": definition(TOGGLE(), [btn_part(f"gg_{key}_on.png", f"gg_{key}_off.png", w, h), focus((0, 0, w, h))])})
-    place(comps, "ANALOG", "ggSw_analog", P["analog"], KX0 + 4 * KW + (KW - 112) / 2, KY[1] + 48, 112, 46, "switch", "analog", touch=True)
-    place(comps, "BYPASS", "ggSw_bypass", P["bypass"], 201, 500, 200, 52, "switch", "bypass", touch=True)
+    for key, (cap, led, cx, y, q) in SWITCHES.items():
+        save(square_switch(True, led), f"gg_{key}_on.png"); save(square_switch(False, led), f"gg_{key}_off.png")
+        defs.append({"key": f"ggSw_{key}", "value": definition(TOGGLE(), [btn_part(f"gg_{key}_on.png", f"gg_{key}_off.png", SW, SW), focus((0, 0, SW, SW))])})
+        place(comps, cap, f"ggSw_{key}", P[key], cx - SW / 2, y, SW, SW, "switch", key, touch=True)
 
-    # momentary buttons: same picture on and off (each tap flips the value; the plugin treats any change as a tap)
-    taps = {"prev": (48, 44, None), "next": (48, 44, None), "fav": (48, 44, None),
-            "load": (96, 44, "LOAD"), "save": (96, 44, "SAVE"), "delete": (96, 44, "DELETE"), "ab": (96, 44, "A / B"), "copy": (96, 44, "COPY")}
-    for key, (w, h, txt) in taps.items():
-        im = icon_button(key, w, h) if txt is None else button(txt, False, w, h)
-        save(im, f"gg_{key}.png")
+    # toolbar taps: same picture on and off (each tap flips the value; the plugin treats any change as a tap)
+    labels = {"load": ("LOAD", (255, 196, 90)), "ab": ("A / B", None), "copy": ("COPY", None), "save": ("SAVE", None), "delete": ("DELETE", None)}
+    for key in ("prev", "next", "fav", "load", "ab", "copy", "save", "delete"):
+        x, y, w, h = TB[key]
+        lab, accent = labels.get(key, ("", None))
+        save(tool_button(lab, w, h, icon=key if key in ("prev", "next", "fav") else None, accent=accent), f"gg_{key}.png")
         defs.append({"key": f"ggTap_{key}", "value": definition(TOGGLE(), [btn_part(f"gg_{key}.png", f"gg_{key}.png", w, h), focus((0, 0, w, h))])})
-    place(comps, "PREV", "ggTap_prev", P["prev"], 44, 284, 48, 44, "tap", "prev", touch=True)
-    place(comps, "NEXT", "ggTap_next", P["next"], 450, 284, 48, 44, "tap", "next", touch=True)
-    place(comps, "FAV", "ggTap_fav", P["fav"], 508, 284, 48, 44, "tap", "fav", touch=True)
-    for i, key in enumerate(("load", "save", "delete", "ab", "copy")):
-        place(comps, key.upper(), f"ggTap_{key}", P[key], 44 + i * 104, 340, 96, 44, "tap", key, touch=True)
-    # preset browser box: transparent drag area + the selected preset's name
-    drag = Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0)); save(drag, "gg_drag.png")
+        place(comps, key.upper(), f"ggTap_{key}", P[key], x, y, w, h, "tap", key, touch=True)
+    save(Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0)), "gg_drag.png")
+    bx, by, bw, bh = TB["browse"]
     defs.append({"key": "ggBrowse", "value": definition(CTRL(), [
         comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "gg_drag.png", "numFrames": NUMFRAMES, "invert": False,
-             "dragOrientation": "Vertical", "handleName": "Data"}, bounds((0, 0, 346, 44))),
-        label("Value", 19, hexcol(PRINT), (0, 0, 346, 44)), focus((0, 0, 346, 44))])})
-    place(comps, "PRESET", "ggBrowse", P["browse"], 98, 284, 346, 44, "box", None, touch=True)
-    # readouts
-    defs.append({"key": "ggPreset", "value": definition([], [label("Value", 22, hexcol(ACCENT), (0, 0, 528, 34))], ignore=True)})
-    defs.append({"key": "ggStatus", "value": definition([], [label("Value", 15, hexcol(DIM), (0, 0, 528, 28))], ignore=True)})
-    place(comps, "Current Preset", "ggPreset", P["preset"], 38, 394, 528, 34, "ro", (22, ACCENT))
-    place(comps, "Status", "ggStatus", P["status"], 38, 432, 528, 28, "ro", (15, DIM))
+             "dragOrientation": "Vertical", "handleName": "Data"}, bounds((0, 0, bw, bh))),
+        label("Value", 20, hexcol(PRINT), (0, 4, bw, bh - 4)), focus((0, 0, bw, bh))])})
+    place(comps, "PRESET", "ggBrowse", P["browse"], bx, by, bw, bh, "box", None, touch=True)
+    for key, (x, y, w, h, fs, col, just) in READOUTS.items():
+        defs.append({"key": f"ggRo_{key}", "value": definition([], [label("Value", fs, hexcol(col), (0, 0, w, h), just)], ignore=True)})
+        place(comps, key, f"ggRo_{key}", P[key], x, y, w, h, "ro", (fs, col, just))
 
-    defs.append({"key": "GG|Main", "value": definition([], comps, "ff1b1c1f")})
+    defs.append({"key": "GG|Main", "value": definition([], comps, "ff141416")})
     tabs = [{"version": 3, "tabName": "G-GLUE", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
              "componentName": "GG|Main", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
     tui = {"pageData": {"version": 1,
@@ -388,10 +498,11 @@ def build():
         "<?xml version='1.0' encoding='utf-8'?>\n<plugincontent version=\"1.0\">\n\t<identifier>gglueaudio.vst.gglue</identifier>\n"
         f"\t<version>{VERSION}</version>\n</plugincontent>\n")
     sizes = [Image.open(os.path.join(OUT, f)).size for f in os.listdir(OUT) if f.endswith(".png")]
-    tallest = max(s[1] for s in sizes)
-    print(f"skin: {len(sizes)} images, tallest {tallest} px, written to {SKIN_DIR}")
+    strips = [s for s in sizes if s[1] > H]
+    bad = [s for s in strips if s[1] != s[0] * FRAMES or s[0] > 72]
+    print(f"skin: {len(sizes)} images, {len(strips)} filmstrips, tallest {max(s[1] for s in sizes)} px, rule violations: {len(bad)}")
 
-# ---------- preview: the real plugin (build/native/gglue.so) after a few seconds of drum-like audio ----------
+# ---------------------------------------------------------------- preview from the real plugin
 class AEffect(ctypes.Structure): pass
 DISP = ctypes.CFUNCTYPE(ctypes.c_ssize_t, ctypes.POINTER(AEffect), ctypes.c_int32, ctypes.c_int32, ctypes.c_ssize_t, ctypes.c_void_p, ctypes.c_float)
 PROC = ctypes.CFUNCTYPE(None, ctypes.POINTER(AEffect), ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32)
@@ -417,13 +528,12 @@ def plugin_state(workdir):
     IL, IR, OL, OR = [(ctypes.c_float * n)() for _ in range(4)]
     ins = (ctypes.POINTER(ctypes.c_float) * 2)(IL, IR); outs = (ctypes.POINTER(ctypes.c_float) * 2)(OL, OR)
     time.sleep(2.7)
-    D(2, val=6)                                                    # program 7: Drum Punch
+    D(2, val=12)                                                   # program 13: Hip-Hop Glue (analog on)
     t = 0
-    for _ in range(int(48000 * 2.2 / n)):
+    for _ in range(int(48000 * 2.3 / n)):
         for i in range(n):
             s = ((t + i) % 24000) / 48000.0
-            x = 0.9 * math.exp(-s * 18) * math.sin(2 * math.pi * 55 * s) + 0.25 * math.sin(2 * math.pi * 330 * (t + i) / 48000.0)
-            IL[i] = IR[i] = x
+            IL[i] = IR[i] = 0.95 * math.exp(-s * 16) * math.sin(2 * math.pi * 52 * s) + 0.3 * math.sin(2 * math.pi * 220 * (t + i) / 48000.0)
         t += n
         e.processReplacing(fx, ins, outs, n)
     vals = [e.getParameter(fx, i) for i in range(e.numParams)]
@@ -436,26 +546,28 @@ def plugin_state(workdir):
 def preview(outdir):
     import tempfile
     vals, txt = plugin_state(tempfile.mkdtemp())
-    im = Image.open(os.path.join(OUT, "gg_bg.png")).convert("RGBA"); d = ImageDraw.Draw(im)
-    knob = Image.open(os.path.join(OUT, "gg_knob.png")).convert("RGBA")
+    im = Image.open(os.path.join(OUT, "gg_bg.png")).convert("RGBA")
     for kind, param, x, y, w, h, extra in PLACED:
         v = vals[param]; fr = max(0, min(NUMFRAMES, round(v * NUMFRAMES)))
+        d = ImageDraw.Draw(im)
         if kind == "tile":
             st = Image.open(os.path.join(OUT, extra)).convert("RGBA"); im.alpha_composite(st.crop((0, fr * w, w, fr * w + h)), (int(x), int(y)))
         elif kind == "knob":
-            im.alpha_composite(knob.crop((0, fr * KS, KS, fr * KS + KS)), (int(x + (KW - KS) / 2), int(y + 24)))
-            d = ImageDraw.Draw(im)
-            text_c(d, x + KW / 2, y + 114, CAPTION[extra], font(13), PRINT)
-            text_c(d, x + KW / 2, y + 141, txt[param], font(14), ACCENT)
+            key, colour = extra
+            st = Image.open(os.path.join(OUT, f"gg_knob_{colour}.png")).convert("RGBA")
+            im.alpha_composite(st.crop((0, fr * KS, KS, fr * KS + KS)), (int(x + (CW - KS) / 2), int(y + KNOB_Y0)))
+            d = ImageDraw.Draw(im); text_c(d, x + CW / 2, y + 136, txt[param], font(13), PRINT)
         elif kind == "switch":
             im.alpha_composite(Image.open(os.path.join(OUT, f"gg_{extra}_{'on' if v >= 0.5 else 'off'}.png")).convert("RGBA"), (int(x), int(y)))
         elif kind == "tap":
             im.alpha_composite(Image.open(os.path.join(OUT, f"gg_{extra}.png")).convert("RGBA"), (int(x), int(y)))
         elif kind == "box":
-            d = ImageDraw.Draw(im); d.rounded_rectangle([x, y, x + w, y + h], radius=6, fill=(12, 12, 14), outline=(70, 72, 78))
-            text_c(d, x + w / 2, y + h / 2, txt[param], font(16), PRINT)
+            text_c(d, x + w / 2, y + h / 2 + 2, txt[param], font(17), PRINT)
         elif kind == "ro":
-            fs, col = extra; d = ImageDraw.Draw(im); text_c(d, x + w / 2, y + h / 2, txt[param], font(fs * 0.8), col)
+            fs, col, just = extra; f = font(fs * 0.8, bold=False); s = txt[param]
+            tw = d.textlength(s, font=f)
+            tx = x if just.startswith("left") else (x + w - tw if just.startswith("right") else x + (w - tw) / 2)
+            d.text((tx, y + h / 2 - fs * 0.45), s, font=f, fill=col)
     os.makedirs(outdir, exist_ok=True)
     path = os.path.join(outdir, "skin-preview.png"); im.convert("RGB").save(path); print("preview:", path)
 
