@@ -15,7 +15,8 @@ It comes with a hardware-style GUI, 65 factory presets, a user preset library an
 | Standalone app, Linux | **built** (not separately tested) |
 | VST3 (+ AU) for Windows / macOS: what MPC Desktop and Controller Mode need | CMake + CI workflow ready, **not built here** (no Windows / macOS toolchain; CI push blocked) |
 | VST2 for Windows / macOS | not built: needs a VST2 SDK licence (Steinberg) or the GPL FST header |
-| **Native MPC Standalone plugin** | **not possible: no public Akai / inMusic plugin SDK.** The engine is ready behind a C bridge built for armv7. See [MPC_STANDALONE_STATUS.md](Documentation/MPC_STANDALONE_STATUS.md) |
+| **MPC Standalone, unofficial** (VST2 for MPC OS, Gen1, armv7) | **built and tested** on ARM under QEMU, plus installer and screen skin: [MPC/](MPC/README.md). Root access needed; not tested on a real MPC yet |
+| Official native MPC Standalone plugin | **not possible: no public Akai / inMusic plugin SDK.** See [MPC_STANDALONE_STATUS.md](Documentation/MPC_STANDALONE_STATUS.md) |
 
 ## Layout
 | Folder | Contents |
@@ -26,7 +27,8 @@ It comes with a hardware-style GUI, 65 factory presets, a user preset library an
 | `GUI/` | look and feel (knobs, screws, brushed plate), analog GR meter, LED meters, needle ballistics |
 | `Desktop/` | JUCE processor and editor (VST3 / VST2 / AU / standalone) |
 | `VST2/`, `VST3/` | format notes; `VST2/PatchFst.cmake` (FST ABI fix) |
-| `MPCStandalone/` | C bridge for a future native MPC wrapper, ARM Makefile, C test |
+| `MPC/` | **MPC Standalone build (unofficial VST2)**: wrapper, MPC screen skin, installer, package, host test |
+| `MPCStandalone/` | C bridge for a future official MPC SDK wrapper, ARM Makefile, C test |
 | `Resources/` | `GUI/` screenshots rendered from the real editor; `FactoryPresets/` as `.gglue` files + index |
 | `Tests/` | DSP tests, plugin host test (loads the built binaries), screenshot tool |
 | `Documentation/` | [BUILD](Documentation/BUILD.md), [INSTALL + MPC setup](Documentation/INSTALL.md), [architecture](Documentation/ARCHITECTURE.md), [test results](Documentation/TEST_RESULTS.md), [MPC Standalone status](Documentation/MPC_STANDALONE_STATUS.md) |
@@ -36,6 +38,7 @@ It comes with a hardware-style GUI, 65 factory presets, a user preset library an
     cmake --build build --parallel
     xvfb-run -a ctest --test-dir build --output-on-failure
     make -C G-Glue/MPCStandalone test        # ARM build of the engine + bridge, tests under QEMU
+    make -C G-Glue/MPC test test-arm package # the MPC plugin: tests (native + QEMU) and the install zip
 
 ## Controls
 THRESHOLD (−30…+10 dB) · MAKEUP (0…+24 dB) · ATTACK (0.1 / 0.3 / 1 / 3 / 10 / 30 ms) · RELEASE (0.1 / 0.3 / 0.6 / 1.2 s,

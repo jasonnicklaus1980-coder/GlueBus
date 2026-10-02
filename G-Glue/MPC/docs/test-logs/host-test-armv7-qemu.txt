@@ -1,0 +1,43 @@
+Loading (like MPC OS: dlopen + VSTPluginMain)
+  ok   plugin loads
+  ok   "G-Glue Bus Compressor" by G-Glue Audio, an effect
+  ok   stereo in / out, unique ID 'GgBc' (same as the desktop build)
+  ok   25 parameters; 1-11 in Q-Link order: Threshold, Makeup, Attack, Release, Ratio, SC Filter ...
+  ok   the 11 compressor parameters are automatable, readouts are not
+  ok   screen texts: -10.0 dB, AUTO, 4:1, OFF
+Audio
+  ok   44.1 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
+  ok   48.0 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
+  ok   88.2 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
+  ok   96.0 kHz: -0.9 dBFS sine comes out -6.5 dB (defaults -10 dB, 4:1)
+  ok   threshold +10 dB: no compression (-0.00 dB)
+  ok   GR needle: 21.5 dB (position 1.00), 31 screen updates in 1 s (only when the frame changes)
+  ok   input meter -1 dB, output meter -22 dB
+  ok   6 s of silence after 21 dB of GR (AUTO release): needle back to 0.1 dB
+Bypass and automation
+  ok   Bypass ON: output = input, bit for bit
+  ok   threshold + makeup automated every 64 samples: largest step 0.0002 (no zipper noise)
+Screen controls: presets, favourites, save, delete, A/B
+  ok   buttons are ignored during the first 2.5 s (project load guard)
+  ok   PRESET knob + LOAD: Loaded Drum Punch (DRUM BUS) / Drum Punch   [A]
+  ok   NEXT -> Tight Drums   [A], PREV -> back to Drum Punch
+  ok   editing a knob marks the preset as modified: Drum Punch *   [A]
+  ok   FAV: ★ Drum Punch moves to the top of the list
+  ok   SAVE: Saved User 01 in <work dir>
+  ok   SAVE again: User 02
+  ok   DELETE, first tap: Tap DELETE again to delete User 02
+  ok   DELETE, second tap: Deleted User 02
+  ok   factory presets can't be deleted
+  ok   A/B: A -20.0 dB, B 0.0 dB; COPY copies the active slot
+  ok   A/B again: B is +0.0 dB
+Programs and project state
+  ok   65 factory presets as VST programs (program 46: Drum Crush)
+  ok   effSetProgram loads it: Drum Crush   [A]
+  ok   second instance
+  ok   project chunk (300 bytes, same format as the desktop plugin) restores all 11 parameters and "Drum Crush *   [A]"
+  ok   buttons ignored for 2.5 s after a project load
+Robustness
+  ok   NaN / inf / +18 dBFS / denormal input: output finite and within 0 dBFS
+  CPU: 2.641 s for 10 s of stereo 48 kHz audio (2x oversampling, analog on) = 26.41 % of one core of this machine
+
+34 checks, 0 failed

@@ -12,6 +12,10 @@ All runs below were made in this session on Ubuntu 24.04 x86_64 (GCC 13.3, JUCE 
 | Built VST3 bundle loaded in a JUCE host (`Tests/PluginHostTest.cpp`) | Linux x86_64 | **21 / 21** |
 | Built VST2 `.so` loaded in a JUCE host | Linux x86_64 | **21 / 21** |
 | `ctest` (DSP + bridge + host test) | Linux x86_64 | **3 / 3 suites** |
+| MPC build (`MPC/test/host_test.cpp`, loads `gglue.so` like MPC OS) | native x86_64 | **35 / 35** (`../MPC/docs/test-logs/`) |
+| MPC build, ARM binary | armv7 hard-float under QEMU | **34 / 34** (the CPU budget check is skipped) |
+| MPC package checks | ARM ELF | libc / libm only, highest glibc symbol 2.34, 3 exports |
+| MPC installer / uninstaller | fake MPC root | registers once (idempotent), valid XML, uninstall keeps user presets |
 | Windows / macOS builds | CI workflow `gglue.yml` | **not run**: the workflow is written, but pushing to GitHub failed in this session |
 | On MPC hardware / MPC Desktop | — | **not tested**: no hardware or MPC Desktop here |
 

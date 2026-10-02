@@ -57,3 +57,21 @@ jobs:
         with:
           name: G-Glue-${{ matrix.name }}
           path: out
+
+  mpc:
+    # the unofficial MPC Standalone build (VST2 for MPC OS, 32-bit ARM): tests natively and under QEMU, then packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf qemu-user-static python3-pil zip fonts-dejavu-core
+      - name: Test (native + ARM under QEMU)
+        run: make -C G-Glue/MPC test test-arm
+      - name: Package
+        run: make -C G-Glue/MPC package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: G-Glue-MPC-armv7
+          path: G-Glue/MPC/dist/G-Glue-MPC-1.0.0-armv7.zip

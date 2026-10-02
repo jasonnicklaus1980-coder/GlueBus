@@ -1,0 +1,4 @@
+{
+  global: VSTPluginMain; GG_ParamKey; GG_ParamCount;
+  local: *;
+};

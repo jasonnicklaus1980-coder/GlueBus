@@ -1,0 +1,3 @@
+NEEDED: libm.so.6 libc.so.6 ld-linux-armhf.so.3 
+Highest glibc symbol: GLIBC_2.34  (MPC OS has GLIBC_2.34)
+Exports: GG_ParamCount GG_ParamKey VSTPluginMain 

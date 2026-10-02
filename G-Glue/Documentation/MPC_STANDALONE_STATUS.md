@@ -1,6 +1,7 @@
 # MPC Standalone: compatibility status
 
-**Status: no native MPC Standalone plugin was built, because the required SDK is not available.**
+**Status: no *official* native MPC Standalone plugin can be built, because the SDK is not available. An unofficial
+MPC build (VST2 for MPC OS, root access needed) is in `../MPC/`. See below.**
 G-Glue's DSP, parameters, presets and state are ready for one (built and tested for the MPC's CPU), but the
 piece that makes a plugin *native* on MPC Standalone does not exist in this project.
 
@@ -31,19 +32,21 @@ full state with A/B, and meters. It is the boundary a native wrapper would call 
   (see `Documentation/test-logs/*armv7-qemu.txt`).
 - It is **not** a plugin. It does not appear in the MPC browser, has no GUI on the MPC and is not installable.
 
-## What was deliberately not done
-You asked for no fake native compatibility and for no VST copied onto the MPC file system. So this project
-does not build or install anything on an MPC. There is an **unofficial** community route: on first-generation
-devices, MPC OS can load Linux VST2 `.so` files that are registered in `MPC.settings`, which needs root SSH access.
-This repository's other plugins use that route, and the open-source *mpc-vst-plugins* project documents it. That
-is exactly the "VST copied onto the MPC" approach you excluded. It is unsupported by Akai, can break with any OS
-update, and is not a native MPC plugin. If you want it anyway, the shared engine and the bridge make a G-Glue build
-for that route a small addition, but it would be labelled as unofficial.
+## The unofficial MPC build (made at your request)
+At first this project left out the community route. You then asked for the MPC version, so it is built in
+[`../MPC/`](../MPC/README.md):
+- On first-generation devices MPC OS loads Linux VST2 `.so` files that are registered in `MPC.settings`. This needs
+  root SSH access. The other plugins in this repository use the same route, and the open-source *mpc-vst-plugins*
+  project documents it.
+- G-Glue's build is a thin VST2 wrapper around the same shared engine, with its own MPC screen skin and an installer
+  and uninstaller that back up `MPC.settings`.
+- It is tested on the MPC's CPU architecture under QEMU, but **not yet on a real MPC**.
+- It is **not** an official native plugin. Akai doesn't support it, and an MPC OS update can break it.
 
 ## Running G-Glue with an MPC today
-Use **Controller Mode**: the MPC hardware connected to a computer running MPC Desktop, with the desktop VST3 build of
-G-Glue (see `INSTALL.md`). That route needs a computer, which is what you wanted to avoid with the standalone
-version, and no amount of code in this project can change it.
+- **Officially supported:** Controller Mode. The MPC is connected to a computer running MPC Desktop with the desktop
+  VST3 build of G-Glue (see `INSTALL.md`).
+- **On the MPC alone:** the unofficial build in `../MPC/` (root access, Gen1 devices).
 
 ## If an SDK becomes available
 1. Write `MPCStandalone/<SDK>Wrapper.cpp` that implements the SDK's plugin entry points by calling the bridge:
