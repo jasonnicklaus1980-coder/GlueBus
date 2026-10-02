@@ -29,12 +29,13 @@ static MainFn mainFn;
 struct Inst
 {
     AEffect* e;
+    const char* (*keyFn) (int) = nullptr;
     int P (const char* key)
     {
         typedef const char* (*KeyFn) (int);
-        static KeyFn k = nullptr; static void* h = nullptr;
-        (void) h;
-        if (! k) k = (KeyFn) dlsym (RTLD_DEFAULT, "SL_ParamKey");
+        static KeyFn sk = nullptr;
+        if (! sk) sk = (KeyFn) dlsym (RTLD_DEFAULT, "SL_ParamKey");
+        KeyFn k = keyFn ? keyFn : sk;
         for (int i = 0; i < e->numParams; ++i) if (! std::strcmp (k (i), key)) return i;
         std::printf ("no param %s\n", key); std::exit (2);
     }
@@ -157,14 +158,22 @@ static std::vector<std::string> sliceLines (Inst& p)
 
 int main (int argc, char** argv)
 {
-    if (argc < 3) { std::printf ("usage: host_test plugin.so workdir\n"); return 2; }
+    if (argc < 3) { std::printf ("usage: host_test plugin.so workdir [capture.so]\n"); return 2; }
     const std::string work = argv[2];
+    const char* capPath = argc > 3 ? argv[3] : nullptr;
     mkdir (work.c_str(), 0755);
     setenv ("SAMPLELAB_ROOT", work.c_str(), 1);
     mkdir ((work + "/Samples").c_str(), 0755);
     const std::vector<double> hits = makeLoop (work + "/Samples/loop96.wav");
     makeSine (work + "/Samples/sine440.wav");
     makeMajor (work + "/Samples/zz_gmajor.wav");
+    // a fake MPC internal drive with an older project sample and a new recording (for BROWSE: Recent)
+    const std::string internal = work + "-internal";
+    mkdir (internal.c_str(), 0755); mkdir ((internal + "/Project A").c_str(), 0755);
+    setenv ("SAMPLELAB_INTERNAL", internal.c_str(), 1);
+    makeSine (internal + "/Project A/old take.wav");
+    sleep (1);
+    makeSine (internal + "/Project A/My Recording.wav");
     void* h = dlopen (argv[1], RTLD_NOW | RTLD_GLOBAL);
     if (! h) { std::printf ("dlopen: %s\n", dlerror()); return 2; }
     mainFn = (MainFn) dlsym (h, "VSTPluginMain");
@@ -281,6 +290,38 @@ int main (int argc, char** argv)
     p.press ("exportall"); p.waitStatus ("Exported 16", 30);
     CHECK (p.disp ("status").find ("Exported 16 slices (24-bit 48000 Hz)") != std::string::npos, "export all: %s", p.disp ("status").c_str());
 
+    std::printf ("Waveform view\n");
+    {
+        std::vector<float> whole, zoomed;
+        for (int b = 0; b < 128; ++b) whole.push_back (p.e->getParameter (p.e, p.P (("wave" + std::to_string (b)).c_str())));
+        p.set ("slice", 5 / 63.f); p.set ("zoom", 1.f); p.run (512); usleep (300000); p.run (512);
+        for (int b = 0; b < 128; ++b) zoomed.push_back (p.e->getParameter (p.e, p.P (("wave" + std::to_string (b)).c_str())));
+        int sel = 0; for (float v : zoomed) if ((int) std::lround (v * 127) / 32 >= 2) ++sel;
+        CHECK (whole != zoomed && sel >= 120, "zoom to the selected slice: %d of 128 bars show the slice", sel);
+        p.set ("zoom", 0.f); p.set ("slice", 0.f); p.run (512);
+    }
+    std::printf ("BPM half / double, key shift\n");
+    p.press ("bpmdouble"); p.run (512);
+    CHECK (std::fabs (std::strtod (p.disp ("bpm").c_str(), nullptr) - 192) < 0.1, "BPM x 2: %s", p.disp ("bpm").c_str());
+    p.press ("bpmhalf"); p.run (512);
+    CHECK (std::fabs (std::strtod (p.disp ("bpm").c_str(), nullptr) - 96) < 0.1, "BPM / 2: %s", p.disp ("bpm").c_str());
+    p.set ("targetkey", 13 / 24.f); p.run (512); usleep (300000); p.run (512);
+    CHECK (p.disp ("analysis").find ("+3") != std::string::npos, "A minor shifted to C minor: %s", p.disp ("analysis").c_str());
+    p.set ("targetkey", 1 / 24.f); p.run (512); usleep (300000); p.run (512);
+    CHECK (p.disp ("analysis").find ("+0") != std::string::npos, "A minor to C major (its relative): %s", p.disp ("analysis").c_str());
+    p.set ("targetkey", 0.f); p.run (512);
+    std::printf ("FIND variations\n");
+    {
+        const auto orig = sliceLines (p);
+        p.press ("find"); p.waitStatus ("variation 1", 10);
+        const auto v1 = sliceLines (p);
+        p.press ("find"); p.waitStatus ("variation 2", 10);
+        const auto v2 = sliceLines (p);
+        CHECK (v1 != orig && v2 != v1 && v1.size() == 16 && v2.size() == 16, "FIND gives other 16-slice chops (%zu, %zu)", v1.size(), v2.size());
+        p.press ("chop"); p.waitStatus ("slices (Transients) on pads", 10);
+        CHECK (sliceLines (p) == orig, "CHOP returns to the original chop");
+    }
+
     std::printf ("Project save / restore\n");
     void* data = nullptr; const intptr_t clen = p.D (effGetChunk, 0, 0, &data);
     const std::string chunk ((const char*) data, (size_t) clen);
@@ -342,6 +383,122 @@ int main (int argc, char** argv)
             std::printf ("  16 voices, %s: %.2f s CPU for 10 s audio = %.1f %% of one core (this machine)\n", mode ? "Stretch" : "Repitch", t, t * 10);
         }
     }
+    std::printf ("Mute, choke, filter, slice envelope (sine)\n");
+    {
+        p.set ("tmode", 0.f); p.set ("sync", 0.f); p.set ("padmode", 0.f); p.set ("playmode", 0.f); p.set ("poly", 0.f);
+        p.set ("slloop", 0.f); p.set ("speed", 1 / 3.f); p.set ("pitch", 0.5f); p.set ("fine", 0.5f); p.run (512);
+        p.set ("file", 0.5f); p.press ("load"); p.waitStatus ("Loaded sine440", 30);
+        p.set ("chopmode", 1.f); p.set ("count", 0.f); p.press ("chop"); p.waitStatus ("slices (Equal)", 10);
+        auto peak = [&] (size_t a, size_t b) { float m = 0; for (size_t i = a; i < b && i < p.L.size(); ++i) m = std::max (m, std::fabs (p.L[i])); return m; };
+        auto energy = [&] (size_t a, size_t b) { double e = 0; for (size_t i = a; i < b && i < p.L.size(); ++i) e += p.L[i] * p.L[i]; return e; };
+        p.set ("slice", 0.f); p.run (512);
+        p.L.clear(); p.R.clear(); p.run (8192, { note (0, 36, 127) });
+        const double e0 = energy (0, 8192), att0 = energy (0, 441);
+        p.set ("slmute", 1.f); p.run (512);
+        p.L.clear(); p.R.clear(); p.run (8192, { note (0, 36, 127) });
+        CHECK (energy (0, 8192) == 0, "muted slice is silent");
+        p.set ("slmute", 0.f);
+        p.set ("slattack", 101 / 201.f); p.run (512);
+        p.L.clear(); p.R.clear(); p.run (8192, { note (0, 36, 127) });
+        CHECK (energy (0, 441) < att0 * 0.05 && p.disp ("slattack") == "100 ms", "slice attack %s: first 10 ms at %.1f %%", p.disp ("slattack").c_str(), 100 * energy (0, 441) / att0);
+        p.set ("slattack", 0.f);
+        p.set ("slfilter", 0.f); p.run (512);       // -1 = low-pass 200 Hz
+        p.L.clear(); p.R.clear(); p.run (8192, { note (0, 36, 127) });
+        CHECK (energy (2000, 8192) < e0 * 0.25 * (6192.0 / 8192), "low-pass %s cuts the 440 Hz sine by %.1f dB", p.disp ("slfilter").c_str(), 10 * std::log10 (energy (2000, 8192) / (e0 * 6192 / 8192)));
+        p.set ("slfilter", 0.5f); p.run (512);
+        p.L.clear(); p.R.clear(); p.run (8192, { note (0, 36, 127) });
+        CHECK (std::fabs (10 * std::log10 (energy (2000, 8192) / (e0 * 6192 / 8192))) < 0.5, "filter Off leaves it alone (%s)", p.disp ("slfilter").c_str());
+        // choke: slices 1 and 2 (in phase) - without a group they add up, in the same group the second cuts the first
+        p.L.clear(); p.R.clear(); p.run (22050, { note (0, 36, 127), note (4410, 37, 127) });
+        const float both = peak (6000, 12000);
+        p.set ("slchoke", 1 / 4.f); p.set ("slice", 1 / 63.f); p.run (512); p.set ("slchoke", 1 / 4.f); p.run (512);
+        p.L.clear(); p.R.clear(); p.run (22050, { note (0, 36, 127), note (4410, 37, 127) });
+        const float choked = peak (6000, 12000);
+        CHECK (both > 0.8f && choked < 0.6f, "choke group: %.2f -> %.2f", both, choked);
+    }
+    std::printf ("Recent recordings (MPC's own samples) + capture plugin\n");
+    {
+        p.set ("source", 1 / 3.f); p.run (512);
+        for (int i = 0; i < 40 && p.disp ("file").find ("My Recording") == std::string::npos; ++i) { p.run (512); usleep (50000); }
+        CHECK (p.disp ("file").find ("My Recording.wav") != std::string::npos, "Recent: the newest MPC recording comes first (%s)", p.disp ("file").c_str());
+        p.set ("file", 0.f); p.press ("load");
+        CHECK (p.waitStatus ("Loaded My Recording", 30), "loads it: %s", p.disp ("status").c_str());
+        struct stat st;
+        CHECK (stat ((work + "/Samples/My Recording.wav").c_str(), &st) != 0, "an internal-drive file is used in place (no copy)");
+        p.set ("source", 0.f); p.run (512);
+    }
+    if (capPath)
+    {
+        void* hc = dlopen (capPath, RTLD_NOW | RTLD_LOCAL);
+        CHECK (hc != nullptr, "capture plugin loads");
+        MainFn cmain = (MainFn) dlsym (hc, "VSTPluginMain");
+        Inst c { cmain (hostCb) }; c.keyFn = (const char* (*) (int)) dlsym (hc, "CA_ParamKey");
+        CHECK (c.e->numInputs == 2 && c.e->numOutputs == 2 && ! (c.e->flags & effFlagsIsSynth), "insert effect, 2 in / 2 out");
+        c.D (effSetSampleRate, 0, 0, nullptr, (float) SR); c.D (effMainsChanged, 0, 1);
+        usleep (2600000);
+        // feed a sine; output must equal input
+        std::vector<float> inL, inR; bool exact = true;
+        auto feed = [&] (int frames, float amp, double f0) {
+            for (int s = 0; s < frames; s += 512)
+            {
+                std::vector<float> l (512), r (512), ol (512), orr (512);
+                for (int i = 0; i < 512; ++i) { const size_t k = inL.size() + (size_t) i; l[(size_t) i] = (float) (amp * std::sin (2 * M_PI * f0 * (double) k / SR)); r[(size_t) i] = -l[(size_t) i]; }
+                float* in[2] { l.data(), r.data() }; float* out[2] { ol.data(), orr.data() };
+                c.e->processReplacing (c.e, in, out, 512);
+                if (ol != l || orr != r) exact = false;
+                inL.insert (inL.end(), l.begin(), l.end()); inR.insert (inR.end(), r.begin(), r.end());
+            } };
+        feed (4096, 0.25f, 440);
+        c.press ("record");
+        const size_t from = inL.size();
+        feed (44032, 0.25f, 440);
+        c.press ("record");
+        CHECK (exact, "audio passes through unchanged");
+        bool saved = false;
+        for (int i = 0; i < 100 && ! saved; ++i) { feed (512, 0.f, 0); usleep (20000); saved = c.disp ("status").find ("Saved") != std::string::npos; }
+        CHECK (saved, "%s", c.disp ("status").c_str());
+        char latest[512] = ""; FILE* lf = std::fopen ((work + "/Samples/Captures/latest.txt").c_str(), "r");
+        if (lf) { if (std::fgets (latest, sizeof latest, lf)) latest[std::strcspn (latest, "\n")] = 0; std::fclose (lf); }
+        FILE* f = std::fopen (latest, "rb");
+        CHECK (f != nullptr, "latest.txt -> %s", latest);
+        if (f)
+        {
+            unsigned char hd[44]; size_t got = std::fread (hd, 1, 44, f); (void) got;
+            const uint32_t bytes = hd[40] | (hd[41] << 8) | (hd[42] << 16) | ((uint32_t) hd[43] << 24);
+            CHECK (hd[34] == 24 && (hd[24] | (hd[25] << 8) | (hd[26] << 16)) == 44100, "24-bit, 44100 Hz");
+            CHECK (bytes / 6 == 44032, "%u frames recorded (44032 fed)", bytes / 6);
+            std::vector<unsigned char> d (bytes); got = std::fread (d.data(), 1, bytes, f); std::fclose (f);
+            double maxErr = 0;
+            for (size_t i = 0; i < bytes / 6; ++i)
+            {
+                const int32_t v = (int32_t) ((uint32_t) d[6 * i] << 8 | (uint32_t) d[6 * i + 1] << 16 | (uint32_t) d[6 * i + 2] << 24) >> 8;
+                maxErr = std::max (maxErr, std::fabs (v / 8388608.0 - inL[from + i]));
+            }
+            CHECK (maxErr < 1.0 / 8388608.0, "recording matches the input (max error %.2g)", maxErr);
+        }
+        // armed: starts at the signal, with a little pre-roll
+        c.set ("arm", 1.f); c.set ("threshold", (-30 + 60) / 54.f);
+        c.press ("record");
+        feed (13230, 0.f, 0);                                       // 0.3 s of silence
+        feed (22016, 0.25f, 440);                                   // then the sound
+        c.press ("record");
+        saved = false;
+        for (int i = 0; i < 100 && ! saved; ++i) { feed (512, 0.f, 0); usleep (20000); saved = c.disp ("status").find ("Saved") != std::string::npos; }
+        lf = std::fopen ((work + "/Samples/Captures/latest.txt").c_str(), "r");
+        if (lf) { if (std::fgets (latest, sizeof latest, lf)) latest[std::strcspn (latest, "\n")] = 0; std::fclose (lf); }
+        f = std::fopen (latest, "rb");
+        if (f)
+        {
+            unsigned char hd[44]; size_t got = std::fread (hd, 1, 44, f); (void) got; std::fclose (f);
+            const uint32_t frames = (hd[40] | (hd[41] << 8) | (hd[42] << 16) | ((uint32_t) hd[43] << 24)) / 6;
+            CHECK (frames >= 22016 - 512 && frames <= 22016 + 2400, "armed take: %u frames (sound 22016 + pre-roll <= 50 ms)", frames);
+        }
+        c.D (effClose);
+        // the sampler's LATEST key loads it
+        p.press ("latest");
+        CHECK (p.waitStatus ("Loaded Capture", 30), "Da Sample Lab LATEST: %s", p.disp ("status").c_str());
+    }
+
     std::printf ("Stability\n");
     bool finite = true; for (float x : p.L) if (! std::isfinite (x) || std::fabs (x) > 1.f) finite = false;
     CHECK (finite, "output finite and within +-1");

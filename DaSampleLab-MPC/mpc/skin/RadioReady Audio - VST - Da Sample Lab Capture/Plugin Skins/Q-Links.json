@@ -1,0 +1,25 @@
+{
+  "version": 4,
+  "info": {
+    "version": 1,
+    "type": "CompleteDescription"
+  },
+  "Screen Mode Q-Links": {
+    "version": 4,
+    "map": [
+      {
+        "Tab": 1,
+        "SubTab": 1,
+        "Bank Direction": "Column",
+        "Q-Links": {
+          "Q-Link 1": 2,
+          "Q-Link 2": 3
+        }
+      }
+    ]
+  },
+  "Program Mode Q-Links": {
+    "Q-Link 1": 2,
+    "Q-Link 2": 3
+  }
+}

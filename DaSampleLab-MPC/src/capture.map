@@ -1,0 +1,4 @@
+{
+  global: VSTPluginMain; CA_ParamKey; CA_ParamCount;
+  local: *;
+};

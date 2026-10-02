@@ -26,7 +26,7 @@
 namespace
 {
 using namespace cp;
-constexpr int kVersion = 1000, kMaxSlices = 64, kVoices = 16, kWaveBars = 64, kMaxFiles = 1024;
+constexpr int kVersion = 1000, kMaxSlices = 64, kVoices = 16, kWaveBars = 128, kMaxFiles = 1024;
 constexpr double kMaxSeconds = 600.0;          // longest sample (10 min); about 100 MB in memory at 44.1 kHz
 
 // ------------------------------------------------------------------------------------------------ storage
@@ -54,6 +54,7 @@ enum P
     P_CHOPMODE, P_SENS, P_COUNT, P_CHOP, P_SLICE, P_SLSTART, P_SLEND, P_SLVOL, P_SLREV, P_SLLOOP, P_SLPITCH, P_SLPLAY,
     P_SLLEFT, P_SLRIGHT, P_SPLIT, P_MERGE, P_EXPORT, P_EXPORTALL,
     P_PADMODE, P_BASENOTE, P_PLAYMODE, P_POLY, P_VELSENS, P_ATTACK, P_RELEASE,
+    P_SLFILTER, P_SLATTACK, P_SLRELEASE, P_SLMUTE, P_SLCHOKE, P_TARGETKEY, P_BPMHALF, P_BPMDOUBLE, P_FIND, P_ZOOM, P_SOURCE, P_LATEST,
     P_STATUS, P_INFO, P_ANALYSIS, P_SLICEINFO, P_PADINFO,
     P_WAVE0, NPARAMS = P_WAVE0 + kWaveBars
 };
@@ -68,6 +69,12 @@ const char* const kPadModes[] { "Slices", "Chromatic" };
 const char* const kPlayModes[] { "One-shot", "Gate" };
 const char* const kPoly[] { "Poly", "Mono (choke)" };
 const char* const kOnOff[] { "Off", "On" };
+const char* const kChoke[] { "Off", "Group 1", "Group 2", "Group 3", "Group 4" };
+const char* const kZoom[] { "Whole sample", "Start to end", "Selected slice" };
+const char* const kSources[] { "SampleLab", "Recent recordings", "Internal drive", "USB drive" };
+const char* const kTargetKeys[] { "Off", "C major", "C# major", "D major", "Eb major", "E major", "F major", "F# major", "G major", "Ab major", "A major",
+                                  "Bb major", "B major", "C minor", "C# minor", "D minor", "Eb minor", "E minor", "F minor", "F# minor", "G minor",
+                                  "Ab minor", "A minor", "Bb minor", "B minor" };
 Def kDefs[NPARAMS];
 char waveKeys[kWaveBars][12], waveNames[kWaveBars][16];
 void initDefs()
@@ -110,6 +117,18 @@ void initDefs()
     d (P_VELSENS, "velsens", "Velocity", K_FLOAT, 0, 100, 80);
     d (P_ATTACK, "attack", "Attack", K_FLOAT, 0, 200, 0);
     d (P_RELEASE, "release", "Release", K_FLOAT, 5, 2000, 30);
+    d (P_SLFILTER, "slfilter", "Slice Filter", K_FLOAT, -1, 1, 0);
+    d (P_SLATTACK, "slattack", "Slice Attack", K_FLOAT, 0, 201, 0);         // 0 = use the global attack
+    d (P_SLRELEASE, "slrelease", "Slice Release", K_FLOAT, 0, 2001, 0);     // 0 = use the global release
+    d (P_SLMUTE, "slmute", "Mute", K_TOGGLE, 0, 1, 0, kOnOff, 2);
+    d (P_SLCHOKE, "slchoke", "Choke Group", K_CHOICE, 0, 4, 0, kChoke, 5);
+    d (P_TARGETKEY, "targetkey", "Key Shift To", K_CHOICE, 0, 24, 0, kTargetKeys, 25);
+    d (P_BPMHALF, "bpmhalf", "BPM / 2", K_BUTTON, 0, 1, 0);
+    d (P_BPMDOUBLE, "bpmdouble", "BPM x 2", K_BUTTON, 0, 1, 0);
+    d (P_FIND, "find", "Find", K_BUTTON, 0, 1, 0);
+    d (P_ZOOM, "zoom", "Zoom", K_CHOICE, 0, 2, 0, kZoom, 3);
+    d (P_SOURCE, "source", "Browse", K_CHOICE, 0, 3, 0, kSources, 4);
+    d (P_LATEST, "latest", "Latest Capture", K_BUTTON, 0, 1, 0);
     d (P_STATUS, "status", "Status", K_TEXT, 0, 1, 0);
     d (P_INFO, "info", "Sample Info", K_TEXT, 0, 1, 0);
     d (P_ANALYSIS, "analysis", "BPM / Key", K_TEXT, 0, 1, 0);
@@ -131,7 +150,10 @@ float toPlain (int i, float n)
 }
 
 // ------------------------------------------------------------------------------------------------ slices
-struct Slice { long start = 0, end = 0; float vol = 0.f; bool rev = false, loop = false; float pitch = 0.f; };
+// filter: -1..0 low-pass (20 kHz .. 200 Hz), 0..1 high-pass (20 Hz .. 5 kHz); att / rel in ms, -1 = the global setting;
+// choke: 0 = none, 1..4 = a new hit cuts the other slices of the same group
+struct Slice { long start = 0, end = 0; float vol = 0.f; bool rev = false, loop = false; float pitch = 0.f;
+               float filter = 0.f, att = -1.f, rel = -1.f; bool mute = false; int choke = 0; };
 struct SliceTable { Slice s[kMaxSlices]; int n = 0; };
 
 // ------------------------------------------------------------------------------------------------ voices
@@ -144,6 +166,8 @@ struct Voice
     double rate = 1, timeRatio = 1, pitchRatio = 1;
     bool stretch = false;
     float gain = 1, env = 0, envTarget = 1, attackStep = 1, releaseStep = 1;
+    int fmode = 0;                            // 0 off, 1 low-pass, 2 high-pass (state-variable filter, Q 0.707)
+    float fa1 = 0, fa2 = 0, fa3 = 0, fk = 1.414f, ic1[2] {}, ic2[2] {};
     GrainSet grains;
     const Sample* smp = nullptr;
 };
@@ -181,6 +205,9 @@ struct Plugin
     std::atomic<int> reqLoad { 0 }, reqChop { 0 }, reqExport { 0 }, reqScan { 1 }, quit { 0 };
     char loadPath[512] {}; int exportWhich = -1;
     std::atomic<int> waveDirty { 1 };
+    std::atomic<int> keyShift { 0 };          // semitones from KEY SHIFT TO (computed on the UI / worker thread)
+    int variation = 0;                        // FIND: which alternative chop
+    long latestSeen = 0;
     double guardUntil = 0;                    // buttons ignored until then (project load)
     std::atomic<int> auditionReq { 0 }, slicePlayReq { -1 };
     int auditionOn = 0;
@@ -231,7 +258,9 @@ struct Plugin
             setText (1, b);
             {
                 std::lock_guard<std::mutex> g (anLock);
-                std::snprintf (b, sizeof b, "%.1f BPM \xc2\xb7 %s", (double) get (P_BPM), sl::keyName (an.key));
+                const int t = (int) get (P_TARGETKEY);
+                if (t > 0 && an.key >= 0) std::snprintf (b, sizeof b, "%.1f BPM \xc2\xb7 %s \xe2\x86\x92 %+d", (double) get (P_BPM), sl::keyName (an.key), keyShift.load());
+                else std::snprintf (b, sizeof b, "%.1f BPM \xc2\xb7 %s", (double) get (P_BPM), sl::keyName (an.key));
             }
             setText (2, b);
         }
@@ -252,26 +281,56 @@ struct Plugin
         else std::snprintf (b, sizeof b, "Chromatic: slice %d, C3 (60) = original pitch", k + 1);
         setText (4, b);
     }
+    // KEY SHIFT TO: the smallest shift (-5..+6 semitones) that puts the detected key on the target (a minor target for
+    // a major sample, or the reverse, uses its relative key so the mode doesn't change)
+    void updateKeyShift()
+    {
+        const int t = (int) get (P_TARGETKEY) - 1;
+        int src;
+        { std::lock_guard<std::mutex> g (anLock); src = an.key; }
+        if (t < 0 || src < 0) { keyShift = 0; return; }
+        int troot = t % 12; const bool tMinor = t >= 12, sMinor = src >= 12;
+        if (tMinor && ! sMinor) troot = (troot + 3) % 12;                   // A minor target for a major sample -> C major
+        if (! tMinor && sMinor) troot = (troot + 9) % 12;                   // C major target for a minor sample -> A minor
+        int d = ((troot - src % 12) % 12 + 12) % 12;
+        if (d > 6) d -= 12;
+        keyShift = d;
+    }
     // ---------------------------------------------------------------------------------------- waveform readout
+    // 128 bars over the view (ZOOM: whole sample / start-end / selected slice). Heights are peaks read from the audio,
+    // scaled to the loudest bar in view (at least -26 dB), so a quiet slice still shows its shape.
+    // frame = state * 32 + height; state 0 outside start-end, 1 inside, 2 selected slice, 3 a slice starts here
     void computeWave()
     {
         const Sample* s = sample.load();
         const SliceTable& t = table();
         const int k = selected();
+        long v0 = 0, v1 = s ? s->frames : 0;
+        const int zoom = (int) get (P_ZOOM);
+        if (s && zoom == 1) { v0 = (long) (get (P_START) * s->frames); v1 = std::max (v0 + kWaveBars, (long) (get (P_END) * s->frames)); }
+        if (s && zoom == 2 && k >= 0) { v0 = t.s[k].start; v1 = std::max (v0 + kWaveBars, t.s[k].end); }
+        if (s) v1 = std::min (v1, s->frames);
+        int peaks[kWaveBars] {}; int vmax = 1;
+        for (int b = 0; b < kWaveBars && s && v1 > v0; ++b)
+        {
+            const long a = v0 + (v1 - v0) * b / kWaveBars, e = std::max (a + 1, v0 + (v1 - v0) * (b + 1) / kWaveBars);
+            const long step = std::max (1L, (e - a) / 2048);                 // long bars: sample every n-th frame
+            int m = 0;
+            for (long i = a; i < e; i += step) { m = std::max (m, std::abs ((int) s->pcm[2 * i])); m = std::max (m, std::abs ((int) s->pcm[2 * i + 1])); }
+            peaks[b] = m; vmax = std::max (vmax, m);
+        }
+        vmax = std::max (vmax, 1650);                                         // -26 dBFS floor
         for (int b = 0; b < kWaveBars; ++b)
         {
             int h = 0, state = 0;
-            if (s && s->frames > 0)
+            if (s && v1 > v0)
             {
-                const long a = s->frames * b / kWaveBars, e = s->frames * (b + 1) / kWaveBars;
-                int m = 0;
-                for (int p = (int) ((long long) a * kEnvPoints / s->frames); p < (int) ((long long) e * kEnvPoints / s->frames) && p < kEnvPoints; ++p) m = std::max (m, (int) s->env[p]);
-                h = std::min (31, (m * 31 + 127) / 255);
+                const long a = v0 + (v1 - v0) * b / kWaveBars, e = std::max (a + 1, v0 + (v1 - v0) * (b + 1) / kWaveBars);
+                h = std::min (31, (int) ((long long) peaks[b] * 31 / vmax));
                 const double fs = (double) a / s->frames;
-                const bool inside = fs >= get (P_START) - 1e-6 && fs < get (P_END);
-                state = inside ? 1 : 0;
+                state = fs >= get (P_START) - 1e-6 && fs < get (P_END) ? 1 : 0;
                 for (int i = 0; i < t.n; ++i) if (t.s[i].start >= a && t.s[i].start < e) { state = 3; break; }
-                if (k >= 0 && a < t.s[k].end && e > t.s[k].start) state = 2;    // the selected slice wins
+                if (k >= 0 && a < t.s[k].end && e > t.s[k].start) state = 2;  // the selected slice wins
             }
             waveFrame[b] = (uint8_t) (state * 32 + h);
         }
@@ -279,7 +338,7 @@ struct Plugin
     // ---------------------------------------------------------------------------------------- MIDI + voices
     double pitchRatioFor (const Slice& c, int noteOffset) const
     {
-        const double st = get (P_PITCH) + get (P_FINE) / 100.0 + c.pitch + noteOffset;
+        const double st = get (P_PITCH) + get (P_FINE) / 100.0 + c.pitch + noteOffset + keyShift.load();
         return std::pow (2.0, st / 12.0);
     }
     double timeRatio() const
@@ -298,6 +357,7 @@ struct Plugin
         const Sample* s = sample.load();
         if (! s || c.end <= c.start) return;
         if ((int) get (P_POLY) == 1) for (auto& x : v) if (x.on) { x.releasing = true; x.releaseStep = 1.f / (float) (0.004 * sr); }
+        if (c.choke > 0) for (auto& x : v) if (x.on && x.sl.choke == c.choke) { x.releasing = true; x.releaseStep = 1.f / (float) (0.004 * sr); }
         Voice& x = *freeVoice();
         x = Voice();
         x.on = true; x.note = note; x.tag = tag; x.sl = c; x.len = c.end - c.start; x.smp = s;
@@ -308,9 +368,17 @@ struct Plugin
         const float vs = get (P_VELSENS) / 100.f;
         const float vg = (1.f - vs) + vs * std::pow (vel / 127.f, 1.6f);
         x.gain = vg * dbToGain (c.vol) * dbToGain (get (P_GAIN));
-        const float att = get (P_ATTACK) / 1000.f;
+        const float att = (c.att >= 0.f ? c.att : get (P_ATTACK)) / 1000.f, rel = (c.rel >= 0.f ? c.rel : get (P_RELEASE)) / 1000.f;
         x.attackStep = att > 0.0005f ? 1.f / (float) (att * sr) : 1.f / (float) (0.0005 * sr);
-        x.releaseStep = 1.f / (float) (std::max (0.005f, get (P_RELEASE) / 1000.f) * sr);
+        x.releaseStep = 1.f / (float) (std::max (0.005f, rel) * sr);
+        x.fmode = 0; x.ic1[0] = x.ic1[1] = x.ic2[0] = x.ic2[1] = 0.f;
+        if (std::fabs (c.filter) > 0.02f)
+        {
+            const double fc = c.filter < 0 ? 20000.0 * std::pow (0.01, -c.filter) : 20.0 * std::pow (250.0, c.filter);
+            const double g = std::tan (kPi * std::min (fc, 0.45 * sr) / sr);
+            x.fmode = c.filter < 0 ? 1 : 2; x.fk = 1.4142f;
+            x.fa1 = (float) (1.0 / (1.0 + g * (g + x.fk))); x.fa2 = (float) (g * x.fa1); x.fa3 = (float) (g * x.fa2);
+        }
         x.env = 0.f;
         x.grains.reset();
     }
@@ -320,11 +388,11 @@ struct Plugin
         if ((int) get (P_PADMODE) == 1)
         {
             const int k = selected();
-            if (k >= 0) startVoice (k, t.s[k], note, vel, note - 60);
+            if (k >= 0 && ! t.s[k].mute) startVoice (k, t.s[k], note, vel, note - 60);
             return;
         }
         const int k = note - (int) get (P_BASENOTE);
-        if (k >= 0 && k < t.n) startVoice (k, t.s[k], note, vel, 0);
+        if (k >= 0 && k < t.n && ! t.s[k].mute) startVoice (k, t.s[k], note, vel, 0);
     }
     void noteOff (int note)
     {
@@ -414,6 +482,17 @@ struct Plugin
                 x.anchor += x.timeRatio;
                 x.grains.sinceSpawn += 1.0;
             }
+            if (x.fmode)
+            {
+                float* io[2] { &l, &r };
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    const float in = *io[ch], v3 = in - x.ic2[ch];
+                    const float v1 = x.fa1 * x.ic1[ch] + x.fa2 * v3, v2 = x.ic2[ch] + x.fa2 * x.ic1[ch] + x.fa3 * v3;
+                    x.ic1[ch] = 2.f * v1 - x.ic1[ch]; x.ic2[ch] = 2.f * v2 - x.ic2[ch];
+                    *io[ch] = x.fmode == 1 ? v2 : in - x.fk * v1 - v2;
+                }
+            }
             const float g = x.gain * x.env;
             L[i] += l * g; R[i] += r * g;
         }
@@ -480,8 +559,28 @@ struct Plugin
                 return;
             }
             case P_AUDITION: auditionReq = 1; return;
-            case P_CHOP: if (sample.load()) { reqChop = 1; setStatus ("Chopping\xe2\x80\xa6"); } return;
+            case P_CHOP: if (sample.load()) { variation = 0; reqChop = 1; setStatus ("Chopping\xe2\x80\xa6"); } return;
             case P_SLPLAY: if (selected() >= 0) slicePlayReq = selected(); return;
+            case P_BPMHALF: case P_BPMDOUBLE:
+            {
+                const float b = get (P_BPM) * (i == P_BPMHALF ? 0.5f : 2.f);
+                if (b < 50.f || b > 200.f) { setStatus ("BPM would leave the 50-200 range"); return; }
+                setPlain (P_BPM, b); sent[P_BPM] = -1.f; waveDirty = 1;
+                char m[64]; std::snprintf (m, sizeof m, "BPM set to %.1f", (double) b); setStatus (m);
+                return;
+            }
+            case P_FIND: if (sample.load()) { ++variation; reqChop = 1; setStatus ("Finding another chop\xe2\x80\xa6"); } return;
+            case P_LATEST:
+            {
+                char lp[600]; std::snprintf (lp, sizeof lp, "%s/Samples/Captures/latest.txt", rootDir());
+                FILE* f = std::fopen (lp, "r");
+                char path[512] = "";
+                if (f) { if (std::fgets (path, sizeof path, f)) path[std::strcspn (path, "\r\n")] = 0; std::fclose (f); }
+                if (! path[0]) { setStatus ("No capture yet: record with Da Sample Lab Capture"); return; }
+                { std::lock_guard<std::mutex> q (qLock); std::snprintf (loadPath, sizeof loadPath, "%s", path); }
+                reqLoad = 1; setStatus ("Loading the latest capture\xe2\x80\xa6");
+                return;
+            }
             case P_SLLEFT: case P_SLRIGHT:
             {
                 const int k = selected(), to = k + (i == P_SLLEFT ? -1 : 1);
@@ -538,6 +637,11 @@ struct Plugin
                 case P_SLREV: c.rev = get (P_SLREV) > 0.5f; break;
                 case P_SLLOOP: c.loop = get (P_SLLOOP) > 0.5f; break;
                 case P_SLPITCH: c.pitch = std::round (get (P_SLPITCH)); break;
+                case P_SLFILTER: c.filter = std::fabs (get (P_SLFILTER)) < 0.02f ? 0.f : get (P_SLFILTER); break;
+                case P_SLATTACK: c.att = get (P_SLATTACK) < 0.5f ? -1.f : std::round (get (P_SLATTACK) - 1.f); break;
+                case P_SLRELEASE: c.rel = get (P_SLRELEASE) < 0.5f ? -1.f : std::round (get (P_SLRELEASE) - 1.f); break;
+                case P_SLMUTE: c.mute = get (P_SLMUTE) > 0.5f; break;
+                case P_SLCHOKE: c.choke = clampi ((int) get (P_SLCHOKE), 0, 4); break;
                 default: break;
             } });
     }
@@ -549,7 +653,9 @@ struct Plugin
         const Slice& c = table().s[k];
         setNorm (P_SLSTART, (float) c.start / (float) s->frames); setNorm (P_SLEND, (float) c.end / (float) s->frames);
         setPlain (P_SLVOL, c.vol); setPlain (P_SLREV, c.rev ? 1.f : 0.f); setPlain (P_SLLOOP, c.loop ? 1.f : 0.f); setPlain (P_SLPITCH, c.pitch);
-        for (int i : { P_SLSTART, P_SLEND, P_SLVOL, P_SLREV, P_SLLOOP, P_SLPITCH }) sent[i] = -1.f;
+        setPlain (P_SLFILTER, c.filter); setPlain (P_SLATTACK, c.att < 0 ? 0.f : c.att + 1.f); setPlain (P_SLRELEASE, c.rel < 0 ? 0.f : c.rel + 1.f);
+        setPlain (P_SLMUTE, c.mute ? 1.f : 0.f); setPlain (P_SLCHOKE, (float) c.choke);
+        for (int i : { P_SLSTART, P_SLEND, P_SLVOL, P_SLREV, P_SLLOOP, P_SLPITCH, P_SLFILTER, P_SLATTACK, P_SLRELEASE, P_SLMUTE, P_SLCHOKE }) sent[i] = -1.f;
     }
     void poll()                                // called from setParameter and the idle / process path (UI thread)
     {
@@ -561,7 +667,9 @@ struct Plugin
             const Kind k = kDefs[i].kind;
             if (k == K_BUTTON) { press (i); continue; }
             if (i == P_SLICE) { showSlice(); waveDirty = 1; continue; }
-            if (i >= P_SLSTART && i <= P_SLPITCH) { sliceParam (i); continue; }
+            if ((i >= P_SLSTART && i <= P_SLPITCH) || (i >= P_SLFILTER && i <= P_SLCHOKE)) { sliceParam (i); continue; }
+            if (i == P_TARGETKEY) { updateKeyShift(); waveDirty = 1; continue; }
+            if (i == P_SOURCE) { reqScan = 1; setNorm (P_FILE, 0.f); sent[P_FILE] = -1.f; continue; }
             waveDirty = 1;                       // start / end / bpm / pad mode ... change the readouts
         }
     }
@@ -578,7 +686,8 @@ struct Plugin
         for (int k = 0; k < t.n; ++k)
         {
             const Slice& c = t.s[k];
-            std::snprintf (b, sizeof b, "s %ld %ld %.3f %d %d %.1f\n", c.start, c.end, (double) c.vol, c.rev ? 1 : 0, c.loop ? 1 : 0, (double) c.pitch);
+            std::snprintf (b, sizeof b, "s %ld %ld %.3f %d %d %.1f %.4f %.1f %.1f %d %d\n", c.start, c.end, (double) c.vol, c.rev ? 1 : 0, c.loop ? 1 : 0,
+                           (double) c.pitch, (double) c.filter, (double) c.att, (double) c.rel, c.mute ? 1 : 0, c.choke);
             chunkText += b;
         }
         std::snprintf (b, sizeof b, "rate %.1f\n", sample.load() ? sample.load()->rate : sr); chunkText += b;
@@ -611,6 +720,10 @@ struct Plugin
                 Slice& c = t.s[t.n];
                 c.start = (long) std::strtod (p, &p); c.end = (long) std::strtod (p, &p); c.vol = (float) std::strtod (p, &p);
                 c.rev = std::strtod (p, &p) > 0.5; c.loop = std::strtod (p, &p) > 0.5; c.pitch = (float) std::strtod (p, &p);
+                // fields added in 1.1 (older projects end here: defaults stay)
+                char* q = p; const double f = std::strtod (p, &q);
+                if (q != p) { c.filter = (float) f; p = q; c.att = (float) std::strtod (p, &p); c.rel = (float) std::strtod (p, &p);
+                              c.mute = std::strtod (p, &p) > 0.5; c.choke = clampi ((int) std::strtod (p, &p), 0, 4); }
                 if (c.end > c.start) ++t.n;
             }
             else if (! line.compare (0, 5, "rate ")) rate = std::strtod (line.c_str() + 5, nullptr);
@@ -621,49 +734,73 @@ struct Plugin
         waveDirty = 1;
     }
     // ---------------------------------------------------------------------------------------- worker jobs
-    void scanDir (const char* dir, int depth)
+    // the MPC's internal drive (where MPC saves projects and recorded samples); SAMPLELAB_INTERNAL overrides (tests)
+    static const char* internalDir() { static char d[300]; if (! d[0]) std::snprintf (d, sizeof d, "%s", std::getenv ("SAMPLELAB_INTERNAL") ? std::getenv ("SAMPLELAB_INTERNAL") : "/media/az01-internal"); return d; }
+    struct Found { std::string path; long mtime; };
+    void scanDir (const char* dir, int depth, int maxDepth, std::vector<Found>& out, size_t cap)
     {
-        if (depth > 3 || nFiles >= kMaxFiles) return;
+        if (depth > maxDepth || out.size() >= cap) return;
         DIR* d = opendir (dir);
         if (! d) return;
         struct dirent* e;
         std::vector<std::string> sub;
-        while ((e = readdir (d)) != nullptr && nFiles < kMaxFiles)
+        while ((e = readdir (d)) != nullptr && out.size() < cap)
         {
             if (e->d_name[0] == '.') continue;
             char p[600]; std::snprintf (p, sizeof p, "%s/%s", dir, e->d_name);
             struct stat st;
             if (stat (p, &st) != 0) continue;
-            if (S_ISDIR (st.st_mode)) { if (std::strcmp (e->d_name, "Exports")) sub.push_back (p); continue; }
+            if (S_ISDIR (st.st_mode)) { if (std::strcmp (e->d_name, "Exports") && std::strcmp (e->d_name, "Settings")) sub.push_back (p); continue; }
             const size_t l = std::strlen (e->d_name);
-            if (l > 4 && (! strcasecmp (e->d_name + l - 4, ".wav"))) { files.push_back (p); ++nFiles; }
+            if (l > 4 && ! strcasecmp (e->d_name + l - 4, ".wav")) out.push_back ({ p, (long) st.st_mtime });
         }
         closedir (d);
-        for (auto& s : sub) scanDir (s.c_str(), depth + 1);
+        for (auto& x : sub) scanDir (x.c_str(), depth + 1, maxDepth, out, cap);
     }
+    // BROWSE: SampleLab (our folder, incl. captures) / Recent recordings (the 128 newest WAVs on the internal drive,
+    // e.g. what you just sampled in MPC) / Internal drive (all, by name) / USB drive
     void scan()
     {
-        std::lock_guard<std::mutex> g (filesLock);
-        nFiles = 0; files.clear();
-        scanDir ((std::string (rootDir()) + "/Samples").c_str(), 0);
-        if (const char* x = std::getenv ("SAMPLELAB_EXTRA")) scanDir (x, 0);
-        DIR* d = opendir ("/media");                                    // USB drives (not the internal one)
-        struct dirent* e;
-        while (d && (e = readdir (d)) != nullptr)
+        std::vector<Found> f;
+        const int src = (int) get (P_SOURCE);
+        if (src == 0) { scanDir ((std::string (rootDir()) + "/Samples").c_str(), 0, 3, f, kMaxFiles); if (const char* x = std::getenv ("SAMPLELAB_EXTRA")) scanDir (x, 0, 3, f, kMaxFiles); }
+        else if (src == 1 || src == 2)
         {
-            if (e->d_name[0] == '.' || std::strstr (e->d_name, "az01-internal")) continue;
-            char p[300]; std::snprintf (p, sizeof p, "/media/%s", e->d_name);
-            scanDir (p, 0);
+            scanDir (internalDir(), 0, 6, f, 8000);
+            if (std::strncmp (rootDir(), internalDir(), std::strlen (internalDir()))) scanDir ((std::string (rootDir()) + "/Samples").c_str(), 0, 3, f, 8000);
         }
-        if (d) closedir (d);
-        std::sort (files.begin(), files.end(), [] (const std::string& a, const std::string& b) { return strcasecmp (std::strrchr (a.c_str(), '/') + 1, std::strrchr (b.c_str(), '/') + 1) < 0; });
+        else
+        {
+            DIR* d = opendir ("/media");
+            struct dirent* e;
+            while (d && (e = readdir (d)) != nullptr)
+            {
+                if (e->d_name[0] == '.' || std::strstr (e->d_name, "az01-internal")) continue;
+                char p[300]; std::snprintf (p, sizeof p, "/media/%s", e->d_name);
+                scanDir (p, 0, 4, f, kMaxFiles);
+            }
+            if (d) closedir (d);
+        }
+        if (src == 1)
+        {
+            std::sort (f.begin(), f.end(), [] (const Found& x, const Found& y) { return x.mtime > y.mtime; });
+            if (f.size() > 128) f.resize (128);
+        }
+        else std::sort (f.begin(), f.end(), [] (const Found& x, const Found& y) { return strcasecmp (std::strrchr (x.path.c_str(), '/') + 1, std::strrchr (y.path.c_str(), '/') + 1) < 0; });
+        if (f.size() > (size_t) kMaxFiles) f.resize (kMaxFiles);
+        std::lock_guard<std::mutex> g (filesLock);
+        files.clear();
+        for (auto& x : f) files.push_back (x.path);
+        nFiles = (int) files.size();
     }
     const char* fileLabel (int k) const { return k >= 0 && k < nFiles ? std::strrchr (files[(size_t) k].c_str(), '/') + 1 : "(no WAV files)"; }
     // copy a file from USB onto internal storage so the project still opens when the drive is gone
     bool importToInternal (const char* src, char* dst, size_t n)
     {
         const std::string samples = std::string (rootDir()) + "/Samples/";
-        if (! std::strncmp (src, rootDir(), std::strlen (rootDir()))) { std::snprintf (dst, n, "%s", src); return true; }
+        // already on internal storage (our folder, or the MPC's own drive): use it where it is
+        if (! std::strncmp (src, rootDir(), std::strlen (rootDir())) || ! std::strncmp (src, internalDir(), std::strlen (internalDir())) || ! std::strncmp (src, "/sdcard/", 8))
+        { std::snprintf (dst, n, "%s", src); return true; }
         std::snprintf (dst, n, "%s%s", samples.c_str(), std::strrchr (src, '/') + 1);
         struct stat a, b;
         if (stat (dst, &b) == 0 && stat (src, &a) == 0 && a.st_size == b.st_size) return true;   // already imported
@@ -687,6 +824,7 @@ struct Plugin
         sl::Analysis A;
         sl::analyse (s->pcm, s->frames, s->rate, A);
         { std::lock_guard<std::mutex> g (anLock); an = std::move (A); }
+        updateKeyShift();
         // publish the sample: voices keep their own pointer until they end; free the old one later
         for (auto& x : v) x.releasing = x.on;                             // fade out what was playing
         Sample* old = sample.exchange (s);
@@ -713,7 +851,8 @@ struct Plugin
             doChop();
         }
         char b[160];
-        std::snprintf (b, sizeof b, "Loaded %s \xc2\xb7 %.1f BPM \xc2\xb7 %s \xc2\xb7 %d slices", s->name, an.bpm, sl::keyName (an.key), table().n);
+        if (an.bpm > 0) std::snprintf (b, sizeof b, "Loaded %s \xc2\xb7 %.1f BPM \xc2\xb7 %s \xc2\xb7 %d slices", s->name, an.bpm, sl::keyName (an.key), table().n);
+        else std::snprintf (b, sizeof b, "Loaded %s \xc2\xb7 no beat \xc2\xb7 %s \xc2\xb7 %d slices", s->name, sl::keyName (an.key), table().n);
         setStatus (b);
         showSlice();
         waveDirty = 1;
@@ -729,11 +868,27 @@ struct Plugin
         std::vector<long> starts;
         {
             std::lock_guard<std::mutex> g (anLock);
+            const int var = variation;
+            Rng rng; rng.seed (0x9E3779B9u * (uint32_t) (var + 1));
             if (mode == 0)                                                // the sample start is slice 1 unless a hit is right there
             {
-                starts = sl::transients (an, a, b, n, get (P_SENS) / 100.f, s->rate, s->pcm, s->frames);
-                if (starts.empty() || starts[0] - a > (long) (0.03 * s->rate))
-                { starts = sl::transients (an, a, b, n - 1, get (P_SENS) / 100.f, s->rate, s->pcm, s->frames); starts.insert (starts.begin(), a); }
+                if (var == 0)
+                {
+                    starts = sl::transients (an, a, b, n, get (P_SENS) / 100.f, s->rate, s->pcm, s->frames);
+                    if (starts.empty() || starts[0] - a > (long) (0.03 * s->rate))
+                    { starts = sl::transients (an, a, b, n - 1, get (P_SENS) / 100.f, s->rate, s->pcm, s->frames); starts.insert (starts.begin(), a); }
+                }
+                else
+                {
+                    // FIND: another pick among the 3x strongest candidates, weighted by strength (same variation = same result)
+                    std::vector<long> pool = sl::transients (an, a, b, 3 * n, std::min (1.f, get (P_SENS) / 100.f + 0.2f), s->rate, s->pcm, s->frames);
+                    std::vector<std::pair<double, long>> w;
+                    for (size_t i = 0; i < pool.size(); ++i) w.push_back ({ (double) rng.uni(), pool[i] });   // pool = the strongest hits
+                    std::sort (w.begin(), w.end(), [] (const std::pair<double, long>& x, const std::pair<double, long>& y) { return x.first > y.first; });
+                    for (int i = 0; i < (int) w.size() && (int) starts.size() < n - 1; ++i) starts.push_back (w[(size_t) i].second);
+                    std::sort (starts.begin(), starts.end());
+                    if (starts.empty() || starts[0] - a > (long) (0.03 * s->rate)) starts.insert (starts.begin(), a);
+                }
             }
             else if (mode == 1 || mode == 2)                               // beat / bar grid from the first strong beat
             {
@@ -741,18 +896,26 @@ struct Plugin
                 double t0 = (double) (mode == 2 ? an.firstBeat : an.beatAnchor);
                 while (t0 - step >= a) t0 -= step;
                 while (t0 < a) t0 += step;
+                t0 += var * step;                                         // FIND: start the grid one beat / bar later
                 if (t0 - a > 0.03 * s->rate) starts.push_back (a);
                 for (double t = t0; t < b && (int) starts.size() < n; t += step) starts.push_back ((long) t);
             }
             else if (mode == 3) starts = sl::sections (an, a, b, n, bpm, s->rate);
-            else for (int i = 0; i < n; ++i) starts.push_back (a + (b - a) * i / n);
+            else
+            {
+                const long off = var ? (long) ((b - a) / n * (var % 4) / 4) : 0;      // FIND: shift the grid by a quarter slice
+                if (off) starts.push_back (a);
+                for (int i = 0; (int) starts.size() < n; ++i) { const long t = a + off + (b - a) * i / n; if (t >= b) break; starts.push_back (t); }
+            }
         }
         if ((int) starts.size() > kMaxSlices) starts.resize (kMaxSlices);
         editSlices ([&] (SliceTable& t) {
             t.n = (int) starts.size();
             for (int i = 0; i < t.n; ++i) { t.s[i] = Slice(); t.s[i].start = starts[(size_t) i]; t.s[i].end = i + 1 < t.n ? starts[(size_t) i + 1] : b; } });
         selectSlice (0); showSlice();
-        char m[96]; std::snprintf (m, sizeof m, "%d slices (%s) on pads %s", table().n, kChop[mode], table().n > 16 ? "A1-D16: use pad banks" : "A1-A16");
+        char m[96];
+        if (variation) std::snprintf (m, sizeof m, "%d slices (%s) \xc2\xb7 variation %d", table().n, kChop[mode], variation);
+        else std::snprintf (m, sizeof m, "%d slices (%s) on pads %s", table().n, kChop[mode], table().n > 16 ? "A1-D16: use pad banks" : "A1-A16");
         setStatus (m);
     }
     void doExport()
@@ -799,6 +962,12 @@ struct Plugin
         while (! quit)
         {
             if (reqScan.exchange (0)) { scan(); waveDirty = 1; }
+            {
+                char lp[600]; std::snprintf (lp, sizeof lp, "%s/Samples/Captures/latest.txt", rootDir());
+                struct stat st;
+                const long m = stat (lp, &st) == 0 ? (long) st.st_mtime * 1000 + st.st_mtim.tv_nsec / 1000000 : 0;
+                if (m && m != latestSeen) { if (latestSeen) { setStatus ("New capture ready: tap LATEST"); reqScan = 1; } latestSeen = m; }
+            }
             if (const int m = reqLoad.exchange (0)) doLoad (m);
             if (reqChop.exchange (0)) doChop();
             if (reqExport.exchange (0)) doExport();
@@ -833,6 +1002,14 @@ struct Plugin
             case P_GAIN: case P_SLVOL: std::snprintf (out, max, "%+.1f dB", (double) p); return;
             case P_SENS: case P_VELSENS: std::snprintf (out, max, "%d %%", (int) std::lround (p)); return;
             case P_BASENOTE: noteName ((int) std::lround (p), out, max); return;
+            case P_SLFILTER:
+            {
+                if (std::fabs (p) < 0.02f) { std::snprintf (out, max, "Off"); return; }
+                const double fc = p < 0 ? 20000.0 * std::pow (0.01, -p) : 20.0 * std::pow (250.0, p);
+                if (fc >= 1000) std::snprintf (out, max, "%s %.1f kHz", p < 0 ? "LP" : "HP", fc / 1000); else std::snprintf (out, max, "%s %d Hz", p < 0 ? "LP" : "HP", (int) fc);
+                return;
+            }
+            case P_SLATTACK: case P_SLRELEASE: if (p < 0.5f) std::snprintf (out, max, "Global"); else std::snprintf (out, max, "%d ms", (int) std::lround (p - 1)); return;
             case P_ATTACK: case P_RELEASE: std::snprintf (out, max, "%d ms", (int) std::lround (p)); return;
             default: break;
         }
