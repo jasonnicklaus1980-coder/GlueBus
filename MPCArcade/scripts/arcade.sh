@@ -6,6 +6,7 @@
 #   sh arcade.sh run [--max SECONDS] PROGRAM [ARGS...]   stop MPC app -> run PROGRAM -> start MPC app again
 #   sh arcade.sh restore                                 start the MPC app (manual recovery)
 #   sh arcade.sh status                                  show whether the MPC app is running
+#   sh arcade.sh stop                                    end the running arcade program (the MPC app then comes back)
 #
 # CHANGES SYSTEM STATE (temporarily): `run` stops the MPC service (systemctl stop acvs) and starts it again when the
 # program ends, crashes, is killed, times out, or the SSH session drops. A separate watchdog process also starts
@@ -19,8 +20,9 @@ restore() { systemctl start "$SVC" && echo "arcade: MPC app started again"; }
 case "${1:-}" in
     restore) restore; exit $? ;;
     status) printf "MPC app (%s): " "$SVC"; systemctl is-active "$SVC"; exit 0 ;;
+    stop) pkill -TERM -x mame 2>/dev/null; pkill -TERM -x hwtest 2>/dev/null; sleep 3; systemctl is-active "$SVC" >/dev/null || restore; exit 0 ;;
     run) shift ;;
-    *) sed -n '2,12p' "$0"; exit 1 ;;
+    *) sed -n '2,13p' "$0"; exit 1 ;;
 esac
 MAX=1800
 if [ "${1:-}" = "--max" ]; then MAX="$2"; shift 2; fi
