@@ -48,7 +48,9 @@ def spaced(d, x, y, s, f, fill, track=1.0, anchor="l"):
     return total
 
 # ---------------------------------------------------------------- palette (console)
-EDGE, SEAM = (86, 88, 93), (9, 9, 10)
+EDGE, SEAM = (104, 110, 118), (9, 9, 10)
+SLATE_T, SLATE_B = (66, 71, 78), (47, 51, 57)               # console slate blue-grey
+FRAME = (196, 200, 206)                                     # white legend frames
 PRINT, DIM, FAINT = (236, 236, 238), (150, 152, 158), (96, 98, 104)
 LED_RED, LED_AMBER, LED_GREEN = (255, 58, 38), (255, 178, 42), (72, 224, 112)
 CAPS = {"red": (196, 50, 42), "blue": (46, 96, 172), "grey": (160, 162, 166), "green": (58, 138, 84),
@@ -83,7 +85,7 @@ SCALE = {"threshold": ["-30", "-20", "-10", "0", "+10"], "makeup": ["0", "6", "1
          "mix": ["0", "25", "50", "75", "100"], "input": ["-24", "-12", "0", "+12", "+24"], "output": ["-24", "-12", "0", "+12", "+24"]}
 STEPS = {"attack": 6, "release": 5, "ratio": 3, "scfilter": 7}
 UNITS = {"threshold": "dB", "makeup": "dB", "attack": "ms", "release": "s", "ratio": "", "scfilter": "Hz", "mix": "%", "input": "dB", "output": "dB"}
-SWITCHES = {"analog": ("ANALOG", LED_AMBER, 214, 500, 10), "bypass": ("BYPASS", LED_RED, 398, 500, 11)}   # square 60 px caps
+SWITCHES = {"analog": ("ANALOG", LED_AMBER, 214, 498, 10), "bypass": ("BYPASS", LED_RED, 398, 498, 11)}   # square 60 px caps
 SW = 60
 ANG0, ANG1 = -140.0, 140.0
 def ang_xy(cx, cy, r, deg):
@@ -99,46 +101,45 @@ TB = {"prev": (284, 12, 40, 36), "browse": (330, 10, 420, 40), "next": (756, 12,
 
 # ---------------------------------------------------------------- knobs (one filmstrip per cap colour)
 def knob_strip(cap):
-    s = KS * SS; c = s / 2; R = s * 0.40
+    """large-format console knob: smooth ribbed grey body, flat coloured cap, white pointer line"""
+    s = KS * SS; c = s / 2; R = s * 0.41
     base = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     sh = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-    ImageDraw.Draw(sh).ellipse([c - R * 1.04, c - R * 1.0 + s * 0.045, c + R * 1.04, c + R * 1.04 + s * 0.045], fill=(0, 0, 0, 200))
-    base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(s * 0.035)))
+    ImageDraw.Draw(sh).ellipse([c - R * 1.02, c - R * 0.96 + s * 0.05, c + R * 1.02, c + R * 1.06 + s * 0.05], fill=(0, 0, 0, 210))
+    base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(s * 0.03)))
     d = ImageDraw.Draw(base)
-    for yy in range(int(c - R), int(c + R) + 1):                # skirt: satin black, lit from above
+    for yy in range(int(c - R), int(c + R) + 1):                # cylinder side: grey, lit from above
         k = min(1.0, max(0.0, (yy - (c - R)) / (2 * R))); dx = math.sqrt(max(0.0, R * R - (yy - c) ** 2))
-        d.line([c - dx, yy, c + dx, yy], fill=rgba(mix((74, 75, 80), (10, 10, 11), k ** 0.8)))
-    rb = R * 0.80                                               # tapered body top
-    body = Image.new("RGBA", (s, s), (0, 0, 0, 0)); bd = ImageDraw.Draw(body)
-    for i in range(48, 0, -1):
-        t = i / 48; r = rb * t
-        bd.ellipse([c - r, c - r - rb * 0.05 * (1 - t), c + r, c + r - rb * 0.05 * (1 - t)], fill=rgba(mix((22, 22, 24), (58, 59, 63), (1 - t) ** 2)))
-    rc = R * 0.52                                               # coloured cap, slightly domed
+        d.line([c - dx, yy, c + dx, yy], fill=rgba(mix((92, 95, 100), (24, 25, 28), k ** 0.9)))
+    rt = R * 0.90                                               # flat top face
+    top = Image.new("RGBA", (s, s), (0, 0, 0, 0)); td = ImageDraw.Draw(top)
+    for i in range(50, 0, -1):
+        t = i / 50; r = rt * t
+        td.ellipse([c - r, c - r - rt * 0.04 * (1 - t), c + r, c + r - rt * 0.04 * (1 - t)], fill=rgba(mix((40, 42, 46), (74, 77, 82), (1 - t) ** 1.6)))
+    rc = R * 0.64                                               # large flat coloured cap
     col = CAPS[cap]
     capim = Image.new("RGBA", (s, s), (0, 0, 0, 0)); cd = ImageDraw.Draw(capim)
+    cd.ellipse([c - rc - SS, c - rc - SS, c + rc + SS, c + rc + SS], fill=rgba(mix(col, (0, 0, 0), 0.55)))
     for i in range(40, 0, -1):
         t = i / 40; r = rc * t
-        ox, oy = c - rc * 0.22 * (1 - t), c - rc * 0.30 * (1 - t)
-        cd.ellipse([ox - r, oy - r, ox + r, oy + r], fill=rgba(mix(mix(col, (0, 0, 0), 0.30), mix(col, (255, 255, 255), 0.42), (1 - t) ** 1.5)))
+        cd.ellipse([c - r, c - r - rc * 0.05 * (1 - t), c + r, c + r - rc * 0.05 * (1 - t)],
+                   fill=rgba(mix(mix(col, (0, 0, 0), 0.12), mix(col, (255, 255, 255), 0.30), (1 - t) ** 2.2)))
+    line_col = (24, 24, 26) if cap in ("grey", "yellow") else PRINT
     strip = Image.new("RGBA", (KS, KS * FRAMES), (0, 0, 0, 0))
     for f in range(FRAMES):
         im = base.copy(); d = ImageDraw.Draw(im)
         deg = ANG0 + (ANG1 - ANG0) * f / NUMFRAMES
-        for i in range(60):                                     # knurling ridges turn with the knob
-            a = deg + i * 6
-            x0, y0 = ang_xy(c, c, R * 0.86, a); x1, y1 = ang_xy(c, c, R * 1.0, a)
-            d.line([x0, y0, x1, y1], fill=(0, 0, 0, 170), width=int(SS * 0.9))
-            x0, y0 = ang_xy(c, c, R * 0.88, a + 2.2); x1, y1 = ang_xy(c, c, R * 0.99, a + 2.2)
-            d.line([x0, y0, x1, y1], fill=(255, 255, 255, 22), width=int(SS * 0.6))
-        im.alpha_composite(body)
+        for i in range(90):                                     # fine ribs on the side (turn with the knob)
+            a = deg + i * 4
+            x0, y0 = ang_xy(c, c, R * 0.92, a); x1, y1 = ang_xy(c, c, R * 0.995, a)
+            d.line([x0, y0, x1, y1], fill=(0, 0, 0, 90), width=max(1, int(SS * 0.6)))
+        im.alpha_composite(top); im.alpha_composite(capim)
         d = ImageDraw.Draw(im)
-        d.ellipse([c - rb, c - rb, c + rb, c + rb], outline=(255, 255, 255, 30), width=SS)
-        x0, y0 = ang_xy(c, c, rc * 1.05, deg); x1, y1 = ang_xy(c, c, rb * 0.97, deg)     # pointer on the body
-        d.line([x0, y0, x1, y1], fill=rgba(PRINT), width=int(SS * 2.6))
-        im.alpha_composite(capim)
-        d = ImageDraw.Draw(im)
-        x0, y0 = ang_xy(c, c, rc * 0.15, deg); x1, y1 = ang_xy(c, c, rc * 0.92, deg)     # line across the cap
-        d.line([x0, y0, x1, y1], fill=rgba(PRINT if cap in ("black", "blue", "red", "green") else (24, 24, 26)), width=int(SS * 1.8))
+        d.ellipse([c - rt, c - rt, c + rt, c + rt], outline=(255, 255, 255, 34), width=SS)
+        x0, y0 = ang_xy(c, c, rc * 1.06, deg); x1, y1 = ang_xy(c, c, rt * 0.97, deg)      # pointer on the grey top
+        d.line([x0, y0, x1, y1], fill=rgba(PRINT), width=int(SS * 2.4))
+        x0, y0 = ang_xy(c, c, rc * 0.10, deg); x1, y1 = ang_xy(c, c, rc * 0.94, deg)      # and across the cap
+        d.line([x0, y0, x1, y1], fill=rgba(line_col), width=int(SS * 2.0))
         strip.paste(im.resize((KS, KS), Image.LANCZOS), (0, f * KS))
     return strip
 
@@ -247,25 +248,23 @@ def led_tiles():
 
 # ---------------------------------------------------------------- switches and toolbar buttons
 def square_switch(on, led):
-    """console push switch: square cap with a lens that lights up"""
+    """console push switch: a square translucent coloured cap that lights up from behind"""
     s = SS; w = SW; im = Image.new("RGBA", (w * s, w * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([0, 0, w * s - 1, w * s - 1], radius=5 * s, fill=rgba((8, 8, 9)))
+    d.rounded_rectangle([0, 0, w * s - 1, w * s - 1], radius=4 * s, fill=rgba((6, 6, 7)))           # bezel cut-out
     off = int(1.5 * s) if on else 0
-    cap = Image.new("RGBA", im.size, (0, 0, 0, 0)); cd = ImageDraw.Draw(cap)
-    for yy in range(4 * s, (w - 4) * s):
-        k = (yy - 4 * s) / ((w - 8) * s); cd.line([4 * s, yy + off, (w - 4) * s, yy + off], fill=rgba(mix((92, 94, 99), (40, 41, 44), k)))
-    mk = Image.new("L", im.size, 0); ImageDraw.Draw(mk).rounded_rectangle([4 * s, 4 * s + off, (w - 4) * s, (w - 4) * s + off], radius=4 * s, fill=255)
-    im.paste(cap, (0, 0), mk); d = ImageDraw.Draw(im)
-    d.rounded_rectangle([4 * s, 4 * s + off, (w - 4) * s, (w - 4) * s + off], radius=4 * s, outline=(255, 255, 255, 46), width=s)
-    lx0, ly0, lx1, ly1 = 12 * s, 14 * s + off, (w - 12) * s, 26 * s + off
+    x0, y0, x1, y1 = 6 * s, 6 * s + off, (w - 6) * s, (w - 6) * s + off
     if on:
-        g = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle([lx0 - 4 * s, ly0 - 4 * s, lx1 + 4 * s, ly1 + 4 * s], radius=4 * s, fill=rgba(led, 160))
+        g = Image.new("RGBA", im.size, (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle([x0 - 3 * s, y0 - 3 * s, x1 + 3 * s, y1 + 3 * s], radius=4 * s, fill=rgba(led, 150))
         im.alpha_composite(g.filter(ImageFilter.GaussianBlur(4 * s))); d = ImageDraw.Draw(im)
-        d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, fill=rgba(mix(led, (255, 255, 255), 0.25)))
-        d.rounded_rectangle([lx0 + 2 * s, ly0 + s, lx1 - 2 * s, ly0 + 4 * s], radius=s, fill=(255, 255, 255, 120))
-    else:
-        d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, fill=rgba(mix(led, (0, 0, 0), 0.78)))
-    d.rounded_rectangle([lx0, ly0, lx1, ly1], radius=2 * s, outline=(0, 0, 0, 200), width=s)
+    top_c = mix(led, (255, 255, 255), 0.45) if on else mix(led, (0, 0, 0), 0.62)
+    bot_c = led if on else mix(led, (0, 0, 0), 0.80)
+    cap = Image.new("RGBA", im.size, (0, 0, 0, 0)); cd = ImageDraw.Draw(cap)
+    for yy in range(y0, y1):
+        k = (yy - y0) / (y1 - y0); cd.line([x0, yy, x1, yy], fill=rgba(mix(top_c, bot_c, k)))
+    mk = Image.new("L", im.size, 0); ImageDraw.Draw(mk).rounded_rectangle([x0, y0, x1, y1], radius=3 * s, fill=255)
+    im.paste(cap, (0, 0), mk); d = ImageDraw.Draw(im)
+    d.rounded_rectangle([x0, y0, x1, y1], radius=3 * s, outline=(0, 0, 0, 180), width=s)
+    d.rounded_rectangle([x0 + 3 * s, y0 + 2 * s, x1 - 3 * s, y0 + 8 * s], radius=2 * s, fill=(255, 255, 255, 70 if on else 26))   # gloss
     return im.resize((w, w), Image.LANCZOS)
 
 def tool_button(lab, w, h, icon=None, accent=None):
@@ -301,12 +300,12 @@ def module(im, box, title):
     x0, y0, x1, y1 = box; d = ImageDraw.Draw(im)
     d.rectangle([x0 - 2, y0 - 2, x1 + 2, y1 + 2], fill=SEAM)
     face = Image.new("RGB", (x1 - x0, y1 - y0)); fd = ImageDraw.Draw(face)
-    for y in range(y1 - y0): fd.line([0, y, x1 - x0, y], fill=mix((50, 51, 55), (37, 38, 41), y / (y1 - y0)))
+    for y in range(y1 - y0): fd.line([0, y, x1 - x0, y], fill=mix(SLATE_T, SLATE_B, y / (y1 - y0)))
     random.seed(x0)
     tex = Image.new("RGBA", face.size, (0, 0, 0, 0)); td = ImageDraw.Draw(tex)
     for _ in range(face.size[0] * face.size[1] // 60):           # vertical brushing
         x = random.randrange(face.size[0]); y = random.randrange(face.size[1]); ln = random.randint(10, 90)
-        td.line([x, y, x, min(face.size[1], y + ln)], fill=(255, 255, 255, random.randint(3, 8)) if random.random() < 0.5 else (0, 0, 0, random.randint(5, 12)))
+        td.line([x, y, x, min(face.size[1], y + ln)], fill=(255, 255, 255, random.randint(2, 5)) if random.random() < 0.5 else (0, 0, 0, random.randint(3, 7)))
     face.paste(tex, (0, 0), tex)
     im.paste(face, (x0, y0)); d = ImageDraw.Draw(im)
     d.line([x0, y0, x1 - 1, y0], fill=EDGE); d.line([x0, y0, x0, y1 - 1], fill=(66, 68, 72))
@@ -359,13 +358,12 @@ def background():
         kx, ky = knob_centre(key)
         tw = spaced(d, kx, top - 22, cap, font(12), PRINT, track=1.6, anchor="c")
         qbadge(d, kx + tw / 2 + 8, top - 21, q)
-        steps = STEPS.get(key, 21)
-        for i in range(steps):
+        steps = STEPS.get(key, 11)
+        for i in range(steps):                                  # printed dot scale
             a = ANG0 + (ANG1 - ANG0) * i / (steps - 1)
             major = key in STEPS or i % 5 == 0
-            r0, r1 = KS / 2 + 4, KS / 2 + (11 if major else 7)
-            x0, y0 = ang_xy(kx, ky, r0, a); x1, y1 = ang_xy(kx, ky, r1, a)
-            d.line([x0, y0, x1, y1], fill=PRINT if major else DIM, width=2 if major else 1)
+            x, y = ang_xy(kx, ky, KS / 2 + 8, a); r = 2.2 if major else 1.4
+            d.ellipse([x - r, y - r, x + r, y + r], fill=PRINT if major else DIM)
         labs = SCALE[key]
         for i, t in enumerate(labs):
             a = ANG0 + (ANG1 - ANG0) * i / (len(labs) - 1)
@@ -375,12 +373,15 @@ def background():
         bx0, by0 = knob_box(key)
         d.rounded_rectangle([bx0 + 25, by0 + 124, bx0 + CW - 25, by0 + 148], radius=3, fill=(6, 7, 8), outline=(74, 76, 80))
         d.line([bx0 + 27, by0 + 125, bx0 + CW - 27, by0 + 125], fill=(0, 0, 0))
+    def frame(x0, y0, x1, y1):
+        d.rounded_rectangle([x0, y0, x1, y1], radius=6, outline=FRAME, width=1)
+    frame(634, 102, 1246, 330); frame(634, 338, 1246, 566)          # compressor rows
+    frame(32, 288, 580, 468); frame(32, 474, 580, 566)              # I/O knobs, switches
     for key, (cap, led, cx, y, q) in SWITCHES.items():                                                      # switches
         tw = spaced(d, cx, y - 22, cap, font(12), PRINT, track=1.6, anchor="c")
         qbadge(d, cx + tw / 2 + 8, y - 21, q)
         d.rounded_rectangle([cx - SW / 2 - 3, y - 3, cx + SW / 2 + 3, y + SW + 3], radius=7, fill=(70, 72, 77))
         d.rounded_rectangle([cx - SW / 2 - 2, y - 2, cx + SW / 2 + 2, y + SW + 2], radius=6, fill=(14, 14, 15))
-    text_c(d, 306, 500 + SW + 14, "ANALOG adds programme-dependent even-order colour", font(9, False), FAINT)
     d.rectangle([0, FOOT_Y, W, H], fill=(12, 12, 13)); d.line([0, FOOT_Y, W, FOOT_Y], fill=(0, 0, 0))     # footer
     d.line([0, FOOT_Y + 1, W, FOOT_Y + 1], fill=(56, 58, 62))
     d.line([760, FOOT_Y + 6, 760, H - 6], fill=(44, 46, 50))

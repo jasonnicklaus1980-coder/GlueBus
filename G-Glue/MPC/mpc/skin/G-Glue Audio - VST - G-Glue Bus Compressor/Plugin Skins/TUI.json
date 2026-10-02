@@ -4372,7 +4372,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "184 500 60 60",
+                                    "bounds": "184 498 60 60",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -4402,7 +4402,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "368 500 60 60",
+                                    "bounds": "368 498 60 60",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
