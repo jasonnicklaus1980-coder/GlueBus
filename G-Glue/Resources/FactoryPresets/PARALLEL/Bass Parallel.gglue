@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Bass Parallel
+category=PARALLEL
+threshold=-26
+makeup=10
+attack=4
+release=3
+ratio=2
+scfilter=0
+mix=35
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Parallel Smash
+category=PARALLEL
+threshold=-28
+makeup=12
+attack=0
+release=0
+ratio=2
+scfilter=0
+mix=35
+input=0
+output=0
+analog=1
+bypass=0

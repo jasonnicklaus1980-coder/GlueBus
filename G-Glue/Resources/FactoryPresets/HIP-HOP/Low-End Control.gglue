@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Low-End Control
+category=HIP-HOP
+threshold=-10
+makeup=1
+attack=3
+release=2
+ratio=1
+scfilter=0
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

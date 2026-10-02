@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Techno Drive
+category=ELECTRONIC
+threshold=-18
+makeup=4
+attack=3
+release=2
+ratio=1
+scfilter=2
+mix=100
+input=0
+output=0
+analog=1
+bypass=0

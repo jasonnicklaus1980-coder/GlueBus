@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Easy Level
+category=GENTLE
+threshold=-14
+makeup=2
+attack=5
+release=4
+ratio=0
+scfilter=4
+mix=80
+input=0
+output=0
+analog=0
+bypass=0

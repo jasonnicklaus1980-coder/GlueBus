@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Open Mix
+category=MIX BUS
+threshold=-10
+makeup=1
+attack=5
+release=2
+ratio=0
+scfilter=5
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

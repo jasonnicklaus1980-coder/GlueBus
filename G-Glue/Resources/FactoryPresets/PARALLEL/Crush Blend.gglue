@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Crush Blend
+category=PARALLEL
+threshold=-26
+makeup=10
+attack=2
+release=1
+ratio=2
+scfilter=2
+mix=40
+input=0
+output=0
+analog=0
+bypass=0

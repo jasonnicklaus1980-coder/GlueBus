@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Gentle Master
+category=MASTERING
+threshold=-8
+makeup=1
+attack=5
+release=4
+ratio=0
+scfilter=4
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

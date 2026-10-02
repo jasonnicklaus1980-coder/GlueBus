@@ -1,0 +1,97 @@
+Initialization
+  ok   prepares and runs at 44.1 / 48 / 88.2 / 96 kHz with 1x / 2x / 4x oversampling, latency 0
+  ok   defaults: threshold -10 dB, 4:1, AUTO release, mix 100 %
+Silence
+  ok   silence in -> exact silence out (analog on, +24 dB makeup), GR 0
+Threshold and ratio (static curve, 1 kHz sine)
+  ok   10 dB below threshold: 0.000 dB GR
+  ok   ratio 2:1, 20 dB over: GR 10.02 dB (expected 10.00)
+  ok   ratio 4:1, 20 dB over: GR 15.03 dB (expected 15.00)
+  ok   ratio 10:1, 20 dB over: GR 18.03 dB (expected 18.00)
+  ok   soft knee: at the threshold 0.58 dB GR (hard knee would be 0)
+  ok   lower threshold compresses more: 10.53 dB vs 0.00 dB
+Mono and stereo
+  ok   mono: 0 dBFS sine compressed to -14.7 dBFS
+  ok   stereo: identical channels stay identical (max difference 0)
+  ok   stereo link: left -13.56 dB, right -13.56 dB (same gain, image kept)
+Attack and release (peak detector, 10:1, step input)
+  ok   attack 0.3 ms: 63 % of 27.0 dB GR after 0.33 ms
+  ok   attack 10 ms: 63 % of 26.7 dB GR after 14.00 ms
+  ok   attack 30 ms: 63 % of 26.3 dB GR after 40.67 ms
+  ok   release 0.1 s: back to 37 % after 0.100 s
+  ok   release 0.6 s: back to 37 % after 0.601 s
+  ok   release 1.2 s: back to 37 % after 1.197 s
+Auto release (programme dependent)
+  ok   after a 20 ms hit GR is under 1 dB in 0.33 s, after 2 s of compression in 3.74 s
+Sidechain high-pass
+  ok   40 Hz bass: 12.5 dB GR with SC OFF, -0.0 dB with SC 200 Hz
+  ok   the sidechain filter never filters the audio itself
+Parallel mix
+  ok   mix 0 / 50 / 100 %: 0.00 / -5.30 / -21.20 dB
+  ok   mix 0 % without oversampling is bit-exact dry
+Analog mode
+  ok   analog OFF: 2nd -165 dB, 3rd -155 dB (clean)
+  ok   analog ON at -6 dBFS: 2nd harmonic -40.7 dB, 3rd -53.2 dB (subtle, even-order)
+  ok   analog ON keeps the level (-0.04 dB) and adds no DC (-3e-08)
+  ok   analog ON keeps transient peaks: -0.29 dB
+Bypass
+  ok   bypass ON is bit-exact
+  ok   bypass on/off while playing: largest step 0.0004 (steady 0.0001), no click
+  ok   15 ms after switching bypass on, the output is bit-exact
+Automation (smoothing, no zipper noise)
+  ok   every continuous parameter randomised every 64 samples: largest step 0.0006 (a 1 dB jump = 0.06)
+  ok   ratio / release / SC filter / analog switched while playing: largest step 0.0096
+  ok   attack 3 / 10 / 30 ms switched while playing: largest step 0.0001
+Sample rates
+  ok   same gain reduction at 44.1 / 48 / 88.2 / 96 kHz: 10.40 .. 10.40 dB
+  ok   re-prepare 44.1 -> 96 kHz while running
+Oversampling filters
+  ok   2x up-sampler image rejection: -151 dB
+  ok   2x round trip flat to 20 kHz at 44.1 kHz: worst 0.000 dB
+  ok   aliasing at 900 Hz from a 15 kHz tone: -43 dB without, -169 dB with 2x oversampling
+Extreme settings, NaN, infinity, DC, denormals
+  ok   40 random min/max combinations with +18 dBFS spikes: finite, peak 1.0000 (<= 1.0, output protection)
+  ok   NaN / +inf / -inf in the input: output stays finite and keeps working
+  ok   zero-mean input (analog on, compressing): output DC -4e-09
+  ok   DC offset in the input: stable
+  ok   decay into silence: no denormal outputs, 17.7 ms CPU for 2 s
+Clicks and pops (analog on/off, preset changes while playing)
+  ok   12 preset changes while playing: largest step 0.0028 (steady 0.0032)
+Parameters
+  ok   11 parameters with unique stable IDs
+  ok   ID order fixed (Q-Link 1-4 = threshold, makeup, attack, release)
+  ok   display text round-trips for every parameter; longest text 8 chars (MPC display)
+  ok   readable values: AUTO, 10:1, OFF, -12.0 dB, 75 %
+Factory presets
+  ok   65 factory presets, all names unique
+  ok   12 categories, at least 5 presets each
+  ok   every preset value inside its parameter range, bypass off
+  ok   all presets run on a drum loop: finite, peak 1.000
+  ok   loading a preset sets every engine parameter (Tight Mix)
+Preset library: save, save as, rename, delete, import, export, favourites, search, next / previous
+  ok   save: "My Bus" written to <work dir> Presets
+  ok   saved values read back (bypass is never stored in a preset)
+  ok   save as an existing name is refused without overwrite (a user preset called "My Bus" already exists)
+  ok   save (overwrite) updates it
+  ok   unsafe characters are removed from names
+  ok   rename keeps the favourite
+  ok   factory presets can't be renamed or deleted
+  ok   export to <work dir> Bus.gglue
+  ok   import never overwrites: "Master Bus 2"
+  ok   importing a non-preset file is refused (not a G-Glue preset)
+  ok   favourites and user presets persist (new library instance)
+  ok   search by name, category, favourites, user
+  ok   next / previous wrap around
+  ok   delete removes the file
+State save / restore (A/B)
+  ok   full state round trip: both A/B slots, active slot, preset name, modified flag (303 bytes)
+  ok   A/B switch swaps the slots
+  ok   corrupt state is rejected
+  ok   unknown keys ignored, out-of-range values clamped, missing values default
+CPU (stereo, 48 kHz, 10 s of audio, this machine)
+  1x oversampling: 0.047 s for 10 s = 0.47 % of one core
+  2x oversampling: 0.105 s for 10 s = 1.05 % of one core
+  ok   2x oversampling (default) under 10 % of one core
+  4x oversampling: 0.193 s for 10 s = 1.93 % of one core
+
+72 checks, 0 failed

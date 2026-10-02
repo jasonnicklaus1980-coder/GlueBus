@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Room Breath
+category=DRUM BUS
+threshold=-22
+makeup=6
+attack=1
+release=3
+ratio=2
+scfilter=3
+mix=60
+input=0
+output=0
+analog=1
+bypass=0

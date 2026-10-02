@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Heavy Bus
+category=AGGRESSIVE
+threshold=-22
+makeup=7
+attack=2
+release=1
+ratio=2
+scfilter=0
+mix=100
+input=0
+output=0
+analog=1
+bypass=0

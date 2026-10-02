@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Synth Bus
+category=ELECTRONIC
+threshold=-12
+makeup=2
+attack=4
+release=4
+ratio=0
+scfilter=4
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Snare Snap
+category=DRUM BUS
+threshold=-18
+makeup=4
+attack=5
+release=0
+ratio=1
+scfilter=5
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

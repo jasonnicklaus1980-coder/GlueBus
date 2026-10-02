@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Clean Glue
+category=MIX BUS
+threshold=-14
+makeup=2
+attack=5
+release=4
+ratio=0
+scfilter=3
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Dusty Squeeze
+category=HIP-HOP
+threshold=-24
+makeup=8
+attack=1
+release=1
+ratio=2
+scfilter=0
+mix=70
+input=0
+output=0
+analog=1
+bypass=0

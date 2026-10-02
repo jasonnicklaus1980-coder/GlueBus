@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Kick Control
+category=DRUM BUS
+threshold=-16
+makeup=3
+attack=2
+release=0
+ratio=2
+scfilter=0
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Drum Crush
+category=PARALLEL
+threshold=-30
+makeup=14
+attack=0
+release=0
+ratio=2
+scfilter=0
+mix=45
+input=0
+output=0
+analog=1
+bypass=0

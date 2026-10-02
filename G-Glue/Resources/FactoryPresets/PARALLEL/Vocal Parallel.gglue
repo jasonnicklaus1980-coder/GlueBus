@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Vocal Parallel
+category=PARALLEL
+threshold=-24
+makeup=9
+attack=3
+release=2
+ratio=2
+scfilter=5
+mix=30
+input=0
+output=0
+analog=0
+bypass=0

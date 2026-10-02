@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Half Squash
+category=CREATIVE
+threshold=-22
+makeup=8
+attack=3
+release=1
+ratio=2
+scfilter=1
+mix=50
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Pressure
+category=AGGRESSIVE
+threshold=-24
+makeup=8
+attack=2
+release=4
+ratio=2
+scfilter=0
+mix=100
+input=0
+output=0
+analog=1
+bypass=0

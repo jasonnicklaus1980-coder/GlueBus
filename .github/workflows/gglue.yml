@@ -1,0 +1,59 @@
+# G-Glue Bus Compressor: builds the desktop plugin on Windows, macOS and Linux and runs every test suite.
+# Windows / macOS are the platforms MPC Desktop (Controller Mode) runs on; these are the binaries to install there.
+# JUCE is fetched by CMake (FetchContent, JUCE 7.0.12) on runners that don't have it installed.
+name: gglue
+
+on:
+  push:
+    paths: [ "G-Glue/**", ".github/workflows/gglue.yml" ]
+  pull_request:
+    paths: [ "G-Glue/**", ".github/workflows/gglue.yml" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, name: windows-x64 }
+          - { os: macos-14,       name: macos-universal, cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13" }
+          - { os: ubuntu-24.04,   name: linux-x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libasound2-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxext-dev \
+            libfreetype-dev libfontconfig1-dev libgl-dev xvfb
+
+      - name: Configure
+        run: cmake -S G-Glue -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_extra }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test (DSP, MPC bridge, built VST3 in a host)
+        if: runner.os != 'Linux'
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Test (Linux, virtual display for the editor test)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a ctest --test-dir build -C Release --output-on-failure
+
+      - name: Collect plugins
+        shell: bash
+        run: |
+          mkdir -p out
+          cp -R "build/GGlue_artefacts/Release/VST3/G-Glue Bus Compressor.vst3" out/
+          if [ -d "build/GGlue_artefacts/Release/AU" ]; then cp -R "build/GGlue_artefacts/Release/AU/G-Glue Bus Compressor.component" out/; fi
+          cp -R G-Glue/Resources/FactoryPresets out/
+          cp G-Glue/Documentation/INSTALL.md out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: G-Glue-${{ matrix.name }}
+          path: out

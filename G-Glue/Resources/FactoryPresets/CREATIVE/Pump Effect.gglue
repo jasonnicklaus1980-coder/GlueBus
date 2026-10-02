@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Pump Effect
+category=CREATIVE
+threshold=-24
+makeup=6
+attack=0
+release=2
+ratio=2
+scfilter=0
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+MPC bridge (C ABI)
+  ok   create; 11 parameters
+  ok   Q-Link order: Thresh, Makeup, Attack, Release
+  ok   release text "AUTO"
+  ok   compresses: -0.9 dBFS in, -7.4 dBFS out, GR meter 6.5 dB
+  ok   set threshold to max: "+10.0 dB"
+  ok   65 presets; load "Vocal Bus" (VOCALS)
+  ok   preset threshold "-16.0 dB"
+  ok   state 303 bytes restored in a second instance
+  ok   all parameters equal after restore
+  ok   A/B: B edited to 50 %, A still 100 %
+  ok   save a user preset to <work dir>
+
+11 checks, 0 failed

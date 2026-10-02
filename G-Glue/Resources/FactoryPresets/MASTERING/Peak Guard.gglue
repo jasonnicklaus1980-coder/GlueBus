@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Peak Guard
+category=MASTERING
+threshold=-4
+makeup=0
+attack=2
+release=0
+ratio=2
+scfilter=2
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

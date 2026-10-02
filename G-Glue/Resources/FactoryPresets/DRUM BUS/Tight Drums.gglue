@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Tight Drums
+category=DRUM BUS
+threshold=-20
+makeup=5
+attack=3
+release=1
+ratio=1
+scfilter=2
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

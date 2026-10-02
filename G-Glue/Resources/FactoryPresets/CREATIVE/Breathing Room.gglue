@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Breathing Room
+category=CREATIVE
+threshold=-28
+makeup=10
+attack=5
+release=3
+ratio=2
+scfilter=0
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=House Bounce
+category=ELECTRONIC
+threshold=-16
+makeup=3
+attack=4
+release=1
+ratio=1
+scfilter=1
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

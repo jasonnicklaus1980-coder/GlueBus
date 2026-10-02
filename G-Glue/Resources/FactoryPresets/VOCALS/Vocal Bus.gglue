@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Vocal Bus
+category=VOCALS
+threshold=-16
+makeup=3
+attack=3
+release=4
+ratio=1
+scfilter=4
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

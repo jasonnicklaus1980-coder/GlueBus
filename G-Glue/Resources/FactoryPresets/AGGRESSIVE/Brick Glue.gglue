@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Brick Glue
+category=AGGRESSIVE
+threshold=-20
+makeup=6
+attack=1
+release=1
+ratio=2
+scfilter=2
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

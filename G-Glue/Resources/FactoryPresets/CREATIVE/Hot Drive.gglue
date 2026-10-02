@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Hot Drive
+category=CREATIVE
+threshold=-8
+makeup=0
+attack=5
+release=4
+ratio=0
+scfilter=0
+mix=100
+input=6
+output=-6
+analog=1
+bypass=0

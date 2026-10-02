@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Rap Vocal Control
+category=VOCALS
+threshold=-20
+makeup=5
+attack=1
+release=0
+ratio=2
+scfilter=5
+mix=100
+input=0
+output=0
+analog=0
+bypass=0

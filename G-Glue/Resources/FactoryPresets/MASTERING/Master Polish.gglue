@@ -1,0 +1,14 @@
+G-Glue Preset 1
+name=Master Polish
+category=MASTERING
+threshold=-12
+makeup=1.5
+attack=5
+release=2
+ratio=0
+scfilter=3
+mix=100
+input=0
+output=0
+analog=1
+bypass=0
