@@ -3,7 +3,8 @@
 # ALWAYS brings the MPC app back.  Nothing here runs at boot and nothing is installed into the system: a power
 # cycle always starts the normal MPC.
 #
-#   sh arcade.sh run [--max SECONDS] PROGRAM [ARGS...]   stop MPC app -> run PROGRAM -> start MPC app again
+#   sh arcade.sh run [--max SECONDS] [--console] PROGRAM [ARGS...]
+#                                    stop MPC app -> run PROGRAM -> start MPC app again (--console: show its output here)
 #   sh arcade.sh restore                                 start the MPC app (manual recovery)
 #   sh arcade.sh status                                  show whether the MPC app is running
 #   sh arcade.sh stop                                    end the running arcade program (the MPC app then comes back)
@@ -20,12 +21,13 @@ restore() { systemctl start "$SVC" && echo "arcade: MPC app started again"; }
 case "${1:-}" in
     restore) restore; exit $? ;;
     status) printf "MPC app (%s): " "$SVC"; systemctl is-active "$SVC"; exit 0 ;;
-    stop) pkill -TERM -x mame 2>/dev/null; pkill -TERM -x hwtest 2>/dev/null; sleep 3; systemctl is-active "$SVC" >/dev/null || restore; exit 0 ;;
+    stop) pkill -TERM -x mame 2>/dev/null; pkill -TERM -x hwtest 2>/dev/null; pkill -TERM -x padbridge 2>/dev/null; sleep 3; systemctl is-active "$SVC" >/dev/null || restore; exit 0 ;;
     run) shift ;;
-    *) sed -n '2,13p' "$0"; exit 1 ;;
+    *) sed -n '2,14p' "$0"; exit 1 ;;
 esac
-MAX=1800
+MAX=1800; CONSOLE=0
 if [ "${1:-}" = "--max" ]; then MAX="$2"; shift 2; fi
+if [ "${1:-}" = "--console" ]; then CONSOLE=1; shift; fi
 [ $# -ge 1 ] || die "no program given"
 [ "$(id -u)" = 0 ] || die "run as root"
 command -v systemctl >/dev/null || die "systemctl not found"
@@ -43,6 +45,8 @@ i=0; while pidof MPC >/dev/null && [ $i -lt 30 ]; do sleep 1; i=$((i + 1)); done
 pidof MPC >/dev/null && die "MPC did not stop; not starting the program"
 
 echo "arcade: running $* (log: $LOG)"
-if command -v timeout >/dev/null; then timeout -s TERM "$MAX" "$@" > "$LOG" 2>&1
+if [ $CONSOLE = 1 ]; then
+    if command -v timeout >/dev/null; then timeout -s TERM "$MAX" "$@" 2>&1 | tee "$LOG"; else "$@" 2>&1 | tee "$LOG"; fi
+elif command -v timeout >/dev/null; then timeout -s TERM "$MAX" "$@" > "$LOG" 2>&1
 else "$@" > "$LOG" 2>&1; fi
 echo "arcade: program ended (exit $?)"

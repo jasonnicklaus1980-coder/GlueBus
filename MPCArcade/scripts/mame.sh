@@ -12,6 +12,13 @@ export SDL_FBROTATE="${SDL_FBROTATE:-0}"
 export SDL_AUDIODRIVER=alsa
 export HOME="$D"
 [ -f /sys/class/graphics/fbcon/cursor_blink ] && echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null
-exec "$D/mame" -rompath "$D/roms" -cfg_directory "$D/cfg" -nvram_directory "$D/nvram" -snapshot_directory "$D/snap" \
+# MPC pads -> virtual keyboard (only if a pad map was learned: sh arcade.sh run --console ./padbridge learn)
+BRIDGE=
+if [ -x "$D/padbridge" ] && [ -f "$D/pads.conf" ]; then
+    "$D/padbridge" run "$D/pads.conf" > "$D/padbridge.log" 2>&1 &
+    BRIDGE=$!; sleep 1                                   # the virtual keyboard must exist before MAME starts
+fi
+trap '[ -n "$BRIDGE" ] && kill $BRIDGE 2>/dev/null' EXIT INT TERM HUP
+"$D/mame" -rompath "$D/roms" -cfg_directory "$D/cfg" -nvram_directory "$D/nvram" -snapshot_directory "$D/snap" \
      -inipath "$D/ini" -homepath "$D" -video soft -sound sdl -samplerate 48000 -audio_latency 2 \
      -skip_gameinfo -keepaspect -nofilter -mouse -nowindow "$@"

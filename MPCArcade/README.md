@@ -15,11 +15,12 @@ Included drivers: Pac-Man, Ms. Pac-Man, Galaga, Dig Dug, Donkey Kong, Space Inva
 | `arcade.sh` | launcher: stops the MPC app → runs a program → starts the MPC app again | **temporarily** (stops/starts `acvs`) |
 | `survey.sh` | read-only system report (`/sdcard/mpcx-survey.txt`) | no |
 | `hwtest` | 20 s screen / sound / input test | no |
+| `padbridge` | MPC pads / buttons → virtual keyboard (probe, learn, run) | no (creates a virtual input device while running) |
 
 ## Install (copies files only)
     mkdir -p /sdcard/mpcarcade/roms
     # copy everything from this folder to /sdcard/mpcarcade, then:
-    chmod +x /sdcard/mpcarcade/mame /sdcard/mpcarcade/hwtest
+    chmod +x /sdcard/mpcarcade/mame /sdcard/mpcarcade/hwtest /sdcard/mpcarcade/padbridge
 Put **ROM sets you legally own** in `/sdcard/mpcarcade/roms` as zip files named like the set: `pacman.zip`,
 `mspacman.zip`, `galaga.zip`, `digdug.zip`, `dkong.zip`, `invaders.zip`, `frogger.zip`, `centiped.zip`. They must
 match MAME 0.242's sets (newer MAME sets usually work for these old games). No ROMs are included.
@@ -30,13 +31,22 @@ match MAME 0.242's sets (newer MAME sets usually work for these old games). No R
     sh arcade.sh run ./mame.sh                 # MAME's game list: tap a game, "Exit" at the bottom quits
 When MAME exits, the MPC app starts again by itself.
 
-### Controls
-- **USB keyboard (recommended for the first test):** arrows = joystick, Left Ctrl = fire, `5` = coin, `1` = start,
-  `Tab` = MAME menu, `P` = pause, **`Esc` = quit back to the MPC**.
-- **Touchscreen:** acts as a mouse, so you can tap entries in MAME's menus.
-- **MPC pads, buttons and knobs:** not mapped yet. Run `hwtest` (below) and send me the log so I can map them.
-- **Exit without a keyboard:** from SSH run `sh /sdcard/mpcarcade/arcade.sh stop`. Every session also ends by itself
-  after 30 minutes (`--max SECONDS` changes that).
+### Controls: the MPC pads (no keyboard needed)
+`padbridge` turns pads and buttons into a virtual keyboard for MAME. Set it up once:
+1. **See what the pads send** (30 s, tap pads and press buttons while it runs):
+   `sh arcade.sh run --max 60 --console ./padbridge probe 30`
+2. **Learn your layout:** it asks for each action in turn. Tap the pad or button you want, or wait 15 s to skip one:
+   `sh arcade.sh run --max 300 --console ./padbridge learn`
+   The actions are: Up, Down, Left, Right, Fire, Button 2, Coin, Start, MAME menu, menu Select, and **Exit**.
+   The mapping is saved to `/sdcard/mpcarcade/pads.conf`.
+3. Play: `sh arcade.sh run ./mame.sh pacman`. `mame.sh` starts the bridge automatically when `pads.conf` exists.
+   - **Exit** needs its pad **held for 1.5 s**, so a stray tap never quits. MAME then closes and the MPC app returns.
+   - The **touchscreen** acts as a mouse: tap entries in MAME's game list and menus.
+   - The bridge needs `/dev/uinput`; the probe output says whether your MPC has it.
+
+A USB keyboard also works: arrows, Ctrl = fire, `5` = coin, `1` = start, `Tab` = menu, `Esc` = quit.
+You can always end a session from SSH: `sh /sdcard/mpcarcade/arcade.sh stop`. Sessions also end by themselves after
+30 minutes (`--max SECONDS` changes that).
 
 ### If the picture is sideways or upside down
 Set `SDL_FBROTATE` to `90`, `180` or `270`, e.g. `SDL_FBROTATE=90 sh arcade.sh run ./mame.sh pacman`.
@@ -49,8 +59,8 @@ Set `SDL_FBROTATE` to `90`, `180` or `270`, e.g. `SDL_FBROTATE=90 sh arcade.sh r
 
 ## Recommended first runs
 1. `sh survey.sh` (read-only) and `sh arcade.sh run --max 60 ./hwtest`: confirms screen, sound and inputs.
-2. `sh arcade.sh run --max 120 ./mame.sh` with a USB keyboard: the game list should appear full-screen.
-3. Then a game. Send me `/sdcard/mpcarcade/*.log` if anything looks wrong.
+2. `sh arcade.sh run --max 120 ./mame.sh`: the game list should appear full-screen (tap the screen to scroll and choose).
+3. `padbridge probe`, then `padbridge learn` (see Controls), then a game. Send me `/sdcard/mpcarcade/*.log` if anything looks wrong.
 
 ## What's verified so far (off-device)
 - The binary is ARM EABI5 hard-float and needs only libc/libm. Its highest glibc symbol is 2.34, the same level
@@ -61,8 +71,10 @@ Set `SDL_FBROTATE` to `90`, `180` or `270`, e.g. `SDL_FBROTATE=90 sh arcade.sh r
   runs above check exactly these.
 
 ## How it's built (`buildsys/`)
-- **SDL 2.30.0, static:** its "dummy + evdev" video driver is patched to scale each frame onto the Linux
-  framebuffer (`patches/SDL_null*.c`); ALSA loaded at run time; evdev input.
+- **SDL 2.30.0, static:**
+  - Its "dummy + evdev" video driver is patched to scale each frame onto the Linux framebuffer (`patches/SDL_null*.c`).
+  - Its evdev input scans `/dev/input` itself, since there's no udev (`patches/SDL_evdev.c`).
+  - ALSA is loaded at run time.
 - **MAME 0.242 cross-compiled** (`build-mame.sh`) with only the six drivers, `-static-libstdc++`. Patches in
   `patches/mame/`:
   - no fontconfig, SDL2_ttf, EGL or X11
