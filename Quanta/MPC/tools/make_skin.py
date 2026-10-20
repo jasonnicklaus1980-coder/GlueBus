@@ -92,6 +92,14 @@ def visual3d(w, h):
             d.line([lines[r][c], lines[r + 1][c]], fill=rgba(mix(ACCENT, VIOLET, lines[r][-1]), int(60 + 140 * lines[r][-1])), width=max(1, SS))
     return im.resize((w, h), Image.LANCZOS)
 
+def tracked(d, x, y, text, size, fill, track=0.0, anchor="la"):
+    """text with letter spacing (in px) between characters, for headings and the wordmark"""
+    f = font(size)
+    for ch in text:
+        d.text((x, y), ch, font=f, fill=fill, anchor=anchor)
+        x += d.textlength(ch, font=f) + track
+    return x
+
 def background():
     im = Image.new("RGB", (W, H), INK)
     d = ImageDraw.Draw(im)
@@ -99,12 +107,12 @@ def background():
         t = y / H
         d.line([0, y, W, y], fill=mix((46, 36, 74), (14, 13, 22), t))
     d.rounded_rectangle([14, 64, W - 14, H - 14], radius=14, fill=PANEL, outline=EDGE, width=2)
-    d.text((34, 18), "QUANTA", font=font(34), fill=PRINT)
-    d.text((212, 30), "stereo mix enhancement", font=font(16, False), fill=DIM)
-    d.rounded_rectangle([14, 64, W - 14, 74], radius=4, fill=VIOLET)   # thin violet band under the header
-    d.text((330, 92), "BALANCE", font=font(14), fill=DIM)
-    d.text((60, 436), "METERS AND STEREO", font=font(14), fill=DIM)
-    d.text((430, 436), "MONO BASS", font=font(14), fill=DIM)
+    tracked(d, 34, 16, "QUANTA", 32, PRINT, track=3.0)
+    tracked(d, 212, 30, "stereo mix enhancement", 15, DIM, track=0.4)
+    d.rectangle([14, 64, W - 14, 66], fill=VIOLET)                    # hairline accent under the header
+    tracked(d, 300, 88, "BALANCE", 11, DIM, track=2.0)                # section headings share one style and baseline
+    tracked(d, 60, 432, "METERS AND STEREO", 11, DIM, track=2.0)
+    tracked(d, 430, 432, "MONO BASS", 11, DIM, track=2.0)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
         d.text((cx, 196), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + 36, 226), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
