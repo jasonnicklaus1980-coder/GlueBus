@@ -5,6 +5,7 @@
 // Threads: the host's UI thread calls setParameter / dispatcher; the audio thread calls processReplacing only.
 #include "vst2.h"
 #include "../../DSP/QuantaEngine.h"
+#include "../../DSP/QuantaMath.h"
 
 #include <cstdio>
 #include <cstring>
@@ -17,8 +18,12 @@ namespace {
 struct Plugin {
     AEffect fx;
     quanta::Engine engine;
+    audioMasterCallback host = nullptr;
+    int32_t lastFrame[quanta::P_COUNT] = {};  // meter frame last sent to the host (-1 = none)
     char chunk[64];   // state, written on the host thread only
 };
+
+inline float clamp01(float v) { return v < 0.f ? 0.f : v > 1.f ? 1.f : v; }
 
 constexpr int32_t kUniqueId = 0x516E7431;   // 'Qnt1'
 constexpr char kStateMagic[4] = {'Q', 'N', 'T', '1'};
@@ -59,14 +64,14 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
     case effGetChunk: {
         char* b = p->chunk;
         std::memcpy(b, kStateMagic, 4);
-        for (int i = 0; i < quanta::P_COUNT; ++i) { float v = p->engine.getParam(i); std::memcpy(b + 4 + 4 * i, &v, 4); }
+        for (int i = 0; i < quanta::kControlCount; ++i) { float v = p->engine.getParam(i); std::memcpy(b + 4 + 4 * i, &v, 4); }
         *(void**)ptr = b;
-        return 4 + 4 * quanta::P_COUNT;
+        return 4 + 4 * quanta::kControlCount;
     }
     case effSetChunk: {
         const char* b = (const char*)ptr;
-        if (!b || value < 4 + 4 * quanta::P_COUNT || std::memcmp(b, kStateMagic, 4) != 0) return 0;
-        for (int i = 0; i < quanta::P_COUNT; ++i) { float v; std::memcpy(&v, b + 4 + 4 * i, 4); p->engine.setParam(i, v); }
+        if (!b || value < 4 + 4 * quanta::kControlCount || std::memcmp(b, kStateMagic, 4) != 0) return 0;
+        for (int i = 0; i < quanta::kControlCount; ++i) { float v; std::memcpy(&v, b + 4 + 4 * i, 4); p->engine.setParam(i, v); }
         return 1;
     }
     case effGetEffectName: if (ptr) copyStr((char*)ptr, "Quanta", 32); return 1;
@@ -76,15 +81,31 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
     case effGetPlugCategory: return kPlugCategEffect;
     case effGetVstVersion: return 2400;
     case effGetTailSize: return 0;
-    case effCanBeAutomated: return index >= 0 && index < quanta::P_COUNT ? 1 : 0;
+    case effCanBeAutomated: return index >= 0 && index < quanta::kControlCount ? 1 : 0;
     case effCanDo: return 0;
     default: return 0;
     }
 }
 
-void setParameter(AEffect* fx, int32_t index, float v) { ((Plugin*)fx->object)->engine.setParam(index, v); }
+void setParameter(AEffect* fx, int32_t index, float v) {
+    if (index >= 0 && index < quanta::kControlCount) ((Plugin*)fx->object)->engine.setParam(index, v);
+}
+
+// The meters are read from the engine (written by the audio thread, read here as plain floats)
+float meterValue(const quanta::Engine& e, int index) {
+    switch (index) {
+    case quanta::P_METER_IN:   return clamp01((20.f * quanta::qlog10(e.inputPeak() + 1e-9f) + 60.f) / 60.f);
+    case quanta::P_METER_OUT:  return clamp01((20.f * quanta::qlog10(e.outputPeak() + 1e-9f) + 60.f) / 60.f);
+    case quanta::P_METER_GR:   return clamp01(-e.gainReductionDbMax() / 20.f);
+    case quanta::P_METER_CORR: return clamp01(0.5f + 0.5f * e.correlation());
+    default: return 0.f;
+    }
+}
+
 float getParameter(AEffect* fx, int32_t index) {
-    return index >= 0 && index < quanta::P_COUNT ? ((Plugin*)fx->object)->engine.getParam(index) : 0.f;
+    Plugin* p = (Plugin*)fx->object;
+    if (index < 0 || index >= quanta::P_COUNT) return 0.f;
+    return index < quanta::kControlCount ? p->engine.getParam(index) : meterValue(p->engine, index);
 }
 
 void processReplacing(AEffect* fx, float** in, float** out, int32_t n) {
@@ -92,6 +113,15 @@ void processReplacing(AEffect* fx, float** in, float** out, int32_t n) {
     if (out[0] != in[0]) std::memcpy(out[0], in[0], sizeof(float) * (size_t)n);
     if (out[1] != in[1]) std::memcpy(out[1], in[1], sizeof(float) * (size_t)n);
     p->engine.process(out[0], out[1], n);
+    // Meters go to the screen only when the picture would change: one update per filmstrip frame (0..127)
+    if (!p->host) return;
+    for (int i = quanta::P_METER_IN; i < quanta::P_COUNT; ++i) {
+        int32_t frame = (int32_t)(meterValue(p->engine, i) * 127.f + 0.5f);
+        if (frame != p->lastFrame[i]) {
+            p->lastFrame[i] = frame;
+            p->host(fx, audioMasterAutomate, i, 0, nullptr, (float)frame / 127.f);
+        }
+    }
 }
 
 }  // namespace
@@ -100,6 +130,8 @@ QN_EXPORT AEffect* VSTPluginMain(audioMasterCallback host) {
     (void)host;
     Plugin* p = new (std::nothrow) Plugin();
     if (!p) return nullptr;
+    p->host = host;
+    for (int i = 0; i < quanta::P_COUNT; ++i) p->lastFrame[i] = -1;
     p->engine.prepare(48000.0);
     AEffect* fx = &p->fx;
     std::memset(fx, 0, sizeof(*fx));

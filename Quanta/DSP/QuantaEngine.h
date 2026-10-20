@@ -16,8 +16,16 @@ enum Param {
     P_MIX,           // parallel blend: 0 dry, 1 processed
     P_OUTPUT,        // output trim: -12 .. +12 dB, 0.5 = 0 dB
     P_MONOBASS,      // 1: content below ~120 Hz is made mono
+    // read-only meters: the host can show them, they are not saved and cannot be automated
+    P_METER_IN,      // input level, -60 .. 0 dB as 0..1
+    P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
+    P_METER_GR,      // glue reduction, 0 .. -20 dB as 0..1
+    P_METER_CORR,    // stereo correlation, -1 .. 1 as 0..1
     P_COUNT
 };
+
+// The controls (the first ones above): the only parameters saved with a project or automated.
+constexpr int kControlCount = P_METER_IN;
 
 struct ParamInfo {
     const char* name;
@@ -41,6 +49,7 @@ public:
     float outputPeak() const { return outPeak_; }
     float correlation() const { return corr_; }
     float gainReductionDb() const { return grDb_; }  // current glue reduction, 0 or negative
+    float gainReductionDbMax() const { return grMin_; }  // deepest reduction in the last block (negative)
 
     // Particle is calibrated so that it adds at most these amounts on top of the other controls.
     static constexpr float kParticleStep = 0.25f;
@@ -94,7 +103,7 @@ private:
     float particleTrimDb_ = 0.f;
     float particleGain_ = 1.f;   // the same compensation as a linear gain, applied to the processed signal only
 
-    float inPeak_ = 0.f, outPeak_ = 0.f, corr_ = 0.f;
+    float inPeak_ = 0.f, outPeak_ = 0.f, corr_ = 0.f, grMin_ = 0.f;
 };
 
 }  // namespace quanta

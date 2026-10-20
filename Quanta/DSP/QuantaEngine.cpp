@@ -7,6 +7,7 @@ namespace quanta {
 const ParamInfo kParams[P_COUNT] = {
     {"Particle", 0.30f}, {"Tone", 0.50f}, {"Density", 0.00f}, {"Glue", 0.00f}, {"Width", 0.50f},
     {"Low End", 0.00f},  {"Air", 0.00f},  {"Mix", 1.00f},     {"Output", 0.50f}, {"Mono Bass", 0.00f},
+    {"In Level", 0.f},   {"Out Level", 0.f}, {"Glue GR", 0.f}, {"Correlation", 0.5f},
 };
 
 namespace {
@@ -144,7 +145,7 @@ void Engine::process(float* left, float* right, int n) {
     const float outTarget = qdb2lin(outTargetDb);
     const bool monoBass = p_[P_MONOBASS] >= 0.5f;
 
-    float inPk = 0.f, outPk = 0.f;
+    float inPk = 0.f, outPk = 0.f, grMinBlock = 0.f;
     double sLL = 0.0, sRR = 0.0, sLR = 0.0;
 
     for (int i = 0; i < n; ++i) {
@@ -194,6 +195,7 @@ void Engine::process(float* left, float* right, int n) {
             else { float t = over + knee * 0.5f; gr = slope * t * t / (2.f * knee); }
         }
         grDb_ = gr;
+        if (gr < grMinBlock) grMinBlock = gr;
         float gain = qdb2lin(gr + makeupDb_);
         for (int c = 0; c < 2; ++c) x[c] *= gain;
 
@@ -236,6 +238,7 @@ void Engine::process(float* left, float* right, int n) {
 
     inPeak_ = inPk;
     outPeak_ = outPk;
+    grMin_ = grMinBlock;
     double den = __builtin_sqrt(sLL * sRR);
     corr_ = den > 1e-12 ? (float)(sLR / den) : 0.f;
 }
