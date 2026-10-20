@@ -33,13 +33,17 @@ LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
      "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "inlevel": 13, "outlevel": 14, "gr": 15, "corr": 16}
-KNOBS = [  # key, label, column position, cap, Q-Link order
-    ("tone", "TONE", 330, SILVER), ("density", "DENSITY", 448, SILVER), ("glue", "GLUE", 566, SILVER),
-    ("width", "WIDTH", 684, SILVER), ("lowend", "LOW END", 802, SILVER), ("air", "AIR", 920, SILVER),
-    ("mix", "MIX", 1038, SILVER), ("output", "OUTPUT", 1156, SILVER),
+KNOBS = [  # key, label, knob centre x, cap, Q-Link order: two rows of four under the stereo field
+    ("tone", "TONE", 393, SILVER), ("density", "DENSITY", 561, SILVER), ("glue", "GLUE", 729, SILVER),
+    ("width", "WIDTH", 896, SILVER), ("lowend", "LOW END", 393, SILVER), ("air", "AIR", 561, SILVER),
+    ("mix", "MIX", 729, SILVER), ("output", "OUTPUT", 896, SILVER),
 ]
-PARTICLE = (60, 150)        # the main control: its own place on the left
-VISUAL_BOX = (300, 256, 944, 150)  # the 3D stereo visual: the open band between the knobs and the meters
+ROW_TOP = {"tone": 352, "density": 352, "glue": 352, "width": 352,
+           "lowend": 472, "air": 472, "mix": 472, "output": 472}   # top of each knob cell
+PARTICLE = (91, 112)        # the Intensity control: its cell, top left, centred in the left column
+VISUAL_BOX = (334, 84, 621, 236)  # the 3D stereo visual: the centre, above the knob rows
+MONO_POS = (40, 380)        # Mono Bass switch, left column
+METER_POS = {"in": (1100, 112), "out": (1100, 222), "gr": (1100, 332), "corr": (1100, 442)}   # right column, stacked
 PRESET_BOX = (560, 18, 420, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
@@ -110,13 +114,14 @@ def background():
     tracked(d, 34, 16, "QUANTA", 32, PRINT, track=3.0)
     tracked(d, 212, 30, "stereo mix enhancement", 15, DIM, track=0.4)
     d.rectangle([14, 64, W - 14, 66], fill=VIOLET)                    # hairline accent under the header
-    tracked(d, 300, 88, "BALANCE", 11, DIM, track=2.0)                # section headings share one style and baseline
-    tracked(d, 60, 432, "METERS AND STEREO", 11, DIM, track=2.0)
-    tracked(d, 430, 432, "MONO BASS", 11, DIM, track=2.0)
+    tracked(d, 334, 332, "BALANCE", 11, DIM, track=2.0)               # section headings share one style and baseline
+    tracked(d, 40, 356, "MONO BASS", 11, DIM, track=2.0)
+    tracked(d, 1100, 88, "METERS", 11, DIM, track=2.0)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
-        d.text((cx, 196), text, font=font(13), fill=DIM, anchor="mm")
-    d.text((PARTICLE[0] + 36, 226), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
-    d.line([300, 84, 1244, 84], fill=EDGE, width=1)
+        d.text((cx, ROW_TOP[key] + 86), text, font=font(13), fill=DIM, anchor="mm")
+    d.text((PARTICLE[0] + CW / 2, PARTICLE[1] + 86), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
+    d.line([302, 84, 302, 600], fill=EDGE, width=1)     # column dividers
+    d.line([1084, 84, 1084, 600], fill=EDGE, width=1)
     vx, vy, vw, vh = VISUAL_BOX
     vis = visual3d(vw, vh)
     im.paste(vis.convert("RGB"), (vx, vy), vis.split()[3])
@@ -125,7 +130,6 @@ def background():
     bx, by, bw, bh = PRESET_BOX
     d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=(10, 9, 16), outline=VIOLET, width=2)
     d.text((bx + 12, by + bh / 2), "PRESET", font=font(12), fill=DIM, anchor="lm")
-    d.line([40, 420, 1244, 420], fill=EDGE, width=1)
     return im
 
 def knob_strip(cap):
@@ -263,19 +267,19 @@ def build():
             label("Value", 15, hexcol(PRINT), (0, KS + 6, CW, 26))])})
     for key, text, cx, cap in KNOBS:
         x = cx - CW / 2
-        place(comps, text.title(), "qnKnob_silver", P[key], x, 110, CW, CH, touch=True)
+        place(comps, text.title(), "qnKnob_silver", P[key], x, ROW_TOP[key], CW, CH, touch=True)
     place(comps, "Intensity", "qnKnob_accent", P["particle"], PARTICLE[0], PARTICLE[1], CW, CH, touch=True)
 
     # mono bass switch
     save(switch_images(True), "qn_mono_on.png"); save(switch_images(False), "qn_mono_off.png")
     defs.append({"key": "qnSwitch_mono", "value": definition(TOGGLE(), [btn_part("qn_mono_on.png", "qn_mono_off.png", 96, 40), focus((0, 0, 96, 40))])})
-    place(comps, "Mono bass", "qnSwitch_mono", P["monobass"], 430, 470, 96, 40, touch=True)
+    place(comps, "Mono bass", "qnSwitch_mono", P["monobass"], MONO_POS[0], MONO_POS[1], 96, 40, touch=True)
 
     # read-only meters: the host reports them as parameters
-    for kind, idx, x in (("in", P["inlevel"], 60), ("out", P["outlevel"], 150), ("gr", P["gr"], 240), ("corr", P["corr"], 330)):
+    for kind, idx in (("in", P["inlevel"]), ("out", P["outlevel"]), ("gr", P["gr"]), ("corr", P["corr"])):
         save(meter_strip(kind), f"qn_meter_{kind}.png")
         defs.append({"key": f"qnMeter_{kind}", "value": definition([], [strip(f"qn_meter_{kind}.png", 0, 0, KS), label("Value", 13, hexcol(DIM), (0, KS + 4, KS, 22))], ignore=True)})
-        place(comps, f"Meter {kind}", f"qnMeter_{kind}", idx, x, 470, KS, KS)
+        place(comps, f"Meter {kind}", f"qnMeter_{kind}", idx, METER_POS[kind][0], METER_POS[kind][1], KS, KS)
 
     # header switches: Bypass and A/B (session switches, not saved with the project)
     save(tile_button("BYPASS", 120, 36, True), "qn_byp_on.png"); save(tile_button("BYPASS", 120, 36, False), "qn_byp_off.png")
@@ -328,11 +332,11 @@ def preview(outdir):
     knobs = knob_strip(SILVER).crop((0, 64 * KS, KS, 65 * KS))
     accent = knob_strip(ACCENT).crop((0, 96 * KS, KS, 97 * KS))
     for key, text, cx, cap in KNOBS:
-        im.alpha_composite(knobs, (int(cx - KS / 2), 110))
+        im.alpha_composite(knobs, (int(cx - KS / 2), ROW_TOP[key]))
     im.alpha_composite(accent, (PARTICLE[0] + 23, PARTICLE[1]))
-    for kind, x in (("in", 60), ("out", 150), ("gr", 240), ("corr", 330)):
-        im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), (x, 470))
-    im.alpha_composite(switch_images(False), (430, 470))
+    for kind in ("in", "out", "gr", "corr"):
+        im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), METER_POS[kind])
+    im.alpha_composite(switch_images(False), MONO_POS)
     im.alpha_composite(tile_button("A", 64, 36, False), (1000, 18))
     im.alpha_composite(tile_button("BYPASS", 120, 36, False), (1076, 18))
     d = ImageDraw.Draw(im)

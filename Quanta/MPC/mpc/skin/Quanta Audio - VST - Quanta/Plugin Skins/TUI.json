@@ -1249,7 +1249,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "271 110 118 132",
+                                    "bounds": "334 352 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1279,7 +1279,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "389 110 118 132",
+                                    "bounds": "502 352 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1309,7 +1309,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "507 110 118 132",
+                                    "bounds": "670 352 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1339,7 +1339,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "625 110 118 132",
+                                    "bounds": "837 352 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1369,7 +1369,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "743 110 118 132",
+                                    "bounds": "334 472 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1399,7 +1399,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "861 110 118 132",
+                                    "bounds": "502 472 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1429,7 +1429,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "979 110 118 132",
+                                    "bounds": "670 472 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1459,7 +1459,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "1097 110 118 132",
+                                    "bounds": "837 472 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1489,7 +1489,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "60 150 118 132",
+                                    "bounds": "91 112 118 132",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1519,7 +1519,7 @@
                                     "showWhenDataModelInvalid": "Hide",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "430 470 96 40",
+                                    "bounds": "40 380 96 40",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1549,7 +1549,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "60 470 72 72",
+                                    "bounds": "1100 112 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1579,7 +1579,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "150 470 72 72",
+                                    "bounds": "1100 222 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1609,7 +1609,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "240 470 72 72",
+                                    "bounds": "1100 332 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1639,7 +1639,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "330 470 72 72",
+                                    "bounds": "1100 442 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
