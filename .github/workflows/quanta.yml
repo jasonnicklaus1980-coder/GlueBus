@@ -1,0 +1,39 @@
+# Builds the Quanta MPC plugin (Quanta/), runs the offline host tests and uploads the install zip as a workflow artifact.
+name: quanta
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # 22.04 on purpose: its armhf glibc keeps the plugin within GLIBC_2.34, like the other MPC packages
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: Quanta
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf file zip
+
+      - name: Offline host tests (x86)
+        run: make test
+
+      - name: Build ARM plugin + package (checks dependencies, glibc level and exports)
+        run: |
+          chmod +x MPC/scripts/*.sh MPC/mpc/*.sh
+          sh MPC/scripts/package.sh
+          ls -la MPC/dist
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Quanta-mpc-armv7
+          path: Quanta/MPC/dist/*.zip
