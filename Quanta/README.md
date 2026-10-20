@@ -16,7 +16,7 @@ adds a capped share of Density, Glue, Low End and Air. It is not based on The Go
 | Factory presets | **built and tested**: twelve presets (`DSP/QuantaPresets.cpp`). Engine checks cover names, ranges and relative character; wrapper checks cover program selection and state round trip. Not auditioned on hardware |
 | Bypass | **built and tested**: host bypass (VST2 `effSetBypass`) and a Bypass switch on the MPC screen. 10 ms crossfade to the exact input |
 | A/B compare | **built and tested**: two session slots with a switch on the MPC screen. Not saved with the project |
-| Desktop VST3 / AU (Controller Mode) | **abandoned**: not planned. No desktop build exists in this repository |
+| Desktop VST3 / AU (Controller Mode) | **dropped**: not planned. The MPC skin is the only interface. No JUCE or OpenGL GUI is used, because neither is verified on the MPC X |
 | CPU benchmark | 10 s of stereo at 48 kHz with every control on takes about 110 ms on this machine (about 1% of one core). Not measured on the MPC |
 
 ## Build and test
