@@ -14,7 +14,8 @@ adds a capped share of Density, Glue, Low End and Air. It is not based on The Go
 | MPC installer (`MPC/mpc/`, `MPC/scripts/package.sh`) | **built and tested on a fake MPC root**: install, reinstall and uninstall, with checksums. Not run on a device |
 | Run on an MPC X | **not done**: no device access here. The ARM library has not been run (QEMU is not installed here) |
 | Factory presets | **built and tested**: twelve presets (`DSP/QuantaPresets.cpp`). Engine checks cover names, ranges and relative character; wrapper checks cover program selection and state round trip. Not auditioned on hardware |
-| A/B and bypass buttons | not started |
+| Bypass | **built and tested** at the host level (VST2 `effSetBypass`): the input passes through unchanged. No bypass button on the MPC screen yet |
+| A/B compare | not started |
 | Desktop VST3 / AU (Controller Mode) | **abandoned**: not planned. No desktop build exists in this repository |
 | CPU benchmark | 10 s of stereo at 48 kHz with every control on takes about 110 ms on this machine (about 1% of one core). Not measured on the MPC |
 

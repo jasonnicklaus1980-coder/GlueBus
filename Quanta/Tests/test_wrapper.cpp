@@ -117,6 +117,23 @@ int main() {
     CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 4, "the saved preset number comes back");
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.9f) < 1e-6f, "the saved Tone comes back, not the preset value");
 
+    // bypass passes the input through unchanged (sample for sample), and turning it off processes again
+    fx->setParameter(fx, quanta::P_MIX, 1.f);
+    CHECK(fx->dispatcher(fx, effSetBypass, 0, 1, nullptr, 0.f) == 1, "effSetBypass is accepted");
+    std::vector<float> bl(N), br(N), bol(N), bor(N);
+    for (int i = 0; i < N; ++i) { bl[i] = 0.3f * std::sin(0.02f * i); br[i] = -0.2f * std::sin(0.07f * i); }
+    float* bin[2] = {bl.data(), br.data()};
+    float* bout[2] = {bol.data(), bor.data()};
+    fx->processReplacing(fx, bin, bout, N);
+    bool passed = true;
+    for (int i = 0; i < N; ++i) if (bol[i] != bl[i] || bor[i] != br[i]) passed = false;
+    CHECK(passed, "bypass passes the input through exactly");
+    fx->dispatcher(fx, effSetBypass, 0, 0, nullptr, 0.f);
+    fx->processReplacing(fx, bin, bout, N);
+    bool changed = false;
+    for (int i = 0; i < N; ++i) if (std::fabs(bol[i] - bl[i]) > 1e-6f) changed = true;
+    CHECK(changed, "with bypass off the processed signal is used");
+
     fx->dispatcher(fx, effClose, 0, 0, nullptr, 0.f);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;

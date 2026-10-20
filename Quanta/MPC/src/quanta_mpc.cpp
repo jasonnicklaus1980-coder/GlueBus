@@ -21,6 +21,7 @@ struct Plugin {
     quanta::Engine engine;
     audioMasterCallback host = nullptr;
     int32_t lastFrame[quanta::P_COUNT] = {};  // meter frame last sent to the host (-1 = none)
+    bool bypass = false;   // set by the host (effSetBypass); the audio thread passes the input straight through
     char chunk[64];   // state, written on the host thread only
 };
 
@@ -61,6 +62,7 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
     case effClose: delete p; return 0;
     case effSetSampleRate: p->engine.prepare((double)opt); return 0;
     case effSetBlockSize: return 0;
+    case effSetBypass: p->bypass = value != 0; return 1;
     case effMainsChanged: if (!value) p->engine.reset(); return 0;
     case effGetParamName:
         if (index >= 0 && index < quanta::P_COUNT && ptr) copyStr((char*)ptr, quanta::kParams[index].name, 32);
@@ -132,6 +134,7 @@ void processReplacing(AEffect* fx, float** in, float** out, int32_t n) {
     Plugin* p = (Plugin*)fx->object;
     if (out[0] != in[0]) std::memcpy(out[0], in[0], sizeof(float) * (size_t)n);
     if (out[1] != in[1]) std::memcpy(out[1], in[1], sizeof(float) * (size_t)n);
+    if (p->bypass) return;
     p->engine.process(out[0], out[1], n);
     // Meters go to the screen only when the picture would change: one update per filmstrip frame (0..127)
     if (!p->host) return;
