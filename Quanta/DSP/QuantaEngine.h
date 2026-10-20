@@ -20,6 +20,8 @@ enum Param {
     // session switches: handled by the plugin wrapper (bypass crossfade, A/B slots), not saved with the project
     P_BYPASS,        // 1 = bypassed (input passes through, faded over 10 ms)
     P_AB,            // 0 = slot A, 1 = slot B: two settings to compare
+    P_UNDO,          // press to step back through the sound-control history (handled by the wrapper)
+    P_REDO,          // press to step forward again
     // read-only meters: the host can show them, they are not saved and cannot be automated
     P_METER_IN,      // input level, -60 .. 0 dB as 0..1
     P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
@@ -30,8 +32,8 @@ enum Param {
 
 // The controls (the first ones above): the only parameters saved with a project.
 constexpr int kControlCount = P_BYPASS;
-// Everything the host may automate: the controls and the two session switches (not the meters).
-constexpr int kAutomatableCount = P_METER_IN;
+// Everything the host may automate: the controls and the bypass and A/B switches (not undo, redo or the meters).
+constexpr int kAutomatableCount = P_UNDO;
 
 struct ParamInfo {
     const char* name;

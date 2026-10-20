@@ -4,7 +4,7 @@
 Filmstrip rules (proven on the MPC by the other plugins in this repository): frames are square, at most 72 px,
 128 frames (9216 px tall); numFrames is the last frame index (127). The parameter indices follow the plugin's Param enum
 in DSP/QuantaEngine.h: 0 Intensity (named Particle in the code), 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
-10 Preset, 11 Bypass, 12 A/B (session switches), 13 In Level, 14 Out Level, 15 Glue GR, 16 Correlation (read-only meters).
+10 Preset, 11 Bypass, 12 A/B, 13 Undo, 14 Redo (session switches), 15 In Level, 16 Out Level, 17 Glue GR, 18 Correlation (read-only meters).
 
 Original artwork: charcoal and graphite surfaces, silver knobs, a warm accent for Particle. No third-party names or marks.
 Usage: python3 tools/make_skin.py [preview-dir]
@@ -32,7 +32,7 @@ SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
-     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "inlevel": 13, "outlevel": 14, "gr": 15, "corr": 16}
+     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "undo": 13, "redo": 14, "inlevel": 15, "outlevel": 16, "gr": 17, "corr": 18}
 KNOBS = [  # key, label, knob centre x, cap, Q-Link order: two rows of four under the stereo field
     ("tone", "TONE", 393, SILVER), ("density", "DENSITY", 561, SILVER), ("glue", "GLUE", 729, SILVER),
     ("width", "WIDTH", 896, SILVER), ("lowend", "LOW END", 393, SILVER), ("air", "AIR", 561, SILVER),
@@ -44,7 +44,7 @@ PARTICLE = (91, 112)        # the Intensity control: its cell, top left, centred
 VISUAL_BOX = (334, 84, 621, 236)  # the 3D stereo visual: the centre, above the knob rows
 MONO_POS = (40, 380)        # Mono Bass switch, left column
 METER_POS = {"in": (1100, 112), "out": (1100, 222), "gr": (1100, 332), "corr": (1100, 442)}   # right column, stacked
-PRESET_BOX = (560, 18, 420, 36)   # preset display in the header band; turn or drag to step through presets
+PRESET_BOX = (540, 18, 340, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
     names = ["LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"] if bold else ["LiberationSans-Regular.ttf", "DejaVuSans.ttf"]
@@ -290,12 +290,18 @@ def build():
         place(comps, f"Meter {kind}", f"qnMeter_{kind}", idx, METER_POS[kind][0], METER_POS[kind][1], KS, KS)
 
     # header switches: Bypass and A/B (session switches, not saved with the project)
-    save(tile_button("BYPASS", 120, 36, True), "qn_byp_on.png"); save(tile_button("BYPASS", 120, 36, False), "qn_byp_off.png")
+    save(tile_button("BYPASS", 110, 36, True), "qn_byp_on.png"); save(tile_button("BYPASS", 110, 36, False), "qn_byp_off.png")
     save(tile_button("B", 64, 36, True), "qn_ab_b.png"); save(tile_button("A", 64, 36, False), "qn_ab_a.png")
-    defs.append({"key": "qnSwitch_byp", "value": definition(TOGGLE(), [btn_part("qn_byp_on.png", "qn_byp_off.png", 120, 36), focus((0, 0, 120, 36))])})
-    place(comps, "Bypass", "qnSwitch_byp", P["bypass"], 1076, 18, 120, 36, touch=True)
+    save(tile_button("UNDO", 70, 36, False), "qn_undo.png"); save(tile_button("REDO", 70, 36, False), "qn_redo.png")
+    defs.append({"key": "qnSwitch_byp", "value": definition(TOGGLE(), [btn_part("qn_byp_on.png", "qn_byp_off.png", 110, 36), focus((0, 0, 110, 36))])})
+    place(comps, "Bypass", "qnSwitch_byp", P["bypass"], 966, 18, 110, 36, touch=True)
     defs.append({"key": "qnSwitch_ab", "value": definition(TOGGLE(), [btn_part("qn_ab_b.png", "qn_ab_a.png", 64, 36), focus((0, 0, 64, 36))])})
-    place(comps, "A/B", "qnSwitch_ab", P["ab"], 1000, 18, 64, 36, touch=True)
+    place(comps, "A/B", "qnSwitch_ab", P["ab"], 892, 18, 64, 36, touch=True)
+    # undo and redo are press buttons: the image does not change, and each press sends one call
+    defs.append({"key": "qnButton_undo", "value": definition(TOGGLE(), [btn_part("qn_undo.png", "qn_undo.png", 70, 36), focus((0, 0, 70, 36))])})
+    place(comps, "Undo", "qnButton_undo", P["undo"], 1086, 18, 70, 36, touch=True)
+    defs.append({"key": "qnButton_redo", "value": definition(TOGGLE(), [btn_part("qn_redo.png", "qn_redo.png", 70, 36), focus((0, 0, 70, 36))])})
+    place(comps, "Redo", "qnButton_redo", P["redo"], 1164, 18, 70, 36, touch=True)
 
     # preset browser: a drag strip (as G-Glue uses) whose value label shows the preset name the host reports
     bx, by, bw, bh = PRESET_BOX
@@ -345,8 +351,10 @@ def preview(outdir):
     for kind in ("in", "out", "gr", "corr"):
         im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), METER_POS[kind])
     im.alpha_composite(switch_images(False), MONO_POS)
-    im.alpha_composite(tile_button("A", 64, 36, False), (1000, 18))
-    im.alpha_composite(tile_button("BYPASS", 120, 36, False), (1076, 18))
+    im.alpha_composite(tile_button("A", 64, 36, False), (892, 18))
+    im.alpha_composite(tile_button("BYPASS", 110, 36, False), (966, 18))
+    im.alpha_composite(tile_button("UNDO", 70, 36, False), (1086, 18))
+    im.alpha_composite(tile_button("REDO", 70, 36, False), (1164, 18))
     d = ImageDraw.Draw(im)
     bx, by, bw, bh = PRESET_BOX
     d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=None, outline=rgba(VIOLET), width=2)

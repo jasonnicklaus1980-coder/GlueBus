@@ -8,6 +8,7 @@ structure. Keep a backup of your project and your MPC settings before you instal
 - **Presets:** 12 factory presets plus Custom. Choosing a preset sets the sound controls, including Mono Bass on three of them.
 - **Bypass:** a 10 ms crossfade to the exact input, from the Bypass switch or the host.
 - **A/B:** two settings to compare while you work. Not saved with the project.
+- **Undo and redo:** step back and forward through changes to the sound controls and presets (up to 32 steps). A quick run of turns counts as one step. Not saved with the project.
 - **Meters (read-only):** input level, output level, glue reduction and stereo correlation.
 - **Screen:** a three-column layout with the stereo field, the PRESET box, Bypass and A/B switches, and segmented meters.
 - **Saved state:** the preset number is kept, and restoring a project does not re-apply preset values.

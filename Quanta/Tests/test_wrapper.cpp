@@ -3,9 +3,11 @@
 #include "../DSP/QuantaEngine.h"
 #include "../DSP/QuantaPresets.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 #include <vector>
 
 extern "C" AEffect* VSTPluginMain(audioMasterCallback host);
@@ -156,6 +158,32 @@ int main() {
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.8f) < 1e-6f, "switching to B restores its Tone");
     fx->setParameter(fx, quanta::P_AB, 0.f);
     CHECK(!std::strcmp((fx->dispatcher(fx, effGetParamDisplay, quanta::P_AB, 0, disp, 0.f), disp), "A"), "A/B shows A again");
+
+    // undo and redo: an edit is one step, a quick run of edits is one gesture, and a new edit ends redo
+    auto pause = [] { std::this_thread::sleep_for(std::chrono::milliseconds(900)); };
+    pause();
+    fx->setParameter(fx, quanta::P_TONE, 0.3f);
+    pause();
+    fx->setParameter(fx, quanta::P_TONE, 0.8f);
+    fx->setParameter(fx, quanta::P_UNDO, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.3f) < 1e-6f, "undo returns Tone to its previous value");
+    fx->setParameter(fx, quanta::P_REDO, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.8f) < 1e-6f, "redo brings the edit back");
+    fx->setParameter(fx, quanta::P_UNDO, 1.f);
+    pause();
+    fx->setParameter(fx, quanta::P_TONE, 0.6f);
+    fx->setParameter(fx, quanta::P_REDO, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.6f) < 1e-6f, "a new edit clears redo");
+    pause();
+    fx->setParameter(fx, quanta::P_TONE, 0.1f);
+    fx->setParameter(fx, quanta::P_TONE, 0.2f);
+    fx->setParameter(fx, quanta::P_TONE, 0.4f);
+    fx->setParameter(fx, quanta::P_UNDO, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.6f) < 1e-6f, "a quick run of edits is one undo step");
+    CHECK(fx->dispatcher(fx, effGetParamDisplay, quanta::P_UNDO, 0, disp, 0.f) == 0 && !std::strcmp(disp, "Undo"), "Undo shows its name");
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_UNDO)) < 1e-6f, "Undo always reads back 0");
+    CHECK(!fx->getParameter(fx, quanta::P_UNDO) && fx->numParams == quanta::P_COUNT, "undo and redo are not automated");
+    CHECK(fx->dispatcher(fx, effCanBeAutomated, quanta::P_UNDO, 0, nullptr, 0.f) == 0, "undo is not automatable");
 
     fx->dispatcher(fx, effClose, 0, 0, nullptr, 0.f);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);

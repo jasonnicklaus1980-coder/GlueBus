@@ -12,7 +12,8 @@ Decisions in force (from the project owner):
 | DSP engine: tone, saturation, glue, width, mono bass, DC blocker, mix, output | built; 667 engine checks pass |
 | Parameter smoothing, denormal guard, no allocation in the audio path | built and tested |
 | Sample rates 44.1 to 192 kHz; silence, overdriven, DC and denormal input | tested (robustness tests) |
-| Bypass (10 ms crossfade) and A/B compare (session only) | built; 38 wrapper checks pass |
+| Bypass (10 ms crossfade) and A/B compare (session only) | built; 46 wrapper checks pass |
+| Undo and redo (32 steps, quick edits join one step, session only) | built and tested; header buttons on the skin |
 | Factory presets (12) and Custom | built; preset selection tested |
 | State save and restore | built; preset number kept, values not re-applied |
 | Read-only meters: in, out, glue reduction, correlation | built (real measurements) |
@@ -30,9 +31,8 @@ Decisions in force (from the project owner):
 - Controls named INPUT, PUNCH, SATURATION and STEREO: not added. The current names are kept.
 - Advanced page (EQ frequencies, compressor timing, limiter settings): on hold.
 - Clipping and peak indicator: on hold.
-- Undo and redo: not built.
-- Oversampling: not built, so Density should stay moderate on bright material.
-- User preset save, search and favourites: not built.
+- Oversampling: not built, so Density should stay moderate on bright material. Adding it changes latency and CPU, which needs your decision first.
+- User preset save, search and favourites: not built. Saving presets to files on the MPC needs your decision on where they live first.
 - Tests while audio plays, under automation, and while presets load: not done on the device.
 
 ## Limits to keep in mind
