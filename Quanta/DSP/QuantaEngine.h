@@ -16,6 +16,7 @@ enum Param {
     P_MIX,           // parallel blend: 0 dry, 1 processed
     P_OUTPUT,        // output trim: -12 .. +12 dB, 0.5 = 0 dB
     P_MONOBASS,      // 1: content below ~120 Hz is made mono
+    P_PRESET,        // preset shown on the screen: 0 Custom, 1.. the factory presets (see QuantaPresets.h). Setting it loads the preset
     // read-only meters: the host can show them, they are not saved and cannot be automated
     P_METER_IN,      // input level, -60 .. 0 dB as 0..1
     P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
@@ -39,6 +40,7 @@ public:
     void prepare(double sampleRate);      // call before processing, and whenever the rate changes
     void reset();                         // clears filter, compressor and DC state
     void setParam(int index, float value);  // value 0..1
+    void loadPreset(int index);             // sets the sound controls of a factory preset and the Preset parameter
     float getParam(int index) const;
 
     // Processes n stereo samples in place. Never allocates, never blocks.

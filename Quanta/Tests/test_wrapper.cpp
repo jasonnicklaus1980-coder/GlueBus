@@ -1,6 +1,7 @@
 // Quanta VST2 wrapper tests (x86 build of the same wrapper source the MPC uses).
 #include "../MPC/src/vst2.h"
 #include "../DSP/QuantaEngine.h"
+#include "../DSP/QuantaPresets.h"
 
 #include <cmath>
 #include <cstdio>
@@ -74,6 +75,47 @@ int main() {
     bool finite = true;
     for (int i = 0; i < N; ++i) if (!std::isfinite(ql[i]) || !std::isfinite(qr[i])) finite = false;
     CHECK(finite, "in-place processing gives finite output");
+
+    // factory presets: the host sees kPresetCount programs; choosing one sets its values, Custom changes nothing
+    CHECK(fx->numPrograms == quanta::kPresetCount, "%d programs advertised (got %d)", quanta::kPresetCount, fx->numPrograms);
+    char pname[64] = "";
+    CHECK(fx->dispatcher(fx, effGetProgramNameIndexed, 3, 0, pname, 0.f) == 1 && !std::strcmp(pname, quanta::presetName(3)),
+          "program 3 is named %s", quanta::presetName(3));
+    CHECK(fx->dispatcher(fx, effGetProgramNameIndexed, quanta::kPresetCount, 0, pname, 0.f) == 0, "a program past the end is refused");
+
+    float presetVals[quanta::P_PRESET];
+    CHECK(quanta::presetValues(3, presetVals), "preset 3 has values");
+    fx->dispatcher(fx, effSetProgram, 0, 3, nullptr, 0.f);
+    CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 3, "effSetProgram(3) selects program 3");
+    bool matches = true;
+    for (int i = 0; i < quanta::P_PRESET; ++i) if (std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
+    CHECK(matches, "preset 3 sets the sound controls through effSetProgram");
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_PRESET) - 3.f / (quanta::kPresetCount - 1)) < 1e-5f, "P_PRESET reads back the preset position");
+
+    // choosing through the parameter interface does the same
+    float presetPos = 6.f / (quanta::kPresetCount - 1);
+    CHECK(quanta::presetValues(6, presetVals), "preset 6 has values");
+    fx->setParameter(fx, quanta::P_PRESET, presetPos);
+    CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 6, "setParameter(P_PRESET) selects program 6");
+    matches = true;
+    for (int i = 0; i < quanta::P_PRESET; ++i) if (std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
+    CHECK(matches, "preset 6 sets the sound controls through setParameter");
+
+    // Custom (program 0) keeps the current values
+    fx->setParameter(fx, quanta::P_TONE, 0.2f);
+    fx->dispatcher(fx, effSetProgram, 0, 0, nullptr, 0.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.2f) < 1e-6f, "Custom leaves the Tone setting alone");
+
+    // a saved state keeps the preset number and does not re-apply the preset values
+    fx->dispatcher(fx, effSetProgram, 0, 4, nullptr, 0.f);
+    fx->setParameter(fx, quanta::P_TONE, 0.9f);
+    void* pchunk = nullptr;
+    intptr_t psize = fx->dispatcher(fx, effGetChunk, 0, 0, &pchunk, 0.f);
+    std::vector<unsigned char> pstate((unsigned char*)pchunk, (unsigned char*)pchunk + psize);
+    fx->dispatcher(fx, effSetProgram, 0, 7, nullptr, 0.f);
+    CHECK(fx->dispatcher(fx, effSetChunk, 0, (intptr_t)pstate.size(), pstate.data(), 0.f) == 1, "state with a preset number loads");
+    CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 4, "the saved preset number comes back");
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.9f) < 1e-6f, "the saved Tone comes back, not the preset value");
 
     fx->dispatcher(fx, effClose, 0, 0, nullptr, 0.f);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);

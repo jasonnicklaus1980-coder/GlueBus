@@ -1,7 +1,9 @@
 // Quanta engine tests: plain C++, no framework. Build with the Makefile in this folder.
 #include "../DSP/QuantaEngine.h"
+#include "../DSP/QuantaPresets.h"
 
 #include <cmath>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
 #include <chrono>
@@ -181,6 +183,45 @@ static void test_rates_and_cpu(void) {
     CHECK(secs < 10.0, "processes faster than real time on this machine");
 }
 
+static void test_presets(double sr) {
+    CHECK(kPresetCount == 13, "13 presets: Custom and 12 factory presets (%d)", kPresetCount);
+    for (int i = 0; i < kPresetCount; ++i) {
+        for (int j = 0; j < i; ++j) CHECK(std::strcmp(presetName(i), presetName(j)) != 0, "duplicate preset name %s", presetName(i));
+        CHECK(std::strlen(presetName(i)) <= 23 && presetName(i)[0], "preset name fits the screen (%s)", presetName(i));
+    }
+    float v[P_PRESET];
+    CHECK(!presetValues(0, v), "Custom has no values to load");
+    for (int i = 1; i < kPresetCount; ++i) {
+        CHECK(presetValues(i, v), "%s has values", presetName(i));
+        bool inRange = true;
+        for (int k = 0; k < P_PRESET; ++k) if (!(v[k] >= 0.f && v[k] <= 1.f)) inRange = false;
+        CHECK(inRange, "%s: every value is 0..1", presetName(i));
+        Engine e; e.prepare(sr); e.loadPreset(i);
+        for (int k = 0; k < P_PRESET; ++k) CHECK(std::fabs(e.getParam(k) - v[k]) < 1e-6f, "%s sets control %d", presetName(i), k);
+        CHECK(std::fabs(e.getParam(P_PRESET) - (float)i / (float)(kPresetCount - 1)) < 1e-6f, "%s shows its own number", presetName(i));
+        // a preset renders cleanly on a loud, dense input
+        const size_t N = (size_t)sr;
+        std::vector<float> L(N), R(N);
+        std::srand(11);
+        for (size_t k = 0; k < N; ++k) {
+            float tone = 0.4f * (float)std::sin(2 * kPi * 110.0 * (double)k / sr);
+            float noise = 0.3f * ((float)std::rand() / RAND_MAX * 2.f - 1.f);
+            L[k] = tone + noise; R[k] = tone - noise;
+        }
+        float peak = 0.f; bool finite = true;
+        for (size_t k = 0; k < N; k += 256) e.process(&L[k], &R[k], (int)(N - k < 256 ? N - k : 256));
+        for (size_t k = 0; k < N; ++k) { if (!std::isfinite(L[k]) || !std::isfinite(R[k])) finite = false; peak = std::fmax(peak, std::fmax(std::fabs(L[k]), std::fabs(R[k]))); }
+        CHECK(finite && peak <= 1.0f, "%s stays finite and under full scale (peak %.3f)", presetName(i), peak);
+    }
+    // character: relative settings that the names promise
+    auto idx = [](const char* name) { for (int i = 0; i < kPresetCount; ++i) if (!std::strcmp(presetName(i), name)) return i; return -1; };
+    float a[P_PRESET], b[P_PRESET];
+    presetValues(idx("Warm and Dense"), a); presetValues(idx("Clean and Open"), b);
+    CHECK(a[P_DENSITY] > b[P_DENSITY] && b[P_AIR] > a[P_AIR], "Warm and Dense is denser; Clean and Open is airier");
+    presetValues(idx("Gentle Master"), a); presetValues(idx("Hip-Hop Mix Bus"), b);
+    CHECK(a[P_PARTICLE] < b[P_PARTICLE] && a[P_GLUE] < b[P_GLUE], "Gentle Master is gentler than Hip-Hop Mix Bus");
+}
+
 int main() {
     test_neutral_passthrough(48000.0);
     test_no_nonfinite_and_bounded(48000.0);
@@ -192,6 +233,8 @@ int main() {
     test_parameter_smoothing(48000.0);
     test_meters_and_correlation(48000.0);
     test_rates_and_cpu();
+    test_presets(48000.0);
+    test_presets(44100.0);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

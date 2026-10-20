@@ -1,12 +1,14 @@
 #include "QuantaEngine.h"
 
 #include "QuantaMath.h"
+#include "QuantaPresets.h"
 
 namespace quanta {
 
 const ParamInfo kParams[P_COUNT] = {
     {"Particle", 0.30f}, {"Tone", 0.50f}, {"Density", 0.00f}, {"Glue", 0.00f}, {"Width", 0.50f},
     {"Low End", 0.00f},  {"Air", 0.00f},  {"Mix", 1.00f},     {"Output", 0.50f}, {"Mono Bass", 0.00f},
+    {"Preset", 0.00f},
     {"In Level", 0.f},   {"Out Level", 0.f}, {"Glue GR", 0.f}, {"Correlation", 0.5f},
 };
 
@@ -94,6 +96,13 @@ void Engine::setParam(int index, float value) {
     if (index < 0 || index >= P_COUNT) return;
     p_[index] = clampf(value, 0.f, 1.f);
     dirty_ = true;
+}
+
+void Engine::loadPreset(int index) {
+    float values[P_PRESET];
+    if (!presetValues(index, values)) return;
+    for (int k = 0; k < P_PRESET; ++k) setParam(k, values[k]);
+    setParam(P_PRESET, (float)index / (float)(kPresetCount - 1));
 }
 
 float Engine::getParam(int index) const {

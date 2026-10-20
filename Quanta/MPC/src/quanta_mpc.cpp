@@ -6,6 +6,7 @@
 #include "vst2.h"
 #include "../../DSP/QuantaEngine.h"
 #include "../../DSP/QuantaMath.h"
+#include "../../DSP/QuantaPresets.h"
 
 #include <cstdio>
 #include <cstring>
@@ -34,8 +35,15 @@ void copyStr(char* dst, const char* src, int max) {
     dst[k] = 0;
 }
 
+int presetIndexOf(float v) {
+    int i = (int)(v * (float)(quanta::kPresetCount - 1) + 0.5f);
+    return i < 0 ? 0 : i >= quanta::kPresetCount ? quanta::kPresetCount - 1 : i;
+}
+
 void formatParam(int index, float v, char* out, int max) {
-    if (index == quanta::P_OUTPUT) {
+    if (index == quanta::P_PRESET) {
+        copyStr(out, quanta::presetName(presetIndexOf(v)), max);
+    } else if (index == quanta::P_OUTPUT) {
         std::snprintf(out, (size_t)max, "%+.1f dB", (double)((v - 0.5f) * 24.f));
     } else if (index == quanta::P_MONOBASS) {
         copyStr(out, v >= 0.5f ? "On" : "Off", max);
@@ -58,6 +66,16 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
         if (index >= 0 && index < quanta::P_COUNT && ptr) copyStr((char*)ptr, quanta::kParams[index].name, 32);
         return 0;
     case effGetParamLabel: if (ptr) ((char*)ptr)[0] = 0; return 0;
+    case effGetProgram: return presetIndexOf(p->engine.getParam(quanta::P_PRESET));
+    case effSetProgram: p->engine.loadPreset((int)value); return 0;
+    case effGetProgramName:
+        if (ptr) copyStr((char*)ptr, quanta::presetName(presetIndexOf(p->engine.getParam(quanta::P_PRESET))), 24);
+        return 0;
+    case effGetProgramNameIndexed:
+        if (index < 0 || index >= quanta::kPresetCount || !ptr) return 0;
+        copyStr((char*)ptr, quanta::presetName(index), 24);
+        return 1;
+    case effSetProgramName: return 0;
     case effGetParamDisplay:
         if (index >= 0 && index < quanta::P_COUNT && ptr) formatParam(index, p->engine.getParam(index), (char*)ptr, 64);
         return 0;
@@ -88,7 +106,9 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
 }
 
 void setParameter(AEffect* fx, int32_t index, float v) {
-    if (index >= 0 && index < quanta::kControlCount) ((Plugin*)fx->object)->engine.setParam(index, v);
+    Plugin* p = (Plugin*)fx->object;
+    if (index == quanta::P_PRESET) p->engine.loadPreset(presetIndexOf(v));   // choosing a preset sets its values
+    else if (index >= 0 && index < quanta::kControlCount) p->engine.setParam(index, v);
 }
 
 // The meters are read from the engine (written by the audio thread, read here as plain floats)
@@ -141,7 +161,7 @@ QN_EXPORT AEffect* VSTPluginMain(audioMasterCallback host) {
     fx->processReplacing = processReplacing;
     fx->setParameter = setParameter;
     fx->getParameter = getParameter;
-    fx->numPrograms = 1;
+    fx->numPrograms = quanta::kPresetCount;
     fx->numParams = quanta::P_COUNT;
     fx->numInputs = 2;
     fx->numOutputs = 2;
