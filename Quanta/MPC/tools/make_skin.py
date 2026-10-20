@@ -160,38 +160,34 @@ def knob_strip(cap):
 def accent_knob_strip(): return knob_strip(ACCENT)
 
 def meter_strip(kind):
-    """a 72 px tile whose bar follows the frame (0..127): LED colours by level; correlation grows from the centre"""
+    """a 72 px tile of segmented LEDs that light up with the frame (0..127): green, amber, then red as the level rises.
+    Correlation is bipolar: its segments grow from the centre, amber below zero and green above."""
     strip = Image.new("RGBA", (KS, KS * FRAMES), (0, 0, 0, 0))
+    N = 12                                                  # segments per bar
     for f in range(FRAMES):
         v = min(1.0, f / NUMFRAMES)
-        im = Image.new("RGBA", (KS * SS, KS * SS), rgba((12, 13, 15), 255))
+        im = Image.new("RGBA", (KS * SS, KS * SS), rgba((12, 11, 18), 255))
         d = ImageDraw.Draw(im)
-        x0, y0, x1, y1 = 10 * SS, 8 * SS, (KS - 10) * SS, (KS - 8) * SS
-        d.rounded_rectangle([x0, y0, x1, y1], radius=4 * SS, outline=(60, 63, 70, 255), width=SS)
-        inner_top, inner_bot = y0 + 4 * SS, y1 - 4 * SS
-        if kind == "corr":
-            mid = (inner_top + inner_bot) / 2
-            span = (inner_bot - inner_top) / 2
-            top = mid - span * abs(v - 0.5) * 2
-            bottom = mid + 0
-            color = LED_GREEN if v >= 0.5 else LED_AMBER
-            if abs(v - 0.5) > 0.2 and v < 0.5:
-                color = LED_RED
-            if v > 0.5:
-                d.rectangle([x0 + 4 * SS, mid - span * (v - 0.5) * 2, x1 - 4 * SS, mid], fill=rgba(color))
+        x0, y0, x1, y1 = 8 * SS, 6 * SS, (KS - 8) * SS, (KS - 6) * SS
+        d.rounded_rectangle([x0, y0, x1, y1], radius=5 * SS, fill=rgba((18, 17, 26), 255), outline=rgba((70, 62, 96), 255), width=SS)
+        d.line([x0 + 5 * SS, y0 + 2 * SS, x1 - 5 * SS, y0 + 2 * SS], fill=rgba((110, 98, 150), 255), width=SS)   # top highlight
+        bx0, bx1 = x0 + 7 * SS, x1 - 7 * SS
+        by0, by1 = y0 + 6 * SS, y1 - 6 * SS
+        seg = (by1 - by0) / N
+        gap = 1.2 * SS
+        for i in range(N):                                  # i = 0 is the bottom segment
+            frac = (i + 0.5) / N
+            top, bot = by1 - (i + 1) * seg + gap / 2, by1 - i * seg - gap / 2
+            if kind == "corr":
+                lit = (v >= 0.5 and 0.5 <= frac <= v) or (v < 0.5 and v <= frac < 0.5)
+                color = LED_GREEN if v >= 0.5 else LED_AMBER if v >= 0.25 else LED_RED
             else:
-                d.rectangle([x0 + 4 * SS, mid, x1 - 4 * SS, mid + span * (0.5 - v) * 2], fill=rgba(color))
-        else:
-            fill_top = inner_bot - (inner_bot - inner_top) * v
-            if kind == "gr":                                 # reduction: the bar grows as the compressor works
-                color = LED_GREEN if v < 0.5 else LED_AMBER if v < 0.8 else LED_RED
-            else:
-                color = LED_GREEN if v < 0.75 else LED_AMBER if v < 0.92 else LED_RED
-            if v > 0.0:
-                d.rectangle([x0 + 4 * SS, fill_top, x1 - 4 * SS, inner_bot], fill=rgba(color))
-        for k in range(1, 5):                                # printed ticks
-            ty = inner_bot - (inner_bot - inner_top) * k / 5
-            d.line([x0 - 3 * SS, ty, x0 - 1 * SS, ty], fill=(120, 124, 130, 255), width=SS)
+                lit = frac <= v
+                color = LED_GREEN if frac < 0.70 else LED_AMBER if frac < 0.90 else LED_RED
+                if kind == "gr":                            # reduction: the same colours, but the bar grows as the compressor works
+                    color = LED_GREEN if frac < 0.5 else LED_AMBER if frac < 0.8 else LED_RED
+            fill = rgba(color) if lit else rgba(mix(color, (26, 25, 34), 0.86))
+            d.rounded_rectangle([bx0, top, bx1, bot], radius=SS, fill=fill)
         strip.paste(im.resize((KS, KS), Image.LANCZOS), (0, f * KS))
     return strip
 
