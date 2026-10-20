@@ -28,6 +28,9 @@ installer and uninstaller have been run against a fake MPC root. Nothing has run
   **GLUE**: linked compression with makeup gain. **WIDTH**: 0 mono, middle unchanged, wider above. **LOW END**: bass
   weight and less low-mid buildup. **AIR**: high-frequency openness. **MIX**: dry to processed. **OUTPUT**: trim.
 - **MONO BASS**: on makes everything below about 120 Hz mono. Useful for club playback and mono-compatible masters.
+- **MID**: -3 to +3 dB at 1 kHz. **LIMIT**: drive into a limiter with a ceiling of about -0.3 dBFS. **BANDS**: multiband compression on three bands.
+- **SLOT, SAVE, LOAD** (left, under Mono Bass): keep your own settings in four slots. Files go to `/sdcard/Quanta` as `user-1.qnpreset` to `user-4.qnpreset`.
+- **Input target:** the marker on the input meter sits at -18 dB.
 - **Meters** (bottom left): input level, output level, glue reduction and stereo correlation. They are read-only.
 
 ## Uninstall
@@ -43,6 +46,7 @@ A backup of `MPC.settings` is kept next to it.
 ## Limits
 - Twelve factory presets, plus Custom (which changes nothing). Choosing a preset sets the ten sound controls, including Mono Bass on three of them. Turning the PRESET box or choosing a program loads it.
 - Undo and redo keep up to 32 steps while MPC runs. They are not saved with the project.
+- Mid, Limit and Bands are saved with the project. Older projects load with them at their defaults.
 - Bypass and A/B are session switches: they are not saved with the project. A/B holds two settings while you work; after a restart both slots start from the defaults.
 - Bypass fades over about 10 ms. It does not save CPU: the engine keeps running so it is ready when bypass ends.
 - No oversampling: keep Density moderate on bright material to avoid aliasing.

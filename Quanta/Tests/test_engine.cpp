@@ -189,15 +189,15 @@ static void test_presets(double sr) {
         for (int j = 0; j < i; ++j) CHECK(std::strcmp(presetName(i), presetName(j)) != 0, "duplicate preset name %s", presetName(i));
         CHECK(std::strlen(presetName(i)) <= 23 && presetName(i)[0], "preset name fits the screen (%s)", presetName(i));
     }
-    float v[P_PRESET];
+    float v[kPresetValues];
     CHECK(!presetValues(0, v), "Custom has no values to load");
     for (int i = 1; i < kPresetCount; ++i) {
         CHECK(presetValues(i, v), "%s has values", presetName(i));
         bool inRange = true;
-        for (int k = 0; k < P_PRESET; ++k) if (!(v[k] >= 0.f && v[k] <= 1.f)) inRange = false;
+        for (int k = 0; k < kPresetValues; ++k) if (k != P_PRESET && !(v[k] >= 0.f && v[k] <= 1.f)) inRange = false;
         CHECK(inRange, "%s: every value is 0..1", presetName(i));
         Engine e; e.prepare(sr); e.loadPreset(i);
-        for (int k = 0; k < P_PRESET; ++k) CHECK(std::fabs(e.getParam(k) - v[k]) < 1e-6f, "%s sets control %d", presetName(i), k);
+        for (int k = 0; k < kPresetValues; ++k) if (k != P_PRESET) CHECK(std::fabs(e.getParam(k) - v[k]) < 1e-6f, "%s sets control %d", presetName(i), k);
         CHECK(std::fabs(e.getParam(P_PRESET) - (float)i / (float)(kPresetCount - 1)) < 1e-6f, "%s shows its own number", presetName(i));
         // a preset renders cleanly on a loud, dense input
         const size_t N = (size_t)sr;
@@ -215,7 +215,7 @@ static void test_presets(double sr) {
     }
     // character: relative settings that the names promise
     auto idx = [](const char* name) { for (int i = 0; i < kPresetCount; ++i) if (!std::strcmp(presetName(i), name)) return i; return -1; };
-    float a[P_PRESET], b[P_PRESET];
+    float a[kPresetValues], b[kPresetValues];
     presetValues(idx("Warm and Dense"), a); presetValues(idx("Clean and Open"), b);
     CHECK(a[P_DENSITY] > b[P_DENSITY] && b[P_AIR] > a[P_AIR], "Warm and Dense is denser; Clean and Open is airier");
     presetValues(idx("Gentle Master"), a); presetValues(idx("Hip-Hop Mix Bus"), b);
@@ -230,7 +230,7 @@ static void test_robustness(double sr) {
     for (int setting = 0; setting < 2; ++setting) {
         for (int kind = 0; kind < 5; ++kind) {
             Engine e; e.prepare(sr);
-            if (setting == 1) for (int i = 0; i < P_PRESET; ++i) e.setParam(i, 1.f);
+            if (setting == 1) for (int i = 0; i < kPresetValues; ++i) if (i != P_PRESET) e.setParam(i, 1.f);
             std::vector<float> in_l(N), in_r(N);
             for (int i = 0; i < N; ++i) {
                 const double t = i / sr;
@@ -283,6 +283,51 @@ static void test_rms_and_loudness(double sr) {
     CHECK(quiet.inputRmsDb() < -100.f && quiet.outputLufs() < -100.f, "silence reads as silence at %.0f Hz", sr);
 }
 
+// New stages: the mid EQ moves 1 kHz by the set amount; multiband at 0 is exact, above 0 it reduces loud material and
+// stays finite; the limiter keeps the output under the ceiling when driven.
+static void test_new_stages(double sr) {
+    const int N = (int)(sr * 0.5);
+    auto sine = [&](double f, float amp, std::vector<float>& l, std::vector<float>& r) {
+        l.assign(N, 0.f); r.assign(N, 0.f);
+        for (int i = 0; i < N; ++i) { l[i] = amp * (float)std::sin(2 * kPi * f * i / sr); r[i] = l[i]; }
+    };
+    auto rmsDb = [&](const std::vector<float>& v) {
+        double acc = 0; for (int i = N * 3 / 4; i < N; ++i) acc += (double)v[i] * v[i];
+        return 10.0 * std::log10(acc / (N / 4) + 1e-12);
+    };
+    std::vector<float> l, r;
+
+    Engine boosted; boosted.prepare(sr); neutral(boosted); boosted.setParam(P_MID, 1.f);   // +3 dB
+    sine(1000, 0.1f, l, r); boosted.process(l.data(), r.data(), N);
+    double gainDb = rmsDb(l) - 20.0 * std::log10(0.1 / std::sqrt(2.0));
+    CHECK(std::fabs(gainDb - 3.0) < 0.5, "mid at +3 gives about +3 dB at 1 kHz (%.2f dB at %.0f Hz)", gainDb, sr);
+
+    Engine cut; cut.prepare(sr); neutral(cut); cut.setParam(P_MID, 0.f);                    // -3 dB
+    sine(1000, 0.1f, l, r); cut.process(l.data(), r.data(), N);
+    gainDb = rmsDb(l) - 20.0 * std::log10(0.1 / std::sqrt(2.0));
+    CHECK(std::fabs(gainDb + 3.0) < 0.5, "mid at -3 gives about -3 dB at 1 kHz (%.2f dB at %.0f Hz)", gainDb, sr);
+
+    Engine flat; flat.prepare(sr); neutral(flat);
+    sine(1000, 0.1f, l, r); flat.process(l.data(), r.data(), N);
+    CHECK(std::fabs(rmsDb(l) - 20.0 * std::log10(0.1 / std::sqrt(2.0))) < 0.1, "mid at its default is flat at %.0f Hz", sr);
+
+    Engine multi; multi.prepare(sr); neutral(multi); multi.setParam(P_BANDS, 1.f);
+    sine(1000, 0.5f, l, r); multi.process(l.data(), r.data(), N);
+    double multiDb = rmsDb(l);
+    CHECK(multiDb < 20.0 * std::log10(0.5 / std::sqrt(2.0)) - 1.0, "multiband reduces loud material (%.2f dB) at %.0f Hz", multiDb, sr);
+    bool finite = true; float peak = 0.f;
+    for (int i = 0; i < N; ++i) { if (!std::isfinite(l[i]) || !std::isfinite(r[i])) finite = false; peak = std::fmax(peak, std::fabs(l[i])); }
+    CHECK(finite && peak <= 1.0f, "multiband output is finite and under full scale (peak %.3f) at %.0f Hz", peak, sr);
+    CHECK(multi.bandReductionDb(1) < 0.f, "the middle band reports reduction on a 1 kHz tone at %.0f Hz", sr);
+
+    Engine lim; lim.prepare(sr); neutral(lim); lim.setParam(P_LIMIT, 1.f);                    // +12 dB drive
+    sine(440, 0.5f, l, r); lim.process(l.data(), r.data(), N);
+    float limPeak = 0.f;
+    for (int i = N * 3 / 4; i < N; ++i) limPeak = std::fmax(limPeak, std::fabs(l[i]));
+    CHECK(limPeak <= 0.975f, "limiter holds the output under about -0.3 dBFS when driven (peak %.3f) at %.0f Hz", limPeak, sr);
+    CHECK(lim.limiterReductionDb() < -1.f, "limiter reports reduction on a driven tone at %.0f Hz (%.2f dB)", sr, lim.limiterReductionDb());
+}
+
 int main() {
     test_neutral_passthrough(48000.0);
     test_no_nonfinite_and_bounded(48000.0);
@@ -298,6 +343,7 @@ int main() {
     test_presets(44100.0);
     for (double sr : {44100.0, 48000.0, 88200.0, 96000.0, 192000.0}) test_robustness(sr);
     for (double sr : {44100.0, 48000.0, 96000.0}) test_rms_and_loudness(sr);
+    for (double sr : {44100.0, 48000.0, 96000.0}) test_new_stages(sr);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

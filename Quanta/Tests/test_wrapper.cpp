@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <thread>
 #include <vector>
@@ -45,7 +46,8 @@ int main() {
     intptr_t size = fx->dispatcher(fx, effGetChunk, 0, 0, &chunk, 0.f);
     CHECK(chunk && size > 0, "state can be saved (%ld bytes)", (long)size);
     std::vector<unsigned char> saved((unsigned char*)chunk, (unsigned char*)chunk + size);
-    for (int i = 0; i < quanta::P_COUNT; ++i) fx->setParameter(fx, i, 0.1f);
+    for (int i = 0; i < quanta::P_COUNT; ++i)   // every parameter, except the press buttons (they would act)
+        if (i != quanta::P_SAVE && i != quanta::P_LOAD && i != quanta::P_UNDO && i != quanta::P_REDO) fx->setParameter(fx, i, 0.1f);
     intptr_t ok = fx->dispatcher(fx, effSetChunk, 0, (intptr_t)saved.size(), saved.data(), 0.f);
     CHECK(ok == 1, "saved state loads");
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_DENSITY) - 0.4f) < 1e-6f && std::fabs(fx->getParameter(fx, quanta::P_WIDTH) - 0.8f) < 1e-6f,
@@ -85,12 +87,12 @@ int main() {
           "program 3 is named %s", quanta::presetName(3));
     CHECK(fx->dispatcher(fx, effGetProgramNameIndexed, quanta::kPresetCount, 0, pname, 0.f) == 0, "a program past the end is refused");
 
-    float presetVals[quanta::P_PRESET];
+    float presetVals[quanta::kPresetValues];
     CHECK(quanta::presetValues(3, presetVals), "preset 3 has values");
     fx->dispatcher(fx, effSetProgram, 0, 3, nullptr, 0.f);
     CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 3, "effSetProgram(3) selects program 3");
     bool matches = true;
-    for (int i = 0; i < quanta::P_PRESET; ++i) if (std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
+    for (int i = 0; i < quanta::kPresetValues; ++i) if (i != quanta::P_PRESET && std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
     CHECK(matches, "preset 3 sets the sound controls through effSetProgram");
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_PRESET) - 3.f / (quanta::kPresetCount - 1)) < 1e-5f, "P_PRESET reads back the preset position");
 
@@ -100,7 +102,7 @@ int main() {
     fx->setParameter(fx, quanta::P_PRESET, presetPos);
     CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 6, "setParameter(P_PRESET) selects program 6");
     matches = true;
-    for (int i = 0; i < quanta::P_PRESET; ++i) if (std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
+    for (int i = 0; i < quanta::kPresetValues; ++i) if (i != quanta::P_PRESET && std::fabs(fx->getParameter(fx, i) - presetVals[i]) > 1e-5f) matches = false;
     CHECK(matches, "preset 6 sets the sound controls through setParameter");
 
     // Custom (program 0) keeps the current values
@@ -184,6 +186,51 @@ int main() {
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_UNDO)) < 1e-6f, "Undo always reads back 0");
     CHECK(!fx->getParameter(fx, quanta::P_UNDO) && fx->numParams == quanta::P_COUNT, "undo and redo are not automated");
     CHECK(fx->dispatcher(fx, effCanBeAutomated, quanta::P_UNDO, 0, nullptr, 0.f) == 0, "undo is not automatable");
+
+    // older projects (11 saved controls) load; the controls they do not have take their defaults
+    {
+        std::vector<unsigned char> old(4 + 4 * quanta::P_MID, 0);
+        std::memcpy(old.data(), "QNT1", 4);
+        float tone = 0.9f;
+        std::memcpy(old.data() + 4 + 4 * quanta::P_TONE, &tone, 4);
+        fx->setParameter(fx, quanta::P_MID, 0.2f);
+        CHECK(fx->dispatcher(fx, effSetChunk, 0, (intptr_t)old.size(), old.data(), 0.f) == 1, "an older 11-control state loads");
+        CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.9f) < 1e-6f, "the older state's Tone is restored");
+        CHECK(std::fabs(fx->getParameter(fx, quanta::P_MID) - 0.5f) < 1e-6f, "a control the older state lacks goes to its default");
+    }
+
+    // user presets: save to a slot, change, load it back; a file of an unknown version is refused; a partial file fills defaults
+    setenv("QUANTA_PRESET_DIR", "build/userpresets", 1);
+    fx->setParameter(fx, quanta::P_SLOT, 0.f);   // slot 1
+    fx->setParameter(fx, quanta::P_TONE, 0.7f);
+    fx->setParameter(fx, quanta::P_MID, 0.8f);
+    fx->setParameter(fx, quanta::P_BANDS, 0.4f);
+    fx->setParameter(fx, quanta::P_SAVE, 1.f);
+    fx->setParameter(fx, quanta::P_TONE, 0.1f);
+    fx->setParameter(fx, quanta::P_MID, 0.2f);
+    fx->setParameter(fx, quanta::P_LOAD, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.7f) < 1e-5f && std::fabs(fx->getParameter(fx, quanta::P_MID) - 0.8f) < 1e-5f
+          && std::fabs(fx->getParameter(fx, quanta::P_BANDS) - 0.4f) < 1e-5f, "a saved user preset loads back in full");
+    CHECK(!std::strcmp((fx->dispatcher(fx, effGetParamDisplay, quanta::P_SLOT, 0, disp, 0.f), disp), "Slot 1"), "the slot shows its number");
+
+    {
+        std::FILE* f = std::fopen("build/userpresets/user-2.qnpreset", "w");
+        std::fprintf(f, "QUANTA-PRESET 2\nTone=0.3\n");   // a newer version: refused
+        std::fclose(f);
+        fx->setParameter(fx, quanta::P_TONE, 0.6f);
+        fx->setParameter(fx, quanta::P_SLOT, 1.f / 3.f);   // slot 2
+        fx->setParameter(fx, quanta::P_LOAD, 1.f);
+        CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.6f) < 1e-6f, "a preset file from a newer version is refused");
+        f = std::fopen("build/userpresets/user-3.qnpreset", "w");
+        std::fprintf(f, "QUANTA-PRESET 1\n# only Tone is given\nTone=0.25\nNo Such Control=0.9\nTone=2\n");
+        std::fclose(f);
+        fx->setParameter(fx, quanta::P_SLOT, 2.f / 3.f);   // slot 3
+        fx->setParameter(fx, quanta::P_LOAD, 1.f);
+        CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.25f) < 1e-6f, "a partial file sets what it names (out-of-range values skipped)");
+        CHECK(std::fabs(fx->getParameter(fx, quanta::P_MID) - 0.5f) < 1e-6f && std::fabs(fx->getParameter(fx, quanta::P_PARTICLE) - 0.3f) < 1e-6f,
+              "settings a partial file does not mention take their defaults");
+    }
+    unsetenv("QUANTA_PRESET_DIR");
 
     fx->dispatcher(fx, effClose, 0, 0, nullptr, 0.f);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);

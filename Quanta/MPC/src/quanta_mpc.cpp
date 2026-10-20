@@ -10,8 +10,11 @@
 
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <new>
+
+#include <sys/stat.h>
 
 #define QN_EXPORT extern "C" __attribute__((visibility("default")))
 
@@ -21,6 +24,12 @@ constexpr int kBlock = 1024;   // the audio thread works in blocks this size, so
 constexpr int kHistory = 32;   // undo and redo steps kept
 constexpr long long kEditGapMs = 800;   // edits closer together than this are one gesture (one undo step)
 constexpr long long kNoEdit = -1000000;
+constexpr int kMinChunkControls = quanta::P_MID;   // projects saved before Mid, Limit and Bands had 11 controls
+// User presets: plain text files, one per slot, in a folder on the device. QUANTA_PRESET_DIR overrides the folder (tests).
+const char* presetDir() {
+    const char* d = std::getenv("QUANTA_PRESET_DIR");
+    return d && *d ? d : "/sdcard/Quanta";
+}
 
 struct Plugin {
     AEffect fx;
@@ -59,6 +68,51 @@ void setAB(Plugin* p, int b) {
     for (int i = 0; i < quanta::kControlCount; ++i) p->slot[p->abSlot][i] = p->engine.getParam(i);   // keep the one we leave
     for (int i = 0; i < quanta::kControlCount; ++i) p->engine.setParam(i, p->slot[b][i]);
     p->abSlot = b;
+}
+
+void beforeEdit(Plugin* p);
+
+// Saves the sound controls to the chosen user slot as "name=value" lines (values 0..1). Host thread only.
+void saveUserPreset(const Plugin* p, int slot) {
+    char path[256];
+    std::snprintf(path, sizeof path, "%s/user-%d.qnpreset", presetDir(), slot + 1);
+    mkdir(presetDir(), 0755);   // fails harmlessly if the folder exists
+    FILE* f = std::fopen(path, "w");
+    if (!f) return;
+    std::fprintf(f, "QUANTA-PRESET 1\n# Quanta user preset, values 0 to 1\n");
+    for (int i = 0; i < quanta::kControlCount; ++i)
+        if (i != quanta::P_PRESET) std::fprintf(f, "%s=%.6f\n", quanta::kParams[i].name, (double)p->engine.getParam(i));
+    std::fclose(f);
+}
+
+// Loads a user slot. A file without the header, or from a newer version, is refused and nothing changes. Settings the
+// file does not mention take their defaults; names it does not know are ignored; values outside 0..1 are skipped.
+void loadUserPreset(Plugin* p, int slot) {
+    char path[256];
+    std::snprintf(path, sizeof path, "%s/user-%d.qnpreset", presetDir(), slot + 1);
+    FILE* f = std::fopen(path, "r");
+    if (!f) return;
+    char line[256];
+    if (!std::fgets(line, sizeof line, f) || std::strncmp(line, "QUANTA-PRESET ", 14) != 0 || std::atoi(line + 14) != 1) {
+        std::fclose(f);
+        return;
+    }
+    float vals[quanta::kControlCount];
+    for (int i = 0; i < quanta::kControlCount; ++i) vals[i] = quanta::kParams[i].def;
+    while (std::fgets(line, sizeof line, f)) {
+        if (line[0] == '#') continue;
+        char* eq = std::strchr(line, '=');
+        if (!eq) continue;
+        *eq = 0;
+        double v = std::strtod(eq + 1, nullptr);
+        if (!(v >= 0.0 && v <= 1.0)) continue;
+        for (int i = 0; i < quanta::kControlCount; ++i)
+            if (i != quanta::P_PRESET && std::strcmp(line, quanta::kParams[i].name) == 0) vals[i] = (float)v;
+    }
+    std::fclose(f);
+    beforeEdit(p);
+    for (int i = 0; i < quanta::kControlCount; ++i)
+        if (i != quanta::P_PRESET) p->engine.setParam(i, vals[i]);
 }
 
 void captureSlots(Plugin* p) {   // at open both slots start from the defaults, so B is never empty
@@ -119,7 +173,13 @@ int presetIndexOf(float v) {
 }
 
 void formatParam(int index, float v, char* out, int max) {
-    if (index == quanta::P_UNDO) {
+    if (index == quanta::P_SLOT) {
+        std::snprintf(out, (size_t)max, "Slot %d", (int)(v * 3.f + 0.5f) + 1);
+    } else if (index == quanta::P_SAVE) {
+        copyStr(out, "Save", max);
+    } else if (index == quanta::P_LOAD) {
+        copyStr(out, "Load", max);
+    } else if (index == quanta::P_UNDO) {
         copyStr(out, "Undo", max);
     } else if (index == quanta::P_REDO) {
         copyStr(out, "Redo", max);
@@ -136,7 +196,8 @@ void formatParam(int index, float v, char* out, int max) {
         std::snprintf(out, (size_t)max, "%.1f dB", (double)(v * 60.f - 60.f));          // meters: -60 .. 0 dB
     } else if (index == quanta::P_METER_LUFS) {
         std::snprintf(out, (size_t)max, "%.1f LUFS", (double)(v * 60.f - 60.f));
-    } else if (index == quanta::P_METER_GR) {
+    } else if (index == quanta::P_METER_GR || index == quanta::P_METER_GR_LO || index == quanta::P_METER_GR_MID ||
+               index == quanta::P_METER_GR_HI || index == quanta::P_METER_LIMIT_GR) {
         std::snprintf(out, (size_t)max, "%.1f dB", (double)(-v * 20.f));                  // reduction: 0 .. -20 dB
     } else if (index == quanta::P_METER_CORR) {
         std::snprintf(out, (size_t)max, "%+.2f", (double)(2.f * v - 1.f));
@@ -189,9 +250,15 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
     }
     case effSetChunk: {
         const char* b = (const char*)ptr;
-        if (!b || value < 4 + 4 * quanta::kControlCount || std::memcmp(b, kStateMagic, 4) != 0) return 0;
+        if (!b || value < 4 + 4 * kMinChunkControls || std::memcmp(b, kStateMagic, 4) != 0) return 0;
+        int n = (int)((value - 4) / 4);
+        if (n > quanta::kControlCount) n = quanta::kControlCount;
         beforeEdit(p);
-        for (int i = 0; i < quanta::kControlCount; ++i) { float v; std::memcpy(&v, b + 4 + 4 * i, 4); p->engine.setParam(i, v); }
+        for (int i = 0; i < quanta::kControlCount; ++i) {   // controls a shorter, older state does not have take their defaults
+            float v = quanta::kParams[i].def;
+            if (i < n) std::memcpy(&v, b + 4 + 4 * i, 4);
+            p->engine.setParam(i, v);
+        }
         return 1;
     }
     case effGetEffectName: if (ptr) copyStr((char*)ptr, "Quanta", 32); return 1;
@@ -212,6 +279,9 @@ void setParameter(AEffect* fx, int32_t index, float v) {
     // Undo and redo act on every call: the skin sends one call per press
     if (index == quanta::P_UNDO) undo(p);
     else if (index == quanta::P_REDO) redo(p);
+    else if (index == quanta::P_SAVE) saveUserPreset(p, (int)(p->engine.getParam(quanta::P_SLOT) * 3.f + 0.5f));
+    else if (index == quanta::P_LOAD) loadUserPreset(p, (int)(p->engine.getParam(quanta::P_SLOT) * 3.f + 0.5f));
+    else if (index == quanta::P_SLOT) p->engine.setParam(quanta::P_SLOT, v);
     else if (index == quanta::P_BYPASS) setBypass(p, v >= 0.5f);
     else if (index == quanta::P_AB) setAB(p, v >= 0.5f ? 1 : 0);
     else if (index == quanta::P_PRESET) { beforeEdit(p); p->engine.loadPreset(presetIndexOf(v)); }   // choosing a preset sets its values
@@ -231,6 +301,10 @@ float meterValue(const quanta::Engine& e, int index) {
     case quanta::P_METER_RMS_IN:  return clamp01((e.inputRmsDb() + 60.f) / 60.f);
     case quanta::P_METER_RMS_OUT: return clamp01((e.outputRmsDb() + 60.f) / 60.f);
     case quanta::P_METER_LUFS:    return clamp01((e.outputLufs() + 60.f) / 60.f);
+    case quanta::P_METER_GR_LO:   return clamp01(-e.bandReductionDb(0) / 20.f);
+    case quanta::P_METER_GR_MID:  return clamp01(-e.bandReductionDb(1) / 20.f);
+    case quanta::P_METER_GR_HI:   return clamp01(-e.bandReductionDb(2) / 20.f);
+    case quanta::P_METER_LIMIT_GR: return clamp01(-e.limiterReductionDb() / 20.f);
     default: return 0.f;
     }
 }
@@ -239,6 +313,7 @@ float getParameter(AEffect* fx, int32_t index) {
     Plugin* p = (Plugin*)fx->object;
     if (index == quanta::P_BYPASS) return p->bypass ? 1.f : 0.f;
     if (index == quanta::P_AB) return (float)p->abSlot;
+    if (index == quanta::P_SLOT) return p->engine.getParam(quanta::P_SLOT);
     if (index < 0 || index >= quanta::P_COUNT) return 0.f;
     return index < quanta::kControlCount ? p->engine.getParam(index) : meterValue(p->engine, index);
 }

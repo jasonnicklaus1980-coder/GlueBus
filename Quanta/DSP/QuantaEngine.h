@@ -17,11 +17,17 @@ enum Param {
     P_OUTPUT,        // output trim: -12 .. +12 dB, 0.5 = 0 dB
     P_MONOBASS,      // 1: content below ~120 Hz is made mono
     P_PRESET,        // preset shown on the screen: 0 Custom, 1.. the factory presets (see QuantaPresets.h). Setting it loads the preset
-    // session switches: handled by the plugin wrapper (bypass crossfade, A/B slots), not saved with the project
+    P_MID,           // mid-range EQ at 1 kHz: -3 .. +3 dB, 0.5 = flat
+    P_LIMIT,         // limiter drive: 0 = off, up to +12 dB into a ceiling of about -0.3 dBFS
+    P_BANDS,         // multiband dynamics: 0 = off; more adds per-band compression on three bands
+    // session switches: handled by the plugin wrapper, not saved with the project
     P_BYPASS,        // 1 = bypassed (input passes through, faded over 10 ms)
     P_AB,            // 0 = slot A, 1 = slot B: two settings to compare
     P_UNDO,          // press to step back through the sound-control history (handled by the wrapper)
     P_REDO,          // press to step forward again
+    P_SLOT,          // user preset slot 1..4 (0..1 as 0, 1/3, 2/3, 1)
+    P_SAVE,          // press to save the current sound controls to the chosen user slot
+    P_LOAD,          // press to load the chosen user slot
     // read-only meters: the host can show them, they are not saved and cannot be automated
     P_METER_IN,      // input level, -60 .. 0 dB as 0..1
     P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
@@ -30,13 +36,20 @@ enum Param {
     P_METER_RMS_IN,  // input RMS (300 ms), -60 .. 0 dB as 0..1
     P_METER_RMS_OUT, // output RMS (300 ms), -60 .. 0 dB as 0..1
     P_METER_LUFS,    // output loudness, momentary (400 ms), -60 .. 0 LUFS as 0..1 (approximate, see README)
+    P_METER_GR_LO,   // multiband reduction, low band, 0 .. -20 dB as 0..1
+    P_METER_GR_MID,  // multiband reduction, middle band
+    P_METER_GR_HI,   // multiband reduction, high band
+    P_METER_LIMIT_GR,// limiter reduction, 0 .. -20 dB as 0..1
     P_COUNT
 };
 
-// The controls (the first ones above): the only parameters saved with a project.
+// The controls (the first ones above): the only parameters saved with a project. Older projects saved fewer; the rest
+// take their defaults when they load.
 constexpr int kControlCount = P_BYPASS;
-// Everything the host may automate: the controls and the bypass and A/B switches (not undo, redo or the meters).
+// Everything the host may automate: the controls and the bypass and A/B switches (not undo, redo, slots or the meters).
 constexpr int kAutomatableCount = P_UNDO;
+// The sound settings a preset sets: every control except the preset number itself.
+constexpr int kPresetValues = P_BANDS + 1;
 
 struct ParamInfo {
     const char* name;
@@ -58,6 +71,8 @@ public:
 
     // Metering, updated by process(): peak absolute values of the last block, and the stereo correlation (-1..1).
     float inputRmsDb() const;   // dB, RMS over about 300 ms
+    float bandReductionDb(int b) const { return bandGrMin_[b]; }   // deepest reduction of multiband band b in the last block (negative dB)
+    float limiterReductionDb() const { return limGrDb_; }           // limiter reduction in the last block (negative dB)
     float outputRmsDb() const;
     float outputLufs() const;   // momentary loudness over about 400 ms, approximate K-weighting (not calibrated)
     float inputPeak() const { return inPeak_; }
@@ -88,6 +103,8 @@ private:
         Biquad tilt[2];      // low shelf, high shelf (Tone)
         Biquad lowShelf, lowMid, air;
         Biquad kShelf, kHigh;     // K-weighting for loudness: pre-filter shelf and high-pass
+        Biquad mid;               // mid-range EQ (1 kHz)
+        Biquad xoLow[2], xoHigh[2];  // multiband crossovers: 200 Hz low-pass and 3 kHz high-pass, two stages each
         float dcX1 = 0.f, dcY1 = 0.f;
         float lowpassState = 0.f;  // for the bass-mono split of the side channel (mid/side path only)
     };
@@ -98,6 +115,8 @@ private:
     void setShelfHigh(Biquad& b, double f0, double gainDb, double slope = 1.0) const;
     void setPeak(Biquad& b, double f0, double gainDb, double q) const;
     void setHighPass(Biquad& b, double f0, double q) const;
+    void setLowPass(Biquad& b, double f0, double q) const;
+    static float bandGainDb(float env, float thresh, float ratio);   // compressor reduction for one band (dB, <= 0)
 
     double sr_ = 48000.0;
     float p_[P_COUNT];
@@ -124,6 +143,15 @@ private:
     float msIn_ = 0.f, msOut_ = 0.f;   // mean-square levels for RMS
     float kMs_[2] = {0.f, 0.f};         // K-weighted mean-square per channel for loudness
     float rmsCoef_ = 0.f, lufsCoef_ = 0.f;
+    // multiband dynamics and limiter
+    float bandEnv_[3] = {0.f, 0.f, 0.f};
+    float bandGrMin_[3] = {0.f, 0.f, 0.f};
+    bool bandsOn_ = false;
+    float bandRatio_ = 1.f;
+    float limDrive_ = 1.f, limCeil_ = 0.966f;   // about -0.3 dBFS
+    bool limOn_ = false;
+    float limAtt_ = 0.f, limRel_ = 0.f;
+    float limGain_ = 1.f, limGrDb_ = 0.f;
 };
 
 }  // namespace quanta

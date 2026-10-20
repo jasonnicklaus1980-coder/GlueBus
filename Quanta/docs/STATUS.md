@@ -33,11 +33,13 @@ Decisions in force (from the project owner):
 - Controls named INPUT, PUNCH, SATURATION and STEREO: not added. The current names are kept.
 - Advanced page (EQ frequencies, compressor timing, limiter settings): on hold.
 - Clipping and peak indicator: on hold. Peak readings have no reset.
-- Mid-range EQ, adaptive limiter with input gain, multiband dynamics, input target zone: not built. Each adds a saved control or a large DSP stage, so each needs a decision first.
-- Sidechain input: not built. The plugin has a stereo input only.
+- Adaptive limiter: built as a basic limiter with drive and a 1 ms attack, no lookahead. Not calibrated.
+- Multiband dynamics: built as three bands with compression, not calibrated against reference material.
+- Mid-range EQ and input target marker: built (-3 to +3 dB at 1 kHz; -18 dB marker).
+- Sidechain input: not built. It needs a second input bus, which the MPC host may not support. Adding one could stop the plugin loading, so it is left out until the host is verified.
 - Gated integrated loudness (full BS.1770): not built. Only momentary loudness is shown.
 - Oversampling: not built, so Density should stay moderate on bright material. Adding it changes latency and CPU, which needs your decision first.
-- User preset save, search and favourites: not built. Saving presets to files on the MPC needs your decision on where they live first.
+- User presets: four slots saved as text files in /sdcard/Quanta. Not verified on the MPC. Search and favourites: not built.
 - Tests while audio plays, under automation, and while presets load: not done on the device.
 
 ## Limits to keep in mind

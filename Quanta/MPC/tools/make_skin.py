@@ -32,19 +32,26 @@ SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
-     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "undo": 13, "redo": 14, "inlevel": 15, "outlevel": 16, "gr": 17, "corr": 18, "rmsin": 19, "rmsout": 20, "lufs": 21}
-KNOBS = [  # key, label, knob centre x, cap, Q-Link order: two rows of four under the stereo field
+     "monobass": 9, "preset": 10, "mid": 11, "limit": 12, "bands": 13, "bypass": 14, "ab": 15, "undo": 16, "redo": 17,
+     "slot": 18, "save": 19, "load": 20, "inlevel": 21, "outlevel": 22, "gr": 23, "corr": 24, "rmsin": 25, "rmsout": 26,
+     "lufs": 27, "grlo": 28, "grmid": 29, "grhi": 30, "limgr": 31}
+KNOBS = [  # key, label, knob centre x, cap: three rows of four under the stereo field
     ("tone", "TONE", 393, SILVER), ("density", "DENSITY", 561, SILVER), ("glue", "GLUE", 729, SILVER),
     ("width", "WIDTH", 896, SILVER), ("lowend", "LOW END", 393, SILVER), ("air", "AIR", 561, SILVER),
     ("mix", "MIX", 729, SILVER), ("output", "OUTPUT", 896, SILVER),
+    ("mid", "MID", 393, SILVER), ("limit", "LIMIT", 561, SILVER), ("bands", "BANDS", 729, SILVER),
+    ("slot", "SLOT", 896, SILVER),
 ]
-ROW_TOP = {"tone": 352, "density": 352, "glue": 352, "width": 352,
-           "lowend": 472, "air": 472, "mix": 472, "output": 472}   # top of each knob cell
+ROW_TOP = {"tone": 296, "density": 296, "glue": 296, "width": 296,
+           "lowend": 396, "air": 396, "mix": 396, "output": 396,
+           "mid": 496, "limit": 496, "bands": 496, "slot": 496}   # top of each knob cell
 PARTICLE = (91, 112)        # the Intensity control: its cell, top left, centred in the left column
-VISUAL_BOX = (334, 84, 621, 236)  # the 3D stereo visual: the centre, above the knob rows
+VISUAL_BOX = (334, 84, 621, 180)  # the 3D stereo visual: the centre, above the knob rows
 MONO_POS = (40, 380)        # Mono Bass switch, left column
 METER_POS = {"in": (1100, 112), "out": (1100, 210), "gr": (1100, 308), "corr": (1100, 406)}   # right column, stacked
-READOUT_ROWS = [("RMS IN", "rmsin", 516), ("RMS OUT", "rmsout", 538), ("LOUDNESS", "lufs", 560)]   # value readouts under the meters
+READOUT_ROWS = [("RMS IN", "rmsin", 516), ("RMS OUT", "rmsout", 538), ("LOUDNESS", "lufs", 560), ("LIMIT GR", "limgr", 582)]   # right column
+BAND_READOUTS = [("LOW", "grlo", 40), ("MID", "grmid", 110), ("HIGH", "grhi", 180)]   # band reduction, left column, y 548
+PRESET_BUTTONS = {"save": (40, 454, "SAVE"), "load": (144, 454, "LOAD")}              # user presets, left column
 PRESET_BOX = (540, 18, 340, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
@@ -121,13 +128,18 @@ def background():
     tracked(d, 34, 16, "QUANTA", 32, PRINT, track=3.0)
     tracked(d, 212, 30, "stereo mix enhancement", 15, DIM, track=0.4)
     d.rectangle([14, 64, W - 14, 66], fill=VIOLET)                    # hairline accent under the header
-    tracked(d, 334, 332, "BALANCE", 11, DIM, track=2.0)               # section headings share one style and baseline
+    tracked(d, 334, 272, "BALANCE", 11, DIM, track=2.0)               # section headings share one style and baseline
     tracked(d, 40, 356, "MONO BASS", 11, DIM, track=2.0)
+    tracked(d, 40, 432, "USER PRESET", 11, DIM, track=2.0)
+    tracked(d, 40, 512, "BAND REDUCTION", 11, DIM, track=2.0)
+    for text, _, x in BAND_READOUTS:
+        tracked(d, x, 532, text, 10, DIM, track=1.2)
     tracked(d, 1100, 88, "METERS", 11, DIM, track=2.0)
     for kind, text in (("in", "IN"), ("out", "OUT"), ("gr", "GR"), ("corr", "CORR")):   # printed labels beside each meter
         tracked(d, METER_POS[kind][0] + KS + 10, METER_POS[kind][1] + 28, text, 11, DIM, track=1.5)
     for text, _, row in READOUT_ROWS:
         tracked(d, 1100, row + 4, text, 11, DIM, track=1.5)
+    tracked(d, METER_POS["in"][0] + KS + 10, METER_POS["in"][1] + 42, "TARGET -18", 9, FAINT, track=1.0)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
         d.text((cx, ROW_TOP[key] + 86), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + CW / 2, PARTICLE[1] + 86), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
@@ -211,6 +223,9 @@ def meter_strip(kind):
                     color = LED_GREEN if frac < 0.5 else LED_AMBER if frac < 0.8 else LED_RED
             fill = rgba(color) if lit else rgba(mix(color, (26, 25, 34), 0.86))
             d.rounded_rectangle([bx0, top, bx1, bot], radius=SS, fill=fill)
+        if kind == "in":                                    # target marker at -18 dB (0.7 of the scale)
+            ty = by1 - (by1 - by0) * 0.7
+            d.line([bx0 - 3 * SS, ty, bx1 + 3 * SS, ty], fill=rgba(VIOLET), width=SS)
         strip.paste(im.resize((KS, KS), Image.LANCZOS), (0, f * KS))
     return strip
 
@@ -319,6 +334,14 @@ def build():
     defs.append({"key": "qnReadout", "value": definition([], [label("Value", 13, hexcol(PRINT), (0, 0, 86, 20), "horizontallyRight verticallyCentred")], ignore=True)})
     for text, key, row in READOUT_ROWS:
         place(comps, f"Readout {text.title()}", "qnReadout", P[key], 1170, row, 86, 20)
+    defs.append({"key": "qnReadoutBand", "value": definition([], [label("Value", 13, hexcol(PRINT), (0, 0, 62, 20), "horizontallyCentred verticallyCentred")], ignore=True)})
+    for text, key, x in BAND_READOUTS:
+        place(comps, f"Band {text.title()}", "qnReadoutBand", P[key], x, 548, 62, 20)
+    # user preset buttons (press: each press sends one call; the image does not change)
+    for key, (x, y, text) in PRESET_BUTTONS.items():
+        save(tile_button(text, 96, 36, False), f"qn_{key}.png")
+        defs.append({"key": f"qnButton_{key}", "value": definition(TOGGLE(), [btn_part(f"qn_{key}.png", f"qn_{key}.png", 96, 36), focus((0, 0, 96, 36))])})
+        place(comps, text.title(), f"qnButton_{key}", P[key], x, y, 96, 36, touch=True)
 
     defs.append({"key": "QN|Main", "value": definition([], comps, "ff141416")})
     tabs = [{"version": 3, "tabName": "QUANTA", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
@@ -361,6 +384,10 @@ def preview(outdir):
     im.alpha_composite(switch_images(False), MONO_POS)
     for text, _, row in READOUT_ROWS:                 # placeholder: the live value only appears on the device
         ImageDraw.Draw(im).text((1256, row + 10), "--", font=font(13), fill=rgba(PRINT), anchor="rm")
+    for text, _, x in BAND_READOUTS:
+        ImageDraw.Draw(im).text((x + 31, 558), "--", font=font(13), fill=rgba(PRINT), anchor="mm")
+    for key, (x, y, text) in PRESET_BUTTONS.items():
+        im.alpha_composite(tile_button(text, 96, 36, False), (x, y))
     im.alpha_composite(tile_button("A", 64, 36, False), (892, 18))
     im.alpha_composite(tile_button("BYPASS", 110, 36, False), (966, 18))
     im.alpha_composite(tile_button("UNDO", 70, 36, False), (1086, 18))
