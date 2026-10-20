@@ -25,6 +25,7 @@ FONT_DIRS = ["/usr/share/fonts/truetype/liberation", "/usr/share/fonts/truetype/
 
 INK, PANEL, EDGE = (16, 14, 24), (30, 27, 42), (70, 60, 96)
 PRINT, DIM, FAINT = (240, 238, 246), (168, 160, 184), (108, 100, 128)
+ARC_TRACK = (44, 40, 60)      # the unlit part of a knob's value arc
 ACCENT = (226, 96, 196)     # magenta, used for Particle, the preset name and active marks
 VIOLET = (142, 110, 238)    # secondary accent: the display frame and the tab line
 SILVER = (186, 190, 196)
@@ -123,6 +124,7 @@ def knob_strip(cap):
         d.line([c - dx, yy, c + dx, yy], fill=rgba(mix((120, 124, 130), (44, 46, 50), k)))
     rt = R * 0.84
     face_col = mix(cap, (255, 255, 255), 0.10) if cap == SILVER else cap
+    arc_col = ACCENT if cap == ACCENT else VIOLET
     strip = Image.new("RGBA", (KS, KS * FRAMES), (0, 0, 0, 0))
     for f in range(FRAMES):
         im = base.copy(); dd = ImageDraw.Draw(im)
@@ -137,6 +139,11 @@ def knob_strip(cap):
                        fill=rgba(mix(mix(face_col, (0, 0, 0), 0.25), mix(face_col, (255, 255, 255), 0.22), (1 - t) ** 1.8)))
         x0, y0 = ang_xy(c, c, rt * 0.12, deg); x1, y1 = ang_xy(c, c, rt * 0.92, deg)
         dd.line([x0, y0, x1, y1], fill=rgba((18, 18, 20)), width=int(SS * 2.2))
+        # value arc just outside the knob: a faint track over the whole sweep, lit up to the current value
+        ra = R * 1.14; box = [c - ra, c - ra, c + ra, c + ra]
+        dd.arc(box, ANG0 - 90, ANG1 - 90, fill=rgba(ARC_TRACK), width=int(SS * 1.6))
+        if deg > ANG0 + 0.5:
+            dd.arc(box, ANG0 - 90, deg - 90, fill=rgba(arc_col), width=int(SS * 2.0))
         strip.paste(im.resize((KS, KS), Image.LANCZOS), (0, f * KS))
     return strip
 
