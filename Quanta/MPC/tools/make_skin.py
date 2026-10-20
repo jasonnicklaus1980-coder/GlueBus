@@ -63,24 +63,33 @@ def visual3d(w, h):
     W2, H2 = w * SS, h * SS
     d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=12 * SS, fill=(12, 10, 20, 255), outline=rgba(VIOLET, 255), width=2 * SS)
     cx, horizon, fx, fy, cam_h = W2 / 2, H2 * 0.22, W2 * 0.40, H2 * 1.30, 1.0
-    rows, cols = 22, 46
+    rows, cols = 30, 60
     def height(x, z):   # the surface: two ripples that grow toward the viewer
         return 0.55 * math.sin(3.2 * math.pi * x + 2.2 * z) * (0.25 + z) + 0.25 * math.cos(2.0 * math.pi * x - 1.3 * z) * z
     def project(x, z):     # z = 1 is the front row (lowest on screen), z = 0 the far edge at the horizon
         depth = 2.2 + (1.0 - z) * 3.0
-        return cx + x * 2.4 * fx / depth, horizon + (cam_h - height(x, z) * 0.6) * fy / depth
+        return cx + x * 2.4 * fx / depth, horizon + (cam_h - height(x, z) * 0.8) * fy / depth
     lines = []
     for r in range(rows):           # rows run from far (z 0) to near (z 1)
         z = r / (rows - 1)
         lines.append([project(-1.0 + 2.0 * c / (cols - 1), z) for c in range(cols)] + [z])
+    glow = Image.new("RGBA", im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)   # a soft halo behind the mesh
     for r in range(rows):
         pts, z = lines[r][:-1], lines[r][-1]
-        t = z
         for c in range(cols - 1):
-            d.line([pts[c], pts[c + 1]], fill=rgba(mix(ACCENT, VIOLET, t), int(60 + 180 * t)), width=max(1, SS))
+            gd.line([pts[c], pts[c + 1]], fill=rgba(mix(ACCENT, VIOLET, z), 90), width=5 * SS)
+    for c in range(cols):
+        for r in range(rows - 1):
+            gd.line([lines[r][c], lines[r + 1][c]], fill=rgba(mix(ACCENT, VIOLET, lines[r][-1]), 70), width=5 * SS)
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(4 * SS)))
+    d = ImageDraw.Draw(im)
+    for r in range(rows):
+        pts, z = lines[r][:-1], lines[r][-1]
+        for c in range(cols - 1):
+            d.line([pts[c], pts[c + 1]], fill=rgba(mix(ACCENT, VIOLET, z), int(70 + 170 * z)), width=max(1, SS))
     for c in range(cols):           # the columns that give the surface its 3D shape
         for r in range(rows - 1):
-            d.line([lines[r][c], lines[r + 1][c]], fill=rgba(mix(ACCENT, VIOLET, lines[r][-1]), int(50 + 150 * lines[r][-1])), width=max(1, SS))
+            d.line([lines[r][c], lines[r + 1][c]], fill=rgba(mix(ACCENT, VIOLET, lines[r][-1]), int(60 + 140 * lines[r][-1])), width=max(1, SS))
     return im.resize((w, h), Image.LANCZOS)
 
 def background():
@@ -104,6 +113,7 @@ def background():
     vis = visual3d(vw, vh)
     im.paste(vis.convert("RGB"), (vx, vy), vis.split()[3])
     d = ImageDraw.Draw(im)
+    d.text((VISUAL_BOX[0] + 14, VISUAL_BOX[1] + 10), "STEREO FIELD", font=font(12), fill=DIM)
     bx, by, bw, bh = PRESET_BOX
     d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=(10, 9, 16), outline=VIOLET, width=2)
     d.text((bx + 12, by + bh / 2), "PRESET", font=font(12), fill=DIM, anchor="lm")
