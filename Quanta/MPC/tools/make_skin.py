@@ -110,13 +110,21 @@ def background():
     for y in range(H):                                   # soft vertical graphite gradient
         t = y / H
         d.line([0, y, W, y], fill=mix((46, 36, 74), (14, 13, 22), t))
-    d.rounded_rectangle([14, 64, W - 14, H - 14], radius=14, fill=PANEL, outline=EDGE, width=2)
+    panel = Image.new("RGB", (W, H), PANEL); pd = ImageDraw.Draw(panel)   # the panel: a gentle top-to-bottom gradient
+    for y in range(64, H - 13):
+        pd.line([0, y, W, y], fill=mix((38, 35, 58), (25, 23, 37), (y - 64) / (H - 77)))
+    mask = Image.new("L", (W, H), 0); ImageDraw.Draw(mask).rounded_rectangle([14, 64, W - 14, H - 14], radius=14, fill=255)
+    im.paste(panel, (0, 0), mask)
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([14, 64, W - 14, H - 14], radius=14, outline=EDGE, width=2)
     tracked(d, 34, 16, "QUANTA", 32, PRINT, track=3.0)
     tracked(d, 212, 30, "stereo mix enhancement", 15, DIM, track=0.4)
     d.rectangle([14, 64, W - 14, 66], fill=VIOLET)                    # hairline accent under the header
     tracked(d, 334, 332, "BALANCE", 11, DIM, track=2.0)               # section headings share one style and baseline
     tracked(d, 40, 356, "MONO BASS", 11, DIM, track=2.0)
     tracked(d, 1100, 88, "METERS", 11, DIM, track=2.0)
+    for kind, text in (("in", "IN"), ("out", "OUT"), ("gr", "GR"), ("corr", "CORR")):   # printed labels beside each meter
+        tracked(d, METER_POS[kind][0] + KS + 10, METER_POS[kind][1] + 28, text, 11, DIM, track=1.5)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
         d.text((cx, ROW_TOP[key] + 86), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + CW / 2, PARTICLE[1] + 86), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
