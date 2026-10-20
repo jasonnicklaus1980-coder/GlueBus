@@ -1,0 +1,121 @@
+// Quanta for MPC OS: a thin VST2 wrapper around the shared engine (../../DSP).
+//
+// UNOFFICIAL, as with G-Glue: MPC OS loads Linux VST2 plugins registered in MPC.settings, which needs root access.
+// The wrapper does three things: VST2 entry points, the parameters (names and display text), and the project state.
+// Threads: the host's UI thread calls setParameter / dispatcher; the audio thread calls processReplacing only.
+#include "vst2.h"
+#include "../../DSP/QuantaEngine.h"
+
+#include <cstdio>
+#include <cstring>
+#include <new>
+
+#define QN_EXPORT extern "C" __attribute__((visibility("default")))
+
+namespace {
+
+struct Plugin {
+    AEffect fx;
+    quanta::Engine engine;
+    char chunk[64];   // state, written on the host thread only
+};
+
+constexpr int32_t kUniqueId = 0x516E7431;   // 'Qnt1'
+constexpr char kStateMagic[4] = {'Q', 'N', 'T', '1'};
+
+void copyStr(char* dst, const char* src, int max) {
+    int k = 0;
+    while (src[k] && k < max - 1) { dst[k] = src[k]; ++k; }
+    dst[k] = 0;
+}
+
+void formatParam(int index, float v, char* out, int max) {
+    if (index == quanta::P_OUTPUT) {
+        std::snprintf(out, (size_t)max, "%+.1f dB", (double)((v - 0.5f) * 24.f));
+    } else if (index == quanta::P_MONOBASS) {
+        copyStr(out, v >= 0.5f ? "On" : "Off", max);
+    } else if (index == quanta::P_TONE) {
+        std::snprintf(out, (size_t)max, "%+.0f", (double)((v - 0.5f) * 200.f));
+    } else {
+        std::snprintf(out, (size_t)max, "%d%%", (int)(v * 100.f + 0.5f));
+    }
+}
+
+intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void* ptr, float opt) {
+    Plugin* p = (Plugin*)fx->object;
+    switch (op) {
+    case effOpen: return 0;
+    case effClose: delete p; return 0;
+    case effSetSampleRate: p->engine.prepare((double)opt); return 0;
+    case effSetBlockSize: return 0;
+    case effMainsChanged: if (!value) p->engine.reset(); return 0;
+    case effGetParamName:
+        if (index >= 0 && index < quanta::P_COUNT && ptr) copyStr((char*)ptr, quanta::kParams[index].name, 32);
+        return 0;
+    case effGetParamLabel: if (ptr) ((char*)ptr)[0] = 0; return 0;
+    case effGetParamDisplay:
+        if (index >= 0 && index < quanta::P_COUNT && ptr) formatParam(index, p->engine.getParam(index), (char*)ptr, 64);
+        return 0;
+    case effGetChunk: {
+        char* b = p->chunk;
+        std::memcpy(b, kStateMagic, 4);
+        for (int i = 0; i < quanta::P_COUNT; ++i) { float v = p->engine.getParam(i); std::memcpy(b + 4 + 4 * i, &v, 4); }
+        *(void**)ptr = b;
+        return 4 + 4 * quanta::P_COUNT;
+    }
+    case effSetChunk: {
+        const char* b = (const char*)ptr;
+        if (!b || value < 4 + 4 * quanta::P_COUNT || std::memcmp(b, kStateMagic, 4) != 0) return 0;
+        for (int i = 0; i < quanta::P_COUNT; ++i) { float v; std::memcpy(&v, b + 4 + 4 * i, 4); p->engine.setParam(i, v); }
+        return 1;
+    }
+    case effGetEffectName: if (ptr) copyStr((char*)ptr, "Quanta", 32); return 1;
+    case effGetVendorString: if (ptr) copyStr((char*)ptr, "Velvet", 64); return 1;
+    case effGetProductString: if (ptr) copyStr((char*)ptr, "Quanta", 64); return 1;
+    case effGetVendorVersion: return 1000;
+    case effGetPlugCategory: return kPlugCategEffect;
+    case effGetVstVersion: return 2400;
+    case effGetTailSize: return 0;
+    case effCanBeAutomated: return index >= 0 && index < quanta::P_COUNT ? 1 : 0;
+    case effCanDo: return 0;
+    default: return 0;
+    }
+}
+
+void setParameter(AEffect* fx, int32_t index, float v) { ((Plugin*)fx->object)->engine.setParam(index, v); }
+float getParameter(AEffect* fx, int32_t index) {
+    return index >= 0 && index < quanta::P_COUNT ? ((Plugin*)fx->object)->engine.getParam(index) : 0.f;
+}
+
+void processReplacing(AEffect* fx, float** in, float** out, int32_t n) {
+    Plugin* p = (Plugin*)fx->object;
+    if (out[0] != in[0]) std::memcpy(out[0], in[0], sizeof(float) * (size_t)n);
+    if (out[1] != in[1]) std::memcpy(out[1], in[1], sizeof(float) * (size_t)n);
+    p->engine.process(out[0], out[1], n);
+}
+
+}  // namespace
+
+QN_EXPORT AEffect* VSTPluginMain(audioMasterCallback host) {
+    (void)host;
+    Plugin* p = new (std::nothrow) Plugin();
+    if (!p) return nullptr;
+    p->engine.prepare(48000.0);
+    AEffect* fx = &p->fx;
+    std::memset(fx, 0, sizeof(*fx));
+    fx->magic = kEffectMagic;
+    fx->dispatcher = dispatcher;
+    fx->process = processReplacing;
+    fx->processReplacing = processReplacing;
+    fx->setParameter = setParameter;
+    fx->getParameter = getParameter;
+    fx->numPrograms = 1;
+    fx->numParams = quanta::P_COUNT;
+    fx->numInputs = 2;
+    fx->numOutputs = 2;
+    fx->flags = effFlagsCanReplacing | effFlagsProgramChunks;
+    fx->uniqueID = kUniqueId;
+    fx->version = 1000;
+    fx->object = p;
+    return fx;
+}
