@@ -23,9 +23,10 @@ CW, CH = 118, 132           # knob cell: knob, then its value
 ANG0, ANG1 = -135.0, 135.0
 FONT_DIRS = ["/usr/share/fonts/truetype/liberation", "/usr/share/fonts/truetype/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 
-INK, PANEL, EDGE = (20, 21, 24), (30, 32, 36), (58, 61, 67)
-PRINT, DIM, FAINT = (236, 236, 238), (156, 160, 166), (98, 102, 108)
-ACCENT = (206, 150, 96)     # warm metal, used for Particle only
+INK, PANEL, EDGE = (16, 14, 24), (30, 27, 42), (70, 60, 96)
+PRINT, DIM, FAINT = (240, 238, 246), (168, 160, 184), (108, 100, 128)
+ACCENT = (226, 96, 196)     # magenta, used for Particle, the preset name and active marks
+VIOLET = (142, 110, 238)    # secondary accent: the display frame and the tab line
 SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
@@ -59,10 +60,11 @@ def background():
     d = ImageDraw.Draw(im)
     for y in range(H):                                   # soft vertical graphite gradient
         t = y / H
-        d.line([0, y, W, y], fill=mix((30, 31, 35), (16, 17, 19), t))
+        d.line([0, y, W, y], fill=mix((46, 36, 74), (14, 13, 22), t))
     d.rounded_rectangle([14, 64, W - 14, H - 14], radius=14, fill=PANEL, outline=EDGE, width=2)
     d.text((34, 18), "QUANTA", font=font(34), fill=PRINT)
     d.text((212, 30), "stereo mix enhancement", font=font(16, False), fill=DIM)
+    d.rounded_rectangle([14, 64, W - 14, 74], radius=4, fill=VIOLET)   # thin violet band under the header
     d.text((330, 92), "BALANCE", font=font(14), fill=DIM)
     d.text((60, 436), "METERS AND STEREO", font=font(14), fill=DIM)
     d.text((430, 436), "MONO BASS", font=font(14), fill=DIM)
@@ -71,7 +73,7 @@ def background():
     d.text((PARTICLE[0] + 36, 226), "PARTICLE", font=font(13), fill=ACCENT, anchor="mm")
     d.line([300, 84, 1244, 84], fill=EDGE, width=1)
     bx, by, bw, bh = PRESET_BOX
-    d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=6, fill=(12, 13, 15), outline=EDGE, width=1)
+    d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=(10, 9, 16), outline=VIOLET, width=2)
     d.text((bx + 12, by + bh / 2), "PRESET", font=font(12), fill=DIM, anchor="lm")
     d.line([40, 420, 1244, 420], fill=EDGE, width=1)
     return im
@@ -273,7 +275,8 @@ def preview(outdir):
     im.alpha_composite(switch_images(False), (430, 470))
     d = ImageDraw.Draw(im)
     bx, by, bw, bh = PRESET_BOX
-    d.text((bx + 102, by + bh / 2), "Custom", font=font(18), fill=rgba(PRINT), anchor="lm")   # the host fills the real name
+    d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=None, outline=rgba(VIOLET), width=2)
+    d.text((bx + 102, by + bh / 2), "Custom", font=font(18), fill=rgba(ACCENT), anchor="lm")   # the host fills the real name
     im.convert("RGB").save(os.path.join(outdir, "quanta-skin-preview.png"), optimize=True)
 
 if __name__ == "__main__":
