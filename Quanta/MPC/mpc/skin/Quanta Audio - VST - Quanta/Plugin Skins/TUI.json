@@ -804,6 +804,220 @@
                     }
                 },
                 {
+                    "key": "qnSwitch_byp",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "qn_byp_on.png",
+                                        "offImage": "qn_byp_off.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 120 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "c8f0eef6",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 1.5
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 120 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "qnSwitch_ab",
+                    "value": {
+                        "version": 4,
+                        "actions": [
+                            {
+                                "version": 2,
+                                "onAction": "Mouse Down",
+                                "handler": "Q-Link",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "onAction": "Enter Pressed",
+                                "handler": "Toggle Switch",
+                                "handleName": "Data",
+                                "additionalData": "",
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                }
+                            }
+                        ],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": false,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Button",
+                                    "type": "Button",
+                                    "data": {
+                                        "version": 2,
+                                        "onImage": "qn_ab_b.png",
+                                        "offImage": "qn_ab_a.png",
+                                        "buttonId": 1,
+                                        "numButtonsInGroup": 1,
+                                        "handleName": "Data",
+                                        "gestureBehaviour": "Instant"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 64 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Focus",
+                                    "type": "Focus",
+                                    "data": {
+                                        "version": 1,
+                                        "backgroundColour": "00000000",
+                                        "outlineColour": "c8f0eef6",
+                                        "backgroundInset": 1.0,
+                                        "outlineThickness": 1.5
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "WhenFocussed",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 64 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
                     "key": "qnBrowse",
                     "value": {
                         "version": 4,
@@ -1325,7 +1539,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 11"
+                                            "value": "Parameter 13"
                                         }
                                     ]
                                 },
@@ -1355,7 +1569,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 12"
+                                            "value": "Parameter 14"
                                         }
                                     ]
                                 },
@@ -1385,7 +1599,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 13"
+                                            "value": "Parameter 15"
                                         }
                                     ]
                                 },
@@ -1415,7 +1629,7 @@
                                     "map": [
                                         {
                                             "key": "Data",
-                                            "value": "Parameter 14"
+                                            "value": "Parameter 16"
                                         }
                                     ]
                                 },
@@ -1426,6 +1640,66 @@
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
                                     "bounds": "330 470 72 72",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Bypass",
+                                    "type": "qnSwitch_byp",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 11"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1076 18 120 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "A/B",
+                                    "type": "qnSwitch_ab",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 12"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "Yes",
+                                    "showWhenDataModelInvalid": "Hide",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1000 18 64 36",
                                     "additionalInvalidatingHandles": []
                                 }
                             },

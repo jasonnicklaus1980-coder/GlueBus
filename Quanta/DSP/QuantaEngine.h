@@ -17,6 +17,9 @@ enum Param {
     P_OUTPUT,        // output trim: -12 .. +12 dB, 0.5 = 0 dB
     P_MONOBASS,      // 1: content below ~120 Hz is made mono
     P_PRESET,        // preset shown on the screen: 0 Custom, 1.. the factory presets (see QuantaPresets.h). Setting it loads the preset
+    // session switches: handled by the plugin wrapper (bypass crossfade, A/B slots), not saved with the project
+    P_BYPASS,        // 1 = bypassed (input passes through, faded over 10 ms)
+    P_AB,            // 0 = slot A, 1 = slot B: two settings to compare
     // read-only meters: the host can show them, they are not saved and cannot be automated
     P_METER_IN,      // input level, -60 .. 0 dB as 0..1
     P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
@@ -25,8 +28,10 @@ enum Param {
     P_COUNT
 };
 
-// The controls (the first ones above): the only parameters saved with a project or automated.
-constexpr int kControlCount = P_METER_IN;
+// The controls (the first ones above): the only parameters saved with a project.
+constexpr int kControlCount = P_BYPASS;
+// Everything the host may automate: the controls and the two session switches (not the meters).
+constexpr int kAutomatableCount = P_METER_IN;
 
 struct ParamInfo {
     const char* name;

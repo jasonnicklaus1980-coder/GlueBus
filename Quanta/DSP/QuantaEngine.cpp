@@ -9,6 +9,7 @@ const ParamInfo kParams[P_COUNT] = {
     {"Particle", 0.30f}, {"Tone", 0.50f}, {"Density", 0.00f}, {"Glue", 0.00f}, {"Width", 0.50f},
     {"Low End", 0.00f},  {"Air", 0.00f},  {"Mix", 1.00f},     {"Output", 0.50f}, {"Mono Bass", 0.00f},
     {"Preset", 0.00f},
+    {"Bypass", 0.f},     {"A/B", 0.f},
     {"In Level", 0.f},   {"Out Level", 0.f}, {"Glue GR", 0.f}, {"Correlation", 0.5f},
 };
 

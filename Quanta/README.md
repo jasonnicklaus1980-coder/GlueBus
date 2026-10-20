@@ -8,14 +8,14 @@ adds a capped share of Density, Glue, Low End and Air. It is not based on The Go
 | Part | State |
 |---|---|
 | Shared DSP engine (`DSP/`) | **built and tested** (x86 and ARM compile). Tests: `make test` |
-| Parameters, defaults, display text | built. Nine controls plus Mono Bass, and a Preset control (0 = Custom) |
+| Parameters, defaults, display text | built. Nine controls plus Mono Bass, a Preset control (0 = Custom), and Bypass and A/B switches (session only) |
 | VST2 wrapper for MPC OS (`MPC/`) | **built as an ARM library and checked**: needs only libc and the loader, highest glibc symbol 2.25, exports only `VSTPluginMain`. Wrapper tests pass on x86. Read-only meters are host parameters (In, Out, Glue GR, Correlation) |
 | MPC screen skin (`MPC/tools/make_skin.py`) | **generated** with the Particle knob, eight macro knobs, the Mono Bass switch, four meters and a PRESET browser in the header. Rule checks pass (72 px filmstrips). The preview is rendered from the same images, not a device screenshot |
 | MPC installer (`MPC/mpc/`, `MPC/scripts/package.sh`) | **built and tested on a fake MPC root**: install, reinstall and uninstall, with checksums. Not run on a device |
 | Run on an MPC X | **not done**: no device access here. The ARM library has not been run (QEMU is not installed here) |
 | Factory presets | **built and tested**: twelve presets (`DSP/QuantaPresets.cpp`). Engine checks cover names, ranges and relative character; wrapper checks cover program selection and state round trip. Not auditioned on hardware |
-| Bypass | **built and tested** at the host level (VST2 `effSetBypass`): the input passes through unchanged. No bypass button on the MPC screen yet |
-| A/B compare | not started |
+| Bypass | **built and tested**: host bypass (VST2 `effSetBypass`) and a Bypass switch on the MPC screen. 10 ms crossfade to the exact input |
+| A/B compare | **built and tested**: two session slots with a switch on the MPC screen. Not saved with the project |
 | Desktop VST3 / AU (Controller Mode) | **abandoned**: not planned. No desktop build exists in this repository |
 | CPU benchmark | 10 s of stereo at 48 kHz with every control on takes about 110 ms on this machine (about 1% of one core). Not measured on the MPC |
 

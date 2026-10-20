@@ -42,6 +42,7 @@ A backup of `MPC.settings` is kept next to it.
 
 ## Limits
 - Twelve factory presets, plus Custom (which changes nothing). Choosing a preset sets the ten sound controls, including Mono Bass on three of them. Turning the PRESET box or choosing a program loads it.
-- No A/B or bypass button yet.
+- Bypass and A/B are session switches: they are not saved with the project. A/B holds two settings while you work; after a restart both slots start from the defaults.
+- Bypass fades over about 10 ms. It does not save CPU: the engine keeps running so it is ready when bypass ends.
 - No oversampling: keep Density moderate on bright material to avoid aliasing.
 - The peak control is a sample-peak soft ceiling at about -0.3 dBFS, not a true-peak limiter.

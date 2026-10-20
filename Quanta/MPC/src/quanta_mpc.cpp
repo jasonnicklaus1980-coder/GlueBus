@@ -16,12 +16,19 @@
 
 namespace {
 
+constexpr int kBlock = 1024;   // the audio thread works in blocks this size, so no buffer is allocated while processing
+
 struct Plugin {
     AEffect fx;
     quanta::Engine engine;
     audioMasterCallback host = nullptr;
     int32_t lastFrame[quanta::P_COUNT] = {};  // meter frame last sent to the host (-1 = none)
-    bool bypass = false;   // set by the host (effSetBypass); the audio thread passes the input straight through
+    float slot[2][quanta::kControlCount] = {};  // settings for A and B; the active one is the engine's
+    int abSlot = 0;                 // which slot is active (0 = A)
+    bool bypass = false;            // requested by the host (effSetBypass) or the Bypass parameter
+    float wet = 1.f;                // 1 = processed, 0 = bypassed; moves toward the request over about 10 ms
+    float wetStep = 1.f / 480.f;    // set from the sample rate
+    float dryL[kBlock] = {}, dryR[kBlock] = {};   // input kept for the bypass crossfade (audio thread only)
     char chunk[64];   // state, written on the host thread only
 };
 
@@ -36,13 +43,32 @@ void copyStr(char* dst, const char* src, int max) {
     dst[k] = 0;
 }
 
+// Session switches. Only the host thread calls these; the audio thread reads bypass and wet.
+void setBypass(Plugin* p, bool on) { p->bypass = on; }
+
+void setAB(Plugin* p, int b) {
+    if (b == p->abSlot) return;
+    for (int i = 0; i < quanta::kControlCount; ++i) p->slot[p->abSlot][i] = p->engine.getParam(i);   // keep the one we leave
+    for (int i = 0; i < quanta::kControlCount; ++i) p->engine.setParam(i, p->slot[b][i]);
+    p->abSlot = b;
+}
+
+void captureSlots(Plugin* p) {   // at open both slots start from the defaults, so B is never empty
+    for (int s = 0; s < 2; ++s)
+        for (int i = 0; i < quanta::kControlCount; ++i) p->slot[s][i] = p->engine.getParam(i);
+}
+
 int presetIndexOf(float v) {
     int i = (int)(v * (float)(quanta::kPresetCount - 1) + 0.5f);
     return i < 0 ? 0 : i >= quanta::kPresetCount ? quanta::kPresetCount - 1 : i;
 }
 
 void formatParam(int index, float v, char* out, int max) {
-    if (index == quanta::P_PRESET) {
+    if (index == quanta::P_BYPASS) {
+        copyStr(out, v >= 0.5f ? "Bypassed" : "Active", max);
+    } else if (index == quanta::P_AB) {
+        copyStr(out, v >= 0.5f ? "B" : "A", max);
+    } else if (index == quanta::P_PRESET) {
         copyStr(out, quanta::presetName(presetIndexOf(v)), max);
     } else if (index == quanta::P_OUTPUT) {
         std::snprintf(out, (size_t)max, "%+.1f dB", (double)((v - 0.5f) * 24.f));
@@ -55,14 +81,19 @@ void formatParam(int index, float v, char* out, int max) {
     }
 }
 
+float getParameter(AEffect* fx, int32_t index);
+
 intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void* ptr, float opt) {
     Plugin* p = (Plugin*)fx->object;
     switch (op) {
-    case effOpen: return 0;
+    case effOpen: captureSlots(p); return 0;
     case effClose: delete p; return 0;
-    case effSetSampleRate: p->engine.prepare((double)opt); return 0;
+    case effSetSampleRate:
+        p->engine.prepare((double)opt);
+        p->wetStep = 1.f / (0.010f * (opt > 1000.f ? opt : 48000.f));
+        return 0;
     case effSetBlockSize: return 0;
-    case effSetBypass: p->bypass = value != 0; return 1;
+    case effSetBypass: setBypass(p, value != 0); return 1;
     case effMainsChanged: if (!value) p->engine.reset(); return 0;
     case effGetParamName:
         if (index >= 0 && index < quanta::P_COUNT && ptr) copyStr((char*)ptr, quanta::kParams[index].name, 32);
@@ -79,7 +110,7 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
         return 1;
     case effSetProgramName: return 0;
     case effGetParamDisplay:
-        if (index >= 0 && index < quanta::P_COUNT && ptr) formatParam(index, p->engine.getParam(index), (char*)ptr, 64);
+        if (index >= 0 && index < quanta::P_COUNT && ptr) formatParam(index, getParameter(fx, index), (char*)ptr, 64);
         return 0;
     case effGetChunk: {
         char* b = p->chunk;
@@ -101,7 +132,7 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
     case effGetPlugCategory: return kPlugCategEffect;
     case effGetVstVersion: return 2400;
     case effGetTailSize: return 0;
-    case effCanBeAutomated: return index >= 0 && index < quanta::kControlCount ? 1 : 0;
+    case effCanBeAutomated: return index >= 0 && index < quanta::kAutomatableCount ? 1 : 0;
     case effCanDo: return 0;
     default: return 0;
     }
@@ -109,7 +140,9 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
 
 void setParameter(AEffect* fx, int32_t index, float v) {
     Plugin* p = (Plugin*)fx->object;
-    if (index == quanta::P_PRESET) p->engine.loadPreset(presetIndexOf(v));   // choosing a preset sets its values
+    if (index == quanta::P_BYPASS) setBypass(p, v >= 0.5f);
+    else if (index == quanta::P_AB) setAB(p, v >= 0.5f ? 1 : 0);
+    else if (index == quanta::P_PRESET) p->engine.loadPreset(presetIndexOf(v));   // choosing a preset sets its values
     else if (index >= 0 && index < quanta::kControlCount) p->engine.setParam(index, v);
 }
 
@@ -126,16 +159,32 @@ float meterValue(const quanta::Engine& e, int index) {
 
 float getParameter(AEffect* fx, int32_t index) {
     Plugin* p = (Plugin*)fx->object;
+    if (index == quanta::P_BYPASS) return p->bypass ? 1.f : 0.f;
+    if (index == quanta::P_AB) return (float)p->abSlot;
     if (index < 0 || index >= quanta::P_COUNT) return 0.f;
     return index < quanta::kControlCount ? p->engine.getParam(index) : meterValue(p->engine, index);
 }
 
 void processReplacing(AEffect* fx, float** in, float** out, int32_t n) {
     Plugin* p = (Plugin*)fx->object;
-    if (out[0] != in[0]) std::memcpy(out[0], in[0], sizeof(float) * (size_t)n);
-    if (out[1] != in[1]) std::memcpy(out[1], in[1], sizeof(float) * (size_t)n);
-    if (p->bypass) return;
-    p->engine.process(out[0], out[1], n);
+    for (int32_t start = 0; start < n; start += kBlock) {
+        const int m = n - start < kBlock ? (int)(n - start) : kBlock;
+        std::memcpy(p->dryL, in[0] + start, sizeof(float) * (size_t)m);
+        std::memcpy(p->dryR, in[1] + start, sizeof(float) * (size_t)m);
+        float* outL = out[0] + start;
+        float* outR = out[1] + start;
+        std::memcpy(outL, p->dryL, sizeof(float) * (size_t)m);
+        std::memcpy(outR, p->dryR, sizeof(float) * (size_t)m);
+        p->engine.process(outL, outR, m);   // the engine keeps running while bypassed, so its state is warm when bypass ends
+        const float target = p->bypass ? 0.f : 1.f;
+        for (int i = 0; i < m; ++i) {       // crossfade: exact input at 0, exact processed signal at 1
+            if (p->wet < target) p->wet = (p->wet + p->wetStep < target) ? p->wet + p->wetStep : target;
+            else if (p->wet > target) p->wet = (p->wet - p->wetStep > target) ? p->wet - p->wetStep : target;
+            const float w = p->wet;
+            outL[i] = p->dryL[i] * (1.f - w) + outL[i] * w;
+            outR[i] = p->dryR[i] * (1.f - w) + outR[i] * w;
+        }
+    }
     // Meters go to the screen only when the picture would change: one update per filmstrip frame (0..127)
     if (!p->host) return;
     for (int i = quanta::P_METER_IN; i < quanta::P_COUNT; ++i) {

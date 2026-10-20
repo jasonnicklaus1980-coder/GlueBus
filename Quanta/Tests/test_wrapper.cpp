@@ -117,22 +117,45 @@ int main() {
     CHECK(fx->dispatcher(fx, effGetProgram, 0, 0, nullptr, 0.f) == 4, "the saved preset number comes back");
     CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.9f) < 1e-6f, "the saved Tone comes back, not the preset value");
 
-    // bypass passes the input through unchanged (sample for sample), and turning it off processes again
+    // bypass: the output is the input once the 10 ms crossfade has settled, and the processed signal returns afterwards
     fx->setParameter(fx, quanta::P_MIX, 1.f);
     CHECK(fx->dispatcher(fx, effSetBypass, 0, 1, nullptr, 0.f) == 1, "effSetBypass is accepted");
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_BYPASS) - 1.f) < 1e-6f, "the Bypass parameter reads back On");
     std::vector<float> bl(N), br(N), bol(N), bor(N);
     for (int i = 0; i < N; ++i) { bl[i] = 0.3f * std::sin(0.02f * i); br[i] = -0.2f * std::sin(0.07f * i); }
     float* bin[2] = {bl.data(), br.data()};
     float* bout[2] = {bol.data(), bor.data()};
     fx->processReplacing(fx, bin, bout, N);
     bool passed = true;
-    for (int i = 0; i < N; ++i) if (bol[i] != bl[i] || bor[i] != br[i]) passed = false;
-    CHECK(passed, "bypass passes the input through exactly");
+    for (int i = N - TAIL; i < N; ++i) if (bol[i] != bl[i] || bor[i] != br[i]) passed = false;
+    CHECK(passed, "bypass passes the input through exactly once settled");
     fx->dispatcher(fx, effSetBypass, 0, 0, nullptr, 0.f);
     fx->processReplacing(fx, bin, bout, N);
     bool changed = false;
-    for (int i = 0; i < N; ++i) if (std::fabs(bol[i] - bl[i]) > 1e-6f) changed = true;
+    for (int i = N - TAIL; i < N; ++i) if (std::fabs(bol[i] - bl[i]) > 1e-6f) changed = true;
     CHECK(changed, "with bypass off the processed signal is used");
+
+    // the bypass crossfade is smooth: no sample-to-sample step bigger than a full-scale sine could make
+    fx->setParameter(fx, quanta::P_BYPASS, 1.f);
+    fx->processReplacing(fx, bin, bout, N);
+    float worstStep = 0.f;
+    for (int i = 1; i < N; ++i) worstStep = std::fmax(worstStep, std::fabs(bol[i] - bol[i - 1]));
+    CHECK(worstStep < 0.1f, "the bypass switch does not click (largest step %g)", worstStep);
+    fx->setParameter(fx, quanta::P_BYPASS, 0.f);
+    CHECK(fx->dispatcher(fx, effGetParamDisplay, quanta::P_BYPASS, 0, disp, 0.f) == 0 && !std::strcmp(disp, "Active"), "Bypass shows Active");
+
+    // A/B: each slot keeps its own settings, and switching back restores them
+    fx->setParameter(fx, quanta::P_TONE, 0.2f);
+    fx->setParameter(fx, quanta::P_AB, 1.f);
+    CHECK(fx->dispatcher(fx, effGetParamDisplay, quanta::P_AB, 0, disp, 0.f) == 0 && !std::strcmp(disp, "B"), "A/B shows B");
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.5f) < 1e-6f, "slot B starts from the default Tone");
+    fx->setParameter(fx, quanta::P_TONE, 0.8f);
+    fx->setParameter(fx, quanta::P_AB, 0.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.2f) < 1e-6f, "switching back to A restores its Tone");
+    fx->setParameter(fx, quanta::P_AB, 1.f);
+    CHECK(std::fabs(fx->getParameter(fx, quanta::P_TONE) - 0.8f) < 1e-6f, "switching to B restores its Tone");
+    fx->setParameter(fx, quanta::P_AB, 0.f);
+    CHECK(!std::strcmp((fx->dispatcher(fx, effGetParamDisplay, quanta::P_AB, 0, disp, 0.f), disp), "A"), "A/B shows A again");
 
     fx->dispatcher(fx, effClose, 0, 0, nullptr, 0.f);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);

@@ -222,6 +222,47 @@ static void test_presets(double sr) {
     CHECK(a[P_PARTICLE] < b[P_PARTICLE] && a[P_GLUE] < b[P_GLUE], "Gentle Master is gentler than Hip-Hop Mix Bus");
 }
 
+// Robustness at every rate the hosts use: silence, overdriven, DC and near-denormal input, at the default settings and
+// with every sound control at its maximum. Output must stay finite, under full scale, and free of DC.
+static void test_robustness(double sr) {
+    const int N = (int)(sr * 0.5);
+    const char* kinds[5] = {"silence", "full scale", "+6 dB square", "DC offset", "denormal"};
+    for (int setting = 0; setting < 2; ++setting) {
+        for (int kind = 0; kind < 5; ++kind) {
+            Engine e; e.prepare(sr);
+            if (setting == 1) for (int i = 0; i < P_PRESET; ++i) e.setParam(i, 1.f);
+            std::vector<float> in_l(N), in_r(N);
+            for (int i = 0; i < N; ++i) {
+                const double t = i / sr;
+                switch (kind) {
+                case 0: in_l[i] = in_r[i] = 0.f; break;
+                case 1: in_l[i] = (float)std::sin(2 * kPi * 1000 * t); in_r[i] = -in_l[i]; break;
+                case 2: in_l[i] = (i / 50) % 2 ? 2.f : -2.f; in_r[i] = 2.f * (float)std::sin(2 * kPi * 80 * t); break;
+                case 3: in_l[i] = in_r[i] = 0.5f; break;
+                default: in_l[i] = in_r[i] = 1e-30f * (float)((i * 7919) % 13 - 6); break;
+                }
+            }
+            std::vector<float> l = in_l, r = in_r;    // the engine works on copies; the input stays as it was
+            e.process(l.data(), r.data(), N);
+            bool finite = true;
+            float peak = 0.f;
+            double tailMean = 0.0;
+            for (int i = 0; i < N; ++i) {
+                if (!std::isfinite(l[i]) || !std::isfinite(r[i])) finite = false;
+                peak = std::fmax(peak, std::fmax(std::fabs(l[i]), std::fabs(r[i])));
+            }
+            for (int i = 3 * N / 4; i < N; ++i) tailMean += l[i] + r[i];
+            tailMean /= 2.0 * (N - 3 * N / 4);
+            const char* where = setting ? "all controls at maximum" : "default settings";
+            CHECK(finite, "%s, %s at %.0f Hz: output is finite", kinds[kind], where, sr);
+            CHECK(peak <= 1.0f, "%s, %s at %.0f Hz: peak stays under full scale (%.3f)", kinds[kind], where, sr, peak);
+            if (kind == 0) CHECK(peak < 1e-6f, "silence stays silent at %s, %.0f Hz (peak %g)", where, sr, peak);
+            if (kind == 3 && setting == 0)
+                CHECK(std::fabs(tailMean) < 0.01, "a DC offset is removed at %.0f Hz (mean %g)", sr, tailMean);
+        }
+    }
+}
+
 int main() {
     test_neutral_passthrough(48000.0);
     test_no_nonfinite_and_bounded(48000.0);
@@ -235,6 +276,7 @@ int main() {
     test_rates_and_cpu();
     test_presets(48000.0);
     test_presets(44100.0);
+    for (double sr : {44100.0, 48000.0, 88200.0, 96000.0, 192000.0}) test_robustness(sr);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

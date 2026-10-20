@@ -4,7 +4,7 @@
 Filmstrip rules (proven on the MPC by the other plugins in this repository): frames are square, at most 72 px,
 128 frames (9216 px tall); numFrames is the last frame index (127). The parameter indices follow the plugin's Param enum
 in DSP/QuantaEngine.h: 0 Particle, 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
-10 Preset, 11 In Level, 12 Out Level, 13 Glue GR, 14 Correlation (read-only meters).
+10 Preset, 11 Bypass, 12 A/B (session switches), 13 In Level, 14 Out Level, 15 Glue GR, 16 Correlation (read-only meters).
 
 Original artwork: charcoal and graphite surfaces, silver knobs, a warm accent for Particle. No third-party names or marks.
 Usage: python3 tools/make_skin.py [preview-dir]
@@ -31,7 +31,7 @@ SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
-     "monobass": 9, "preset": 10, "inlevel": 11, "outlevel": 12, "gr": 13, "corr": 14}
+     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "inlevel": 13, "outlevel": 14, "gr": 15, "corr": 16}
 KNOBS = [  # key, label, column position, cap, Q-Link order
     ("tone", "TONE", 330, SILVER), ("density", "DENSITY", 448, SILVER), ("glue", "GLUE", 566, SILVER),
     ("width", "WIDTH", 684, SILVER), ("lowend", "LOW END", 802, SILVER), ("air", "AIR", 920, SILVER),
@@ -256,6 +256,14 @@ def build():
         defs.append({"key": f"qnMeter_{kind}", "value": definition([], [strip(f"qn_meter_{kind}.png", 0, 0, KS), label("Value", 13, hexcol(DIM), (0, KS + 4, KS, 22))], ignore=True)})
         place(comps, f"Meter {kind}", f"qnMeter_{kind}", idx, x, 470, KS, KS)
 
+    # header switches: Bypass and A/B (session switches, not saved with the project)
+    save(tile_button("BYPASS", 120, 36, True), "qn_byp_on.png"); save(tile_button("BYPASS", 120, 36, False), "qn_byp_off.png")
+    save(tile_button("B", 64, 36, True), "qn_ab_b.png"); save(tile_button("A", 64, 36, False), "qn_ab_a.png")
+    defs.append({"key": "qnSwitch_byp", "value": definition(TOGGLE(), [btn_part("qn_byp_on.png", "qn_byp_off.png", 120, 36), focus((0, 0, 120, 36))])})
+    place(comps, "Bypass", "qnSwitch_byp", P["bypass"], 1076, 18, 120, 36, touch=True)
+    defs.append({"key": "qnSwitch_ab", "value": definition(TOGGLE(), [btn_part("qn_ab_b.png", "qn_ab_a.png", 64, 36), focus((0, 0, 64, 36))])})
+    place(comps, "A/B", "qnSwitch_ab", P["ab"], 1000, 18, 64, 36, touch=True)
+
     # preset browser: a drag strip (as G-Glue uses) whose value label shows the preset name the host reports
     bx, by, bw, bh = PRESET_BOX
     save(Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0)), "qn_drag.png")
@@ -304,6 +312,8 @@ def preview(outdir):
     for kind, x in (("in", 60), ("out", 150), ("gr", 240), ("corr", 330)):
         im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), (x, 470))
     im.alpha_composite(switch_images(False), (430, 470))
+    im.alpha_composite(tile_button("A", 64, 36, False), (1000, 18))
+    im.alpha_composite(tile_button("BYPASS", 120, 36, False), (1076, 18))
     d = ImageDraw.Draw(im)
     bx, by, bw, bh = PRESET_BOX
     d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=None, outline=rgba(VIOLET), width=2)
