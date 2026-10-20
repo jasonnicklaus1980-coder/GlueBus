@@ -3,7 +3,7 @@
 
 Filmstrip rules (proven on the MPC by the other plugins in this repository): frames are square, at most 72 px,
 128 frames (9216 px tall); numFrames is the last frame index (127). The parameter indices follow the plugin's Param enum
-in DSP/QuantaEngine.h: 0 Particle, 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
+in DSP/QuantaEngine.h: 0 Intensity (named Particle in the code), 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
 10 Preset, 11 Bypass, 12 A/B (session switches), 13 In Level, 14 Out Level, 15 Glue GR, 16 Correlation (read-only meters).
 
 Original artwork: charcoal and graphite surfaces, silver knobs, a warm accent for Particle. No third-party names or marks.
@@ -97,7 +97,7 @@ def background():
     d.text((430, 436), "MONO BASS", font=font(14), fill=DIM)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
         d.text((cx, 196), text, font=font(13), fill=DIM, anchor="mm")
-    d.text((PARTICLE[0] + 36, 226), "PARTICLE", font=font(13), fill=ACCENT, anchor="mm")
+    d.text((PARTICLE[0] + 36, 226), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
     d.line([300, 84, 1244, 84], fill=EDGE, width=1)
     vx, vy, vw, vh = VISUAL_BOX
     vis = visual3d(vw, vh)
@@ -243,7 +243,7 @@ def build():
     for key, text, cx, cap in KNOBS:
         x = cx - CW / 2
         place(comps, text.title(), "qnKnob_silver", P[key], x, 110, CW, CH, touch=True)
-    place(comps, "Particle", "qnKnob_accent", P["particle"], PARTICLE[0], PARTICLE[1], CW, CH, touch=True)
+    place(comps, "Intensity", "qnKnob_accent", P["particle"], PARTICLE[0], PARTICLE[1], CW, CH, touch=True)
 
     # mono bass switch
     save(switch_images(True), "qn_mono_on.png"); save(switch_images(False), "qn_mono_off.png")

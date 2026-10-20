@@ -22,7 +22,7 @@ installer and uninstaller have been run against a fake MPC root. Nothing has run
 4. Add an insert effect to a track, program, submix or the master, and choose **Quanta** from the effects list.
 
 ## Use
-- **PARTICLE** (large, left): overall intensity. It adds a little to Density, Glue, Low End and Air, and trims the
+- **INTENSITY** (large, left): overall intensity. It adds a little to Density, Glue, Low End and Air, and trims the
   processed signal by up to 1 dB. It is not a loudness control.
 - **TONE**: darker at the bottom, brighter at the top. **DENSITY**: saturation with a little even-harmonic colour.
   **GLUE**: linked compression with makeup gain. **WIDTH**: 0 mono, middle unchanged, wider above. **LOW END**: bass
