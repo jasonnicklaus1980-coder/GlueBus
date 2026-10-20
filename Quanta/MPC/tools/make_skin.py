@@ -4,7 +4,7 @@
 Filmstrip rules (proven on the MPC by the other plugins in this repository): frames are square, at most 72 px,
 128 frames (9216 px tall); numFrames is the last frame index (127). The parameter indices follow the plugin's Param enum
 in DSP/QuantaEngine.h: 0 Particle, 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
-10 In Level, 11 Out Level, 12 Glue GR, 13 Correlation (read-only meters).
+10 Preset, 11 In Level, 12 Out Level, 13 Glue GR, 14 Correlation (read-only meters).
 
 Original artwork: charcoal and graphite surfaces, silver knobs, a warm accent for Particle. No third-party names or marks.
 Usage: python3 tools/make_skin.py [preview-dir]
@@ -30,13 +30,14 @@ SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
-     "monobass": 9, "inlevel": 10, "outlevel": 11, "gr": 12, "corr": 13}
+     "monobass": 9, "preset": 10, "inlevel": 11, "outlevel": 12, "gr": 13, "corr": 14}
 KNOBS = [  # key, label, column position, cap, Q-Link order
     ("tone", "TONE", 330, SILVER), ("density", "DENSITY", 448, SILVER), ("glue", "GLUE", 566, SILVER),
     ("width", "WIDTH", 684, SILVER), ("lowend", "LOW END", 802, SILVER), ("air", "AIR", 920, SILVER),
     ("mix", "MIX", 1038, SILVER), ("output", "OUTPUT", 1156, SILVER),
 ]
 PARTICLE = (60, 150)        # the main control: its own place on the left
+PRESET_BOX = (560, 18, 420, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
     names = ["LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"] if bold else ["LiberationSans-Regular.ttf", "DejaVuSans.ttf"]
@@ -69,6 +70,9 @@ def background():
         d.text((cx, 196), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + 36, 226), "PARTICLE", font=font(13), fill=ACCENT, anchor="mm")
     d.line([300, 84, 1244, 84], fill=EDGE, width=1)
+    bx, by, bw, bh = PRESET_BOX
+    d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=6, fill=(12, 13, 15), outline=EDGE, width=1)
+    d.text((bx + 12, by + bh / 2), "PRESET", font=font(12), fill=DIM, anchor="lm")
     d.line([40, 420, 1244, 420], fill=EDGE, width=1)
     return im
 
@@ -219,6 +223,15 @@ def build():
         defs.append({"key": f"qnMeter_{kind}", "value": definition([], [strip(f"qn_meter_{kind}.png", 0, 0, KS), label("Value", 13, hexcol(DIM), (0, KS + 4, KS, 22))], ignore=True)})
         place(comps, f"Meter {kind}", f"qnMeter_{kind}", idx, x, 470, KS, KS)
 
+    # preset browser: a drag strip (as G-Glue uses) whose value label shows the preset name the host reports
+    bx, by, bw, bh = PRESET_BOX
+    save(Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0)), "qn_drag.png")
+    defs.append({"key": "qnBrowse", "value": definition(CTRL(), [
+        comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "qn_drag.png", "numFrames": NUMFRAMES, "invert": False,
+             "dragOrientation": "Vertical", "handleName": "Data"}, bounds((0, 0, bw, bh))),
+        label("Value", 18, hexcol(PRINT), (90, 2, bw - 100, bh - 4), "horizontallyLeft verticallyCentred"), focus((0, 0, bw, bh))])})
+    place(comps, "Preset", "qnBrowse", P["preset"], bx, by, bw, bh, touch=True)
+
     defs.append({"key": "QN|Main", "value": definition([], comps, "ff141416")})
     tabs = [{"version": 3, "tabName": "QUANTA", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
              "componentName": "QN|Main", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
@@ -258,6 +271,9 @@ def preview(outdir):
     for kind, x in (("in", 60), ("out", 150), ("gr", 240), ("corr", 330)):
         im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), (x, 470))
     im.alpha_composite(switch_images(False), (430, 470))
+    d = ImageDraw.Draw(im)
+    bx, by, bw, bh = PRESET_BOX
+    d.text((bx + 102, by + bh / 2), "Custom", font=font(18), fill=rgba(PRINT), anchor="lm")   # the host fills the real name
     im.convert("RGB").save(os.path.join(outdir, "quanta-skin-preview.png"), optimize=True)
 
 if __name__ == "__main__":

@@ -8,12 +8,12 @@ adds a capped share of Density, Glue, Low End and Air. It is not based on The Go
 | Part | State |
 |---|---|
 | Shared DSP engine (`DSP/`) | **built and tested** (x86 and ARM compile). Tests: `make test` |
-| Parameters, defaults, display text | built. Nine controls plus Mono Bass |
+| Parameters, defaults, display text | built. Nine controls plus Mono Bass, and a Preset control (0 = Custom) |
 | VST2 wrapper for MPC OS (`MPC/`) | **built as an ARM library and checked**: needs only libc and the loader, highest glibc symbol 2.25, exports only `VSTPluginMain`. Wrapper tests pass on x86. Read-only meters are host parameters (In, Out, Glue GR, Correlation) |
-| MPC screen skin (`MPC/tools/make_skin.py`) | **generated** with the Particle knob, eight macro knobs, the Mono Bass switch and four meters. Rule checks pass (72 px filmstrips). The preview is rendered from the same images, not a device screenshot |
+| MPC screen skin (`MPC/tools/make_skin.py`) | **generated** with the Particle knob, eight macro knobs, the Mono Bass switch, four meters and a PRESET browser in the header. Rule checks pass (72 px filmstrips). The preview is rendered from the same images, not a device screenshot |
 | MPC installer (`MPC/mpc/`, `MPC/scripts/package.sh`) | **built and tested on a fake MPC root**: install, reinstall and uninstall, with checksums. Not run on a device |
 | Run on an MPC X | **not done**: no device access here. The ARM library has not been run (QEMU is not installed here) |
-| Factory presets | not started |
+| Factory presets | **built and tested**: twelve presets (`DSP/QuantaPresets.cpp`). Engine checks cover names, ranges and relative character; wrapper checks cover program selection and state round trip. Not auditioned on hardware |
 | A/B and bypass buttons | not started |
 | Desktop VST3 / AU (Controller Mode) | not started. Windows and macOS toolchains are not installed here |
 | CPU benchmark | 10 s of stereo at 48 kHz with every control on takes about 110 ms on this machine (about 1% of one core). Not measured on the MPC |

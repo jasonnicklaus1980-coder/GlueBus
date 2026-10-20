@@ -41,7 +41,7 @@ A backup of `MPC.settings` is kept next to it.
 - **Installer says the files are damaged:** copy the folder to the device again.
 
 ## Limits
-- No presets yet (the factory presets are a later step).
+- Twelve factory presets, plus Custom (which changes nothing). Choosing a preset sets the ten sound controls, including Mono Bass on three of them. Turning the PRESET box or choosing a program loads it.
 - No A/B or bypass button yet.
 - No oversampling: keep Density moderate on bright material to avoid aliasing.
 - The peak control is a sample-peak soft ceiling at about -0.3 dBFS, not a true-peak limiter.
