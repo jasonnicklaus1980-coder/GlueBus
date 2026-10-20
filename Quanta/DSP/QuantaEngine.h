@@ -27,6 +27,9 @@ enum Param {
     P_METER_OUT,     // output level, -60 .. 0 dB as 0..1
     P_METER_GR,      // glue reduction, 0 .. -20 dB as 0..1
     P_METER_CORR,    // stereo correlation, -1 .. 1 as 0..1
+    P_METER_RMS_IN,  // input RMS (300 ms), -60 .. 0 dB as 0..1
+    P_METER_RMS_OUT, // output RMS (300 ms), -60 .. 0 dB as 0..1
+    P_METER_LUFS,    // output loudness, momentary (400 ms), -60 .. 0 LUFS as 0..1 (approximate, see README)
     P_COUNT
 };
 
@@ -54,6 +57,9 @@ public:
     void process(float* left, float* right, int n);
 
     // Metering, updated by process(): peak absolute values of the last block, and the stereo correlation (-1..1).
+    float inputRmsDb() const;   // dB, RMS over about 300 ms
+    float outputRmsDb() const;
+    float outputLufs() const;   // momentary loudness over about 400 ms, approximate K-weighting (not calibrated)
     float inputPeak() const { return inPeak_; }
     float outputPeak() const { return outPeak_; }
     float correlation() const { return corr_; }
@@ -81,6 +87,7 @@ private:
     struct Channel {
         Biquad tilt[2];      // low shelf, high shelf (Tone)
         Biquad lowShelf, lowMid, air;
+        Biquad kShelf, kHigh;     // K-weighting for loudness: pre-filter shelf and high-pass
         float dcX1 = 0.f, dcY1 = 0.f;
         float lowpassState = 0.f;  // for the bass-mono split of the side channel (mid/side path only)
     };
@@ -88,8 +95,9 @@ private:
     void recomputeFilters();
     static float softCeiling(float v);  // peak control: linear below 0.8, smooth limit towards 0.97
     void setShelfLow(Biquad& b, double f0, double gainDb) const;
-    void setShelfHigh(Biquad& b, double f0, double gainDb) const;
+    void setShelfHigh(Biquad& b, double f0, double gainDb, double slope = 1.0) const;
     void setPeak(Biquad& b, double f0, double gainDb, double q) const;
+    void setHighPass(Biquad& b, double f0, double q) const;
 
     double sr_ = 48000.0;
     float p_[P_COUNT];
@@ -113,6 +121,9 @@ private:
     float particleGain_ = 1.f;   // the same compensation as a linear gain, applied to the processed signal only
 
     float inPeak_ = 0.f, outPeak_ = 0.f, corr_ = 0.f, grMin_ = 0.f;
+    float msIn_ = 0.f, msOut_ = 0.f;   // mean-square levels for RMS
+    float kMs_[2] = {0.f, 0.f};         // K-weighted mean-square per channel for loudness
+    float rmsCoef_ = 0.f, lufsCoef_ = 0.f;
 };
 
 }  // namespace quanta

@@ -11,6 +11,7 @@ const ParamInfo kParams[P_COUNT] = {
     {"Preset", 0.00f},
     {"Bypass", 0.f},     {"A/B", 0.f},     {"Undo", 0.f},     {"Redo", 0.f},
     {"In Level", 0.f},   {"Out Level", 0.f}, {"Glue GR", 0.f}, {"Correlation", 0.5f},
+    {"RMS In", 0.f},     {"RMS Out", 0.f},   {"Loudness", 0.f},
 };
 
 namespace {
@@ -39,9 +40,9 @@ void Engine::setShelfLow(Biquad& b, double f0, double gainDb) const {
     b.a2 = ((A + 1) + (A - 1) * cs - 2 * sA * alpha) / a0;
 }
 
-void Engine::setShelfHigh(Biquad& b, double f0, double gainDb) const {
+void Engine::setShelfHigh(Biquad& b, double f0, double gainDb, double slope) const {
     double A = dbToA(gainDb), w0 = 2.0 * kPi * f0 / sr_;
-    double cs = qcos(w0), sn = qsin(w0), alpha = sn / 2.0 * 1.41421356237309504880;
+    double cs = qcos(w0), sn = qsin(w0), alpha = sn / 2.0 * __builtin_sqrt((A + 1.0 / A) * (1.0 / slope - 1.0) + 2.0);
     double sA = __builtin_sqrt(A);
     double a0 = (A + 1) - (A - 1) * cs + 2 * sA * alpha;
     b.b0 = A * ((A + 1) + (A - 1) * cs + 2 * sA * alpha) / a0;
@@ -49,6 +50,17 @@ void Engine::setShelfHigh(Biquad& b, double f0, double gainDb) const {
     b.b2 = A * ((A + 1) + (A - 1) * cs - 2 * sA * alpha) / a0;
     b.a1 = 2 * ((A - 1) - (A + 1) * cs) / a0;
     b.a2 = ((A + 1) - (A - 1) * cs - 2 * sA * alpha) / a0;
+}
+
+void Engine::setHighPass(Biquad& b, double f0, double q) const {
+    double w0 = 2.0 * kPi * f0 / sr_;
+    double cs = qcos(w0), alpha = qsin(w0) / (2.0 * q);
+    double a0 = 1 + alpha;
+    b.b0 = (1 + cs) / 2.0 / a0;
+    b.b1 = -(1 + cs) / a0;
+    b.b2 = (1 + cs) / 2.0 / a0;
+    b.a1 = -2 * cs / a0;
+    b.a2 = (1 - alpha) / a0;
 }
 
 void Engine::setPeak(Biquad& b, double f0, double gainDb, double q) const {
@@ -67,6 +79,12 @@ void Engine::setPeak(Biquad& b, double f0, double gainDb, double q) const {
 void Engine::prepare(double sampleRate) {
     sr_ = sampleRate > 1000.0 ? sampleRate : 48000.0;
     smoothCoef_ = (float)(1.0 - qexp2d(-1.0 / (0.010 * sr_) * 1.44269504088896340736));       // 10 ms
+    rmsCoef_ = (float)(1.0 - qexp2d(-1.0 / (0.300 * sr_) * 1.44269504088896340736));          // RMS: 300 ms
+    lufsCoef_ = (float)(1.0 - qexp2d(-1.0 / (0.400 * sr_) * 1.44269504088896340736));         // momentary loudness: 400 ms
+    for (auto& c : ch_) {                                                                    // K-weighting (approximate)
+        setShelfHigh(c.kShelf, 1681.97, 3.99984);
+        setHighPass(c.kHigh, 38.14, 0.5003);
+    }
     attack_ = (float)(1.0 - qexp2d(-1.0 / (0.020 * sr_) * 1.44269504088896340736));            // 20 ms: keeps most of the transient
     release_ = (float)(1.0 - qexp2d(-1.0 / (0.250 * sr_) * 1.44269504088896340736));           // 250 ms: no audible breathing at moderate settings
     sideLpCoef_ = (float)(1.0 - qexp2d(-2.0 * kPi * kBassMonoHz / sr_ * 1.44269504088896340736));
@@ -84,11 +102,14 @@ void Engine::reset() {
     for (auto& c : ch_) {
         for (auto& b : c.tilt) b.reset();
         c.lowShelf.reset(); c.lowMid.reset(); c.air.reset();
+        c.kShelf.reset(); c.kHigh.reset();
         c.dcX1 = c.dcY1 = 0.f;
         c.lowpassState = 0.f;
     }
     env_ = 0.f;
     grDb_ = 0.f;
+    msIn_ = msOut_ = 0.f;
+    kMs_[0] = kMs_[1] = 0.f;
     inPeak_ = outPeak_ = 0.f;
     corr_ = 0.f;
 }
@@ -241,6 +262,13 @@ void Engine::process(float* left, float* right, int n) {
 
         float ao = qmax(qabs(outL), qabs(outR));
         if (ao > outPk) outPk = ao;
+        msIn_ = flush(msIn_ + ((inL * inL + inR * inR) * 0.5f - msIn_) * rmsCoef_);
+        msOut_ = flush(msOut_ + ((outL * outL + outR * outR) * 0.5f - msOut_) * rmsCoef_);
+        for (int c = 0; c < 2; ++c) {   // loudness: K-weighting, then mean square per channel
+            Channel& ch = ch_[c];
+            float k = ch.kHigh.run(ch.kShelf.run(c == 0 ? outL : outR));
+            kMs_[c] = flush(kMs_[c] + (k * k - kMs_[c]) * lufsCoef_);
+        }
         sLL += (double)outL * outL;
         sRR += (double)outR * outR;
         sLR += (double)outL * outR;
@@ -252,6 +280,10 @@ void Engine::process(float* left, float* right, int n) {
     double den = __builtin_sqrt(sLL * sRR);
     corr_ = den > 1e-12 ? (float)(sLR / den) : 0.f;
 }
+
+float Engine::inputRmsDb() const { return 10.f * qlog10(msIn_ + 1e-12f); }
+float Engine::outputRmsDb() const { return 10.f * qlog10(msOut_ + 1e-12f); }
+float Engine::outputLufs() const { return -0.691f + 10.f * qlog10(kMs_[0] + kMs_[1] + 1e-12f); }
 
 float Engine::softCeiling(float v) {
     float a = qabs(v);

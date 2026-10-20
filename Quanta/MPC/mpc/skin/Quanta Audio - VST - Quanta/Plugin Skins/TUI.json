@@ -1388,6 +1388,70 @@
                     }
                 },
                 {
+                    "key": "qnReadout",
+                    "value": {
+                        "version": 4,
+                        "actions": [],
+                        "backgroundData": {
+                            "version": 1,
+                            "focussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            },
+                            "unfocussed": {
+                                "version": 1,
+                                "colour": "0",
+                                "image": ""
+                            }
+                        },
+                        "ignoreMousePresses": true,
+                        "disableCoarseDataWheel": false,
+                        "repeats": 1,
+                        "hideQLinkBounds": true,
+                        "componentsData": [
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Value",
+                                    "type": "Label",
+                                    "data": {
+                                        "version": 1,
+                                        "textStyle": {
+                                            "version": 1,
+                                            "font": {
+                                                "version": 1,
+                                                "name": "Titillium Web",
+                                                "style": "SemiBold",
+                                                "height": 13.0
+                                            },
+                                            "colour": "fff0eef6",
+                                            "justification": "horizontallyRight verticallyCentred",
+                                            "case": "Original"
+                                        },
+                                        "type": "Value",
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "remap": []
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "0 0 86 20",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
                     "key": "QN|Main",
                     "value": {
                         "version": 4,
@@ -1793,7 +1857,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "1100 222 72 72",
+                                    "bounds": "1100 210 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1823,7 +1887,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "1100 332 72 72",
+                                    "bounds": "1100 308 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -1853,7 +1917,7 @@
                                     "showWhenDataModelInvalid": "Show",
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
-                                    "bounds": "1100 442 72 72",
+                                    "bounds": "1100 406 72 72",
                                     "additionalInvalidatingHandles": []
                                 }
                             },
@@ -2004,6 +2068,96 @@
                                     "whenVisible": "Always",
                                     "boundsType": "Absolute",
                                     "bounds": "540 18 340 36",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Readout Rms In",
+                                    "type": "qnReadout",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 19"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1170 516 86 20",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Readout Rms Out",
+                                    "type": "qnReadout",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 20"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1170 538 86 20",
+                                    "additionalInvalidatingHandles": []
+                                }
+                            },
+                            {
+                                "version": 2,
+                                "componentData": {
+                                    "version": 1,
+                                    "name": "Readout Loudness",
+                                    "type": "qnReadout",
+                                    "data": {
+                                        "version": 1,
+                                        "handleName": "Data"
+                                    }
+                                },
+                                "handle remapping": {
+                                    "version": 1,
+                                    "map": [
+                                        {
+                                            "key": "Data",
+                                            "value": "Parameter 21"
+                                        }
+                                    ]
+                                },
+                                "bounds": {
+                                    "version": 2,
+                                    "acceptsHWFocus": "No",
+                                    "showWhenDataModelInvalid": "Show",
+                                    "whenVisible": "Always",
+                                    "boundsType": "Absolute",
+                                    "bounds": "1170 560 86 20",
                                     "additionalInvalidatingHandles": []
                                 }
                             }

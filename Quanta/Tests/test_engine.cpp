@@ -263,6 +263,26 @@ static void test_robustness(double sr) {
     }
 }
 
+// RMS and loudness meters: a 1 kHz tone at -20 dBFS reads about -23 dB RMS per channel; neutral settings pass it through;
+// silence reads as silence. Loudness is approximate (not calibrated), so it is checked within 1.5 dB of the RMS-based value.
+static void test_rms_and_loudness(double sr) {
+    Engine e; e.prepare(sr); neutral(e);
+    const int N = (int)(sr * 1.0);
+    std::vector<float> l(N), r(N);
+    for (int i = 0; i < N; ++i) { l[i] = 0.1f * (float)std::sin(2 * kPi * 1000 * i / sr); r[i] = l[i]; }
+    e.process(l.data(), r.data(), N);
+    const float expectedDb = 20.f * (float)std::log10(0.1 / std::sqrt(2.0));    // about -23.0 dB
+    CHECK(std::fabs(e.inputRmsDb() - expectedDb) < 0.3f, "input RMS of a -20 dBFS tone reads %.2f dB (expected %.2f) at %.0f Hz", e.inputRmsDb(), expectedDb, sr);
+    CHECK(std::fabs(e.outputRmsDb() - e.inputRmsDb()) < 0.5f, "neutral output RMS matches the input at %.0f Hz", sr);
+    const float lufsRef = -0.691f + 10.f * (float)std::log10(2.0 * 0.1 * 0.1 / 2.0);   // RMS-based reference
+    CHECK(std::fabs(e.outputLufs() - lufsRef) < 1.5f, "loudness of the tone is near the RMS-based value (%.2f LUFS, reference %.2f) at %.0f Hz", e.outputLufs(), lufsRef, sr);
+
+    Engine quiet; quiet.prepare(sr); neutral(quiet);
+    std::vector<float> zl(N, 0.f), zr(N, 0.f);
+    quiet.process(zl.data(), zr.data(), N);
+    CHECK(quiet.inputRmsDb() < -100.f && quiet.outputLufs() < -100.f, "silence reads as silence at %.0f Hz", sr);
+}
+
 int main() {
     test_neutral_passthrough(48000.0);
     test_no_nonfinite_and_bounded(48000.0);
@@ -277,6 +297,7 @@ int main() {
     test_presets(48000.0);
     test_presets(44100.0);
     for (double sr : {44100.0, 48000.0, 88200.0, 96000.0, 192000.0}) test_robustness(sr);
+    for (double sr : {44100.0, 48000.0, 96000.0}) test_rms_and_loudness(sr);
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

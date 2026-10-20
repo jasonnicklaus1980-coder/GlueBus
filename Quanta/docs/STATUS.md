@@ -16,7 +16,9 @@ Decisions in force (from the project owner):
 | Undo and redo (32 steps, quick edits join one step, session only) | built and tested; header buttons on the skin |
 | Factory presets (12) and Custom | built; preset selection tested |
 | State save and restore | built; preset number kept, values not re-applied |
-| Read-only meters: in, out, glue reduction, correlation | built (real measurements) |
+| Read-only meters: in, out, glue reduction, correlation | built (real measurements), shown in dB |
+| RMS readings (input and output, 300 ms) | built; engine test checks a -20 dBFS tone reads about -23 dB |
+| Momentary loudness (LUFS, 400 ms) | built as an approximation (K-weighting not calibrated); engine test checks it against the RMS-based value within 1.5 dB |
 | ARM library: only libc and the loader; glibc 2.25 max | checked |
 | Installer, uninstaller, fake-root install test | built and tested |
 | Quanta GitHub Actions workflow | built; runs on each push |
@@ -30,7 +32,10 @@ Decisions in force (from the project owner):
 - Desktop VST3 / AU / controller-mode build: dropped.
 - Controls named INPUT, PUNCH, SATURATION and STEREO: not added. The current names are kept.
 - Advanced page (EQ frequencies, compressor timing, limiter settings): on hold.
-- Clipping and peak indicator: on hold.
+- Clipping and peak indicator: on hold. Peak readings have no reset.
+- Mid-range EQ, adaptive limiter with input gain, multiband dynamics, input target zone: not built. Each adds a saved control or a large DSP stage, so each needs a decision first.
+- Sidechain input: not built. The plugin has a stereo input only.
+- Gated integrated loudness (full BS.1770): not built. Only momentary loudness is shown.
 - Oversampling: not built, so Density should stay moderate on bright material. Adding it changes latency and CPU, which needs your decision first.
 - User preset save, search and favourites: not built. Saving presets to files on the MPC needs your decision on where they live first.
 - Tests while audio plays, under automation, and while presets load: not done on the device.

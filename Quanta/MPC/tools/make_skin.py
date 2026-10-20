@@ -4,7 +4,7 @@
 Filmstrip rules (proven on the MPC by the other plugins in this repository): frames are square, at most 72 px,
 128 frames (9216 px tall); numFrames is the last frame index (127). The parameter indices follow the plugin's Param enum
 in DSP/QuantaEngine.h: 0 Intensity (named Particle in the code), 1 Tone, 2 Density, 3 Glue, 4 Width, 5 Low End, 6 Air, 7 Mix, 8 Output, 9 Mono Bass,
-10 Preset, 11 Bypass, 12 A/B, 13 Undo, 14 Redo (session switches), 15 In Level, 16 Out Level, 17 Glue GR, 18 Correlation (read-only meters).
+10 Preset, 11 Bypass, 12 A/B, 13 Undo, 14 Redo (session switches), 15 In Level, 16 Out Level, 17 Glue GR, 18 Correlation, 19 RMS In, 20 RMS Out, 21 Loudness (read-only meters).
 
 Original artwork: charcoal and graphite surfaces, silver knobs, a warm accent for Particle. No third-party names or marks.
 Usage: python3 tools/make_skin.py [preview-dir]
@@ -32,7 +32,7 @@ SILVER = (186, 190, 196)
 LED_GREEN, LED_AMBER, LED_RED = (96, 214, 130), (232, 170, 60), (236, 80, 60)
 
 P = {"particle": 0, "tone": 1, "density": 2, "glue": 3, "width": 4, "lowend": 5, "air": 6, "mix": 7, "output": 8,
-     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "undo": 13, "redo": 14, "inlevel": 15, "outlevel": 16, "gr": 17, "corr": 18}
+     "monobass": 9, "preset": 10, "bypass": 11, "ab": 12, "undo": 13, "redo": 14, "inlevel": 15, "outlevel": 16, "gr": 17, "corr": 18, "rmsin": 19, "rmsout": 20, "lufs": 21}
 KNOBS = [  # key, label, knob centre x, cap, Q-Link order: two rows of four under the stereo field
     ("tone", "TONE", 393, SILVER), ("density", "DENSITY", 561, SILVER), ("glue", "GLUE", 729, SILVER),
     ("width", "WIDTH", 896, SILVER), ("lowend", "LOW END", 393, SILVER), ("air", "AIR", 561, SILVER),
@@ -43,7 +43,8 @@ ROW_TOP = {"tone": 352, "density": 352, "glue": 352, "width": 352,
 PARTICLE = (91, 112)        # the Intensity control: its cell, top left, centred in the left column
 VISUAL_BOX = (334, 84, 621, 236)  # the 3D stereo visual: the centre, above the knob rows
 MONO_POS = (40, 380)        # Mono Bass switch, left column
-METER_POS = {"in": (1100, 112), "out": (1100, 222), "gr": (1100, 332), "corr": (1100, 442)}   # right column, stacked
+METER_POS = {"in": (1100, 112), "out": (1100, 210), "gr": (1100, 308), "corr": (1100, 406)}   # right column, stacked
+READOUT_ROWS = [("RMS IN", "rmsin", 516), ("RMS OUT", "rmsout", 538), ("LOUDNESS", "lufs", 560)]   # value readouts under the meters
 PRESET_BOX = (540, 18, 340, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
@@ -125,6 +126,8 @@ def background():
     tracked(d, 1100, 88, "METERS", 11, DIM, track=2.0)
     for kind, text in (("in", "IN"), ("out", "OUT"), ("gr", "GR"), ("corr", "CORR")):   # printed labels beside each meter
         tracked(d, METER_POS[kind][0] + KS + 10, METER_POS[kind][1] + 28, text, 11, DIM, track=1.5)
+    for text, _, row in READOUT_ROWS:
+        tracked(d, 1100, row + 4, text, 11, DIM, track=1.5)
     for key, text, cx, cap in KNOBS:                    # knob names under each knob
         d.text((cx, ROW_TOP[key] + 86), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + CW / 2, PARTICLE[1] + 86), "INTENSITY", font=font(13), fill=ACCENT, anchor="mm")
@@ -312,6 +315,11 @@ def build():
         label("Value", 18, hexcol(PRINT), (90, 2, bw - 100, bh - 4), "horizontallyLeft verticallyCentred"), focus((0, 0, bw, bh))])})
     place(comps, "Preset", "qnBrowse", P["preset"], bx, by, bw, bh, touch=True)
 
+    # value readouts: the host formats each reading (dB, LUFS), and the label shows it
+    defs.append({"key": "qnReadout", "value": definition([], [label("Value", 13, hexcol(PRINT), (0, 0, 86, 20), "horizontallyRight verticallyCentred")], ignore=True)})
+    for text, key, row in READOUT_ROWS:
+        place(comps, f"Readout {text.title()}", "qnReadout", P[key], 1170, row, 86, 20)
+
     defs.append({"key": "QN|Main", "value": definition([], comps, "ff141416")})
     tabs = [{"version": 3, "tabName": "QUANTA", "fnKeyIndex": 0, "fnKeySubIndex": 0, "qlinkBoundsData": ["0 0 0 0"],
              "componentName": "QN|Main", "initialSize": f"0 0 {W} {H}", "scale": 1.0}]
@@ -351,6 +359,8 @@ def preview(outdir):
     for kind in ("in", "out", "gr", "corr"):
         im.alpha_composite(meter_strip(kind).crop((0, 80 * KS, KS, 81 * KS)), METER_POS[kind])
     im.alpha_composite(switch_images(False), MONO_POS)
+    for text, _, row in READOUT_ROWS:                 # placeholder: the live value only appears on the device
+        ImageDraw.Draw(im).text((1256, row + 10), "--", font=font(13), fill=rgba(PRINT), anchor="rm")
     im.alpha_composite(tile_button("A", 64, 36, False), (892, 18))
     im.alpha_composite(tile_button("BYPASS", 110, 36, False), (966, 18))
     im.alpha_composite(tile_button("UNDO", 70, 36, False), (1086, 18))

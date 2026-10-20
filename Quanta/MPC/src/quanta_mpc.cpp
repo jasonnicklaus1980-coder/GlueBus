@@ -131,6 +131,15 @@ void formatParam(int index, float v, char* out, int max) {
         copyStr(out, quanta::presetName(presetIndexOf(v)), max);
     } else if (index == quanta::P_OUTPUT) {
         std::snprintf(out, (size_t)max, "%+.1f dB", (double)((v - 0.5f) * 24.f));
+    } else if (index == quanta::P_METER_IN || index == quanta::P_METER_OUT ||
+               index == quanta::P_METER_RMS_IN || index == quanta::P_METER_RMS_OUT) {
+        std::snprintf(out, (size_t)max, "%.1f dB", (double)(v * 60.f - 60.f));          // meters: -60 .. 0 dB
+    } else if (index == quanta::P_METER_LUFS) {
+        std::snprintf(out, (size_t)max, "%.1f LUFS", (double)(v * 60.f - 60.f));
+    } else if (index == quanta::P_METER_GR) {
+        std::snprintf(out, (size_t)max, "%.1f dB", (double)(-v * 20.f));                  // reduction: 0 .. -20 dB
+    } else if (index == quanta::P_METER_CORR) {
+        std::snprintf(out, (size_t)max, "%+.2f", (double)(2.f * v - 1.f));
     } else if (index == quanta::P_MONOBASS) {
         copyStr(out, v >= 0.5f ? "On" : "Off", max);
     } else if (index == quanta::P_TONE) {
@@ -219,6 +228,9 @@ float meterValue(const quanta::Engine& e, int index) {
     case quanta::P_METER_OUT:  return clamp01((20.f * quanta::qlog10(e.outputPeak() + 1e-9f) + 60.f) / 60.f);
     case quanta::P_METER_GR:   return clamp01(-e.gainReductionDbMax() / 20.f);
     case quanta::P_METER_CORR: return clamp01(0.5f + 0.5f * e.correlation());
+    case quanta::P_METER_RMS_IN:  return clamp01((e.inputRmsDb() + 60.f) / 60.f);
+    case quanta::P_METER_RMS_OUT: return clamp01((e.outputRmsDb() + 60.f) / 60.f);
+    case quanta::P_METER_LUFS:    return clamp01((e.outputLufs() + 60.f) / 60.f);
     default: return 0.f;
     }
 }
