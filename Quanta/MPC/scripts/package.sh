@@ -17,6 +17,7 @@ rm -rf "$D" && mkdir -p "$D/payload/vst" "$D/payload/Synths"
 cp build/quanta.so "$D/payload/vst/quanta.so"
 cp -r "mpc/skin/Quanta Audio - VST - Quanta" "$D/payload/Synths/"
 cp mpc/install.sh mpc/uninstall.sh mpc/plugin.xml mpc/plugin_list.awk "$D/"
-(cd "$D" && find payload plugin.xml plugin_list.awk -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+cp mpc/INSTALL.md mpc/RELEASE-NOTES.md "$D/"
+(cd "$D" && find payload plugin.xml plugin_list.awk INSTALL.md RELEASE-NOTES.md -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 (cd dist && rm -f "Quanta-$VER-mpc-armv7.zip" && zip -qr "Quanta-$VER-mpc-armv7.zip" "Quanta-$VER-mpc-armv7")
 echo "dist/Quanta-$VER-mpc-armv7.zip"
