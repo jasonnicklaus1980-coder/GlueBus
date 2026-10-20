@@ -38,6 +38,7 @@ KNOBS = [  # key, label, column position, cap, Q-Link order
     ("mix", "MIX", 1038, SILVER), ("output", "OUTPUT", 1156, SILVER),
 ]
 PARTICLE = (60, 150)        # the main control: its own place on the left
+VISUAL_BOX = (300, 256, 944, 150)  # the 3D stereo visual: the open band between the knobs and the meters
 PRESET_BOX = (560, 18, 420, 36)   # preset display in the header band; turn or drag to step through presets
 
 def font(size, bold=True):
@@ -54,6 +55,32 @@ def mix(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 def hexcol(c, a=255): return "%02x%02x%02x%02x" % (a, c[0], c[1], c[2])
 def ang_xy(cx, cy, r, deg):
     a = math.radians(deg - 90); return cx + r * math.cos(a), cy + r * math.sin(a)
+
+def visual3d(w, h):
+    """a 3D wireframe of a stereo field: a surface rippling toward the viewer, drawn in perspective with depth shading"""
+    im = Image.new("RGBA", (w * SS, h * SS), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    W2, H2 = w * SS, h * SS
+    d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=12 * SS, fill=(12, 10, 20, 255), outline=rgba(VIOLET, 255), width=2 * SS)
+    cx, horizon, fx, fy, cam_h = W2 / 2, H2 * 0.22, W2 * 0.40, H2 * 1.30, 1.0
+    rows, cols = 22, 46
+    def height(x, z):   # the surface: two ripples that grow toward the viewer
+        return 0.55 * math.sin(3.2 * math.pi * x + 2.2 * z) * (0.25 + z) + 0.25 * math.cos(2.0 * math.pi * x - 1.3 * z) * z
+    def project(x, z):     # z = 1 is the front row (lowest on screen), z = 0 the far edge at the horizon
+        depth = 2.2 + (1.0 - z) * 3.0
+        return cx + x * 2.4 * fx / depth, horizon + (cam_h - height(x, z) * 0.6) * fy / depth
+    lines = []
+    for r in range(rows):           # rows run from far (z 0) to near (z 1)
+        z = r / (rows - 1)
+        lines.append([project(-1.0 + 2.0 * c / (cols - 1), z) for c in range(cols)] + [z])
+    for r in range(rows):
+        pts, z = lines[r][:-1], lines[r][-1]
+        t = z
+        for c in range(cols - 1):
+            d.line([pts[c], pts[c + 1]], fill=rgba(mix(ACCENT, VIOLET, t), int(60 + 180 * t)), width=max(1, SS))
+    for c in range(cols):           # the columns that give the surface its 3D shape
+        for r in range(rows - 1):
+            d.line([lines[r][c], lines[r + 1][c]], fill=rgba(mix(ACCENT, VIOLET, lines[r][-1]), int(50 + 150 * lines[r][-1])), width=max(1, SS))
+    return im.resize((w, h), Image.LANCZOS)
 
 def background():
     im = Image.new("RGB", (W, H), INK)
@@ -72,6 +99,10 @@ def background():
         d.text((cx, 196), text, font=font(13), fill=DIM, anchor="mm")
     d.text((PARTICLE[0] + 36, 226), "PARTICLE", font=font(13), fill=ACCENT, anchor="mm")
     d.line([300, 84, 1244, 84], fill=EDGE, width=1)
+    vx, vy, vw, vh = VISUAL_BOX
+    vis = visual3d(vw, vh)
+    im.paste(vis.convert("RGB"), (vx, vy), vis.split()[3])
+    d = ImageDraw.Draw(im)
     bx, by, bw, bh = PRESET_BOX
     d.rounded_rectangle([bx, by, bx + bw, by + bh], radius=8, fill=(10, 9, 16), outline=VIOLET, width=2)
     d.text((bx + 12, by + bh / 2), "PRESET", font=font(12), fill=DIM, anchor="lm")
