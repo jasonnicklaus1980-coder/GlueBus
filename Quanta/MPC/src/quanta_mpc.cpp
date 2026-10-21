@@ -15,6 +15,7 @@
 #include <new>
 
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define QN_EXPORT extern "C" __attribute__((visibility("default")))
 
@@ -167,6 +168,24 @@ void redo(Plugin* p) {
     p->lastEditMs = kNoEdit;
 }
 
+// Diagnostics: when the file <presets folder>/debug exists, each call the host makes that changes or reads Quanta's
+// state is appended to <presets folder>/quanta-log.txt. Host thread only (never called from processReplacing).
+bool debugOn() {
+    char path[256];
+    std::snprintf(path, sizeof path, "%s/debug", presetDir());
+    return access(path, F_OK) == 0;
+}
+
+void logLine(const char* text) {
+    if (!debugOn()) return;
+    char path[256];
+    std::snprintf(path, sizeof path, "%s/quanta-log.txt", presetDir());
+    FILE* f = std::fopen(path, "a");
+    if (!f) return;
+    std::fprintf(f, "%lld %s\n", nowMs(), text);
+    std::fclose(f);
+}
+
 int presetIndexOf(float v) {
     int i = (int)(v * (float)(quanta::kPresetCount - 1) + 0.5f);
     return i < 0 ? 0 : i >= quanta::kPresetCount ? quanta::kPresetCount - 1 : i;
@@ -215,33 +234,46 @@ float getParameter(AEffect* fx, int32_t index);
 intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void* ptr, float opt) {
     Plugin* p = (Plugin*)fx->object;
     switch (op) {
-    case effOpen: captureSlots(p); return 0;
-    case effClose: delete p; return 0;
+    case effOpen: captureSlots(p); logLine("effOpen"); return 0;
+    case effClose: logLine("effClose"); delete p; return 0;
     case effSetSampleRate:
         p->engine.prepare((double)opt);
+        { char t[64]; std::snprintf(t, sizeof t, "effSetSampleRate %.0f", (double)opt); logLine(t); }
         p->wetStep = 1.f / (0.010f * (opt > 1000.f ? opt : 48000.f));
         return 0;
     case effSetBlockSize: return 0;
     case effSetBypass: setBypass(p, value != 0); return 1;
-    case effMainsChanged: if (!value) p->engine.reset(); return 0;
+    case effMainsChanged: { char t[64]; std::snprintf(t, sizeof t, "effMainsChanged %d", (int)value); logLine(t); }
+        if (!value) p->engine.reset();
+        return 0;
     case effGetParamName:
         if (index >= 0 && index < quanta::P_COUNT && ptr) copyStr((char*)ptr, quanta::kParams[index].name, 32);
         return 0;
     case effGetParamLabel: if (ptr) ((char*)ptr)[0] = 0; return 0;
     case effGetProgram: return presetIndexOf(p->engine.getParam(quanta::P_PRESET));
-    case effSetProgram: beforeEdit(p); p->engine.loadPreset((int)value); return 0;
+    case effSetProgram: {
+        beforeEdit(p);
+        p->engine.loadPreset((int)value);
+        char t[96];
+        std::snprintf(t, sizeof t, "effSetProgram %d -> Tone %.3f Glue %.3f Preset %.3f", (int)value,
+                      (double)p->engine.getParam(quanta::P_TONE), (double)p->engine.getParam(quanta::P_GLUE), (double)p->engine.getParam(quanta::P_PRESET));
+        logLine(t);
+        return 0;
+    }
     case effGetProgramName:
         if (ptr) copyStr((char*)ptr, quanta::presetName(presetIndexOf(p->engine.getParam(quanta::P_PRESET))), 24);
         return 0;
     case effGetProgramNameIndexed:
         if (index < 0 || index >= quanta::kPresetCount || !ptr) return 0;
         copyStr((char*)ptr, quanta::presetName(index), 24);
+        { char t[64]; std::snprintf(t, sizeof t, "effGetProgramNameIndexed %d", index); logLine(t); }
         return 1;
     case effSetProgramName: return 0;
     case effGetParamDisplay:
         if (index >= 0 && index < quanta::P_COUNT && ptr) formatParam(index, getParameter(fx, index), (char*)ptr, 64);
         return 0;
     case effGetChunk: {
+        { char t[96]; std::snprintf(t, sizeof t, "effGetChunk Tone %.3f Preset %.3f", (double)p->engine.getParam(quanta::P_TONE), (double)p->engine.getParam(quanta::P_PRESET)); logLine(t); }
         char* b = p->chunk;
         std::memcpy(b, kStateMagic, 4);
         for (int i = 0; i < quanta::kControlCount; ++i) { float v = p->engine.getParam(i); std::memcpy(b + 4 + 4 * i, &v, 4); }
@@ -253,6 +285,7 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
         if (!b || value < 4 + 4 * kMinChunkControls || std::memcmp(b, kStateMagic, 4) != 0) return 0;
         int n = (int)((value - 4) / 4);
         if (n > quanta::kControlCount) n = quanta::kControlCount;
+        { char t[96]; std::snprintf(t, sizeof t, "effSetChunk bytes %d", (int)value); logLine(t); }
         beforeEdit(p);
         for (int i = 0; i < quanta::kControlCount; ++i) {   // controls a shorter, older state does not have take their defaults
             float v = quanta::kParams[i].def;
@@ -276,6 +309,7 @@ intptr_t dispatcher(AEffect* fx, int32_t op, int32_t index, intptr_t value, void
 
 void setParameter(AEffect* fx, int32_t index, float v) {
     Plugin* p = (Plugin*)fx->object;
+    if (index >= 0 && index < quanta::P_METER_IN) { char t[96]; std::snprintf(t, sizeof t, "setParameter %d = %.4f", (int)index, (double)v); logLine(t); }
     // Undo and redo act on every call: the skin sends one call per press
     if (index == quanta::P_UNDO) undo(p);
     else if (index == quanta::P_REDO) redo(p);
