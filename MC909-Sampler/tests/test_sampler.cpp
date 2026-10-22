@@ -41,7 +41,7 @@ int main()
     {
         Sampler s(44100.0);
         int id = s.addSample(ramp(1, 44100, 1000));
-        s.pad(0).sample = id;
+        s.addLayer(0, Layer{id});
         s.noteOn(0, 1.f);
         float L[1100], R[1100];
         s.render(L, R, 1100);
@@ -55,14 +55,14 @@ int main()
     // pitch: +12 semitones reads twice as fast, so a 1000-frame sample finishes in about 500 output frames
     {
         Sampler s(44100.0);
-        s.pad(0).sample = s.addSample(ramp(1, 44100, 1000));
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 1000))});
         s.pad(0).semitones = 12.f;
         s.noteOn(0, 1.f);
         float L[600], R[600];
         s.render(L, R, 600);
         CHECK(s.activeVoices() == 0, "+12 semitones finishes a 1000-frame one-shot within 600 output frames");
         Sampler t(44100.0);
-        t.pad(0).sample = t.addSample(ramp(1, 44100, 1000));
+        t.addLayer(0, Layer{t.addSample(ramp(1, 44100, 1000))});
         t.pad(0).semitones = 12.f;
         t.noteOn(0, 1.f);
         float L2[300], R2[300];
@@ -73,7 +73,7 @@ int main()
     // loop: a looping voice keeps sounding past the end of its sample until released
     {
         Sampler s(44100.0);
-        s.pad(0).sample = s.addSample(ramp(1, 44100, 200));
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 200))});
         s.pad(0).loop = true;
         s.noteOn(0, 1.f);
         float L[1000], R[1000];
@@ -87,7 +87,7 @@ int main()
     // reverse: plays from the end
     {
         Sampler s(44100.0);
-        s.pad(0).sample = s.addSample(ramp(1, 44100, 1000));
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 1000))});
         s.pad(0).reverse = true;
         s.noteOn(0, 1.f);
         float L[400], R[400];
@@ -99,8 +99,8 @@ int main()
     {
         Sampler s(44100.0);
         int id = s.addSample(ramp(1, 44100, 5000));
-        s.pad(0).sample = id; s.pad(0).loop = true; s.pad(0).choke = 1;
-        s.pad(1).sample = id; s.pad(1).loop = true; s.pad(1).choke = 1;
+        s.addLayer(0, Layer{id}); s.pad(0).loop = true; s.pad(0).choke = 1;
+        s.addLayer(1, Layer{id}); s.pad(1).loop = true; s.pad(1).choke = 1;
         s.noteOn(0, 1.f);
         float L[100], R[100];
         s.render(L, R, 100);
@@ -112,12 +112,79 @@ int main()
     // stereo: left and right stay separate
     {
         Sampler s(44100.0);
-        s.pad(0).sample = s.addSample(ramp(2, 44100, 500));
+        s.addLayer(0, Layer{s.addSample(ramp(2, 44100, 500))});
         s.noteOn(0, 1.f);
         float L[200], R[200];
         s.render(L, R, 200);
         CHECK(std::fabs(L[100] + R[100] * 0.5f * 0) == std::fabs(L[100]) && L[100] > 0.f && R[100] < 0.f,
               "stereo sample keeps its channels (L %.4f, R %.4f)", L[100], R[100]);
+    }
+
+
+    // velocity layers: a soft and a hard layer; the velocity picks the layer
+    {
+        Sampler s(44100.0);
+        int soft = s.addSample(ramp(1, 44100, 300));
+        int hard = s.addSample(ramp(1, 44100, 300));
+        Layer a{soft}; a.velLo = 0.f; a.velHi = 0.5f;
+        Layer b{hard}; b.velLo = 0.5f; b.velHi = 1.f;
+        s.addLayer(0, a); s.addLayer(0, b);
+        s.noteOn(0, 0.2f); float L[10], R[10]; s.render(L, R, 10);
+        CHECK(s.activeVoices() == 1, "a soft hit starts a voice");
+        Sampler t(44100.0);
+        int s2 = t.addSample(ramp(1, 44100, 300)); int h2 = t.addSample(ramp(1, 44100, 300));
+        Layer c{s2}; c.velLo = 0.f; c.velHi = 0.5f; Layer d{h2}; d.velLo = 0.5f; d.velHi = 1.f;
+        t.addLayer(0, c); t.addLayer(0, d);
+        CHECK(t.addLayer(0, c) && t.addLayer(0, c) && !t.addLayer(0, c), "a pad holds up to four layers");
+    }
+
+    // start and end: playback is limited to the window
+    {
+        Sampler s(44100.0);
+        Layer l{s.addSample(ramp(1, 44100, 1000))}; l.start = 0.5f; l.end = 0.75f;
+        s.addLayer(0, l);
+        s.noteOn(0, 1.f);
+        float L[400], R[400]; s.render(L, R, 400);
+        CHECK(s.activeVoices() == 0, "a one-shot with a window ends at the window's end (250 frames)");
+        CHECK(std::fabs(L[100] - 0.5f * (500 + 100) / 1000.f) < 0.01f, "a window starts at its start point (%.4f, sample frame 600)", L[100]);
+    }
+
+    // envelope: attack reaches full level, decay settles at the sustain level, release fades out
+    {
+        Sampler s(44100.0);
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 44100))});
+        Pad& p = s.pad(0);
+        p.loop = true; p.attack = 0.01f; p.decay = 0.01f; p.sustain = 0.5f; p.release = 0.01f;
+        s.noteOn(0, 1.f);
+        float L[2000], R[2000]; s.render(L, R, 2000);
+        const float heldAt = L[1999] / (0.5f * 1999.f / 44100.f);      // level relative to the sample value at that frame
+        CHECK(std::fabs(heldAt - 0.5f) < 0.05f, "sustain holds at the sustain level (ratio %.3f)", heldAt);
+        s.noteOff(0);
+        float before[1]; float beforeR[1];
+        s.render(L, R, 1); before[0] = L[0]; (void)beforeR;
+        s.render(L, R, 1000);
+        CHECK(std::fabs(L[999]) < std::fabs(before[0]), "release fades the level down (%.4f to %.4f)", before[0], L[999]);
+        s.render(L, R, 2000);
+        CHECK(s.activeVoices() == 0, "release fades the voice out");
+    }
+
+    // pan: a mono sample panned hard left is silent on the right
+    {
+        Sampler s(44100.0);
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 500))});
+        s.pad(0).pan = 0.f;
+        s.noteOn(0, 1.f);
+        float L[200], R[200]; s.render(L, R, 200);
+        CHECK(std::fabs(L[100]) > 0.f && std::fabs(R[100]) < 1e-6f, "pan hard left: left only");
+    }
+
+    // mute: a muted pad does not sound
+    {
+        Sampler s(44100.0);
+        s.addLayer(0, Layer{s.addSample(ramp(1, 44100, 500))});
+        s.pad(0).mute = true;
+        s.noteOn(0, 1.f);
+        CHECK(s.activeVoices() == 0, "a muted pad does not start a voice");
     }
 
     // optional: the factory WAV files, if a folder is given
