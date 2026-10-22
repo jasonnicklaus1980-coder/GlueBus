@@ -7,7 +7,7 @@
 
 namespace mc909 {
 
-enum class Kind { Wav, Midi, Unknown };
+enum class Kind { Wav, Aiff, Midi, Unknown };
 
 struct WavInfo {
     bool ok = false;
@@ -41,6 +41,13 @@ Report analyze(const std::vector<uint8_t>& bytes);
 // Decodes a WAV file to interleaved float samples in -1..1. Returns false (and leaves out empty) unless the file is
 // read in full. Only the documented PCM and float encodings are converted.
 bool decodeWav(const std::vector<uint8_t>& bytes, WavInfo& info, std::vector<float>& out);
+
+// Decodes an uncompressed AIFF file (IFF FORM/AIFF, big-endian PCM 8/16/24/32-bit) the same way. AIFC files with
+// compression are not decoded.
+bool decodeAiff(const std::vector<uint8_t>& bytes, WavInfo& info, std::vector<float>& out);
+
+// Decodes whichever audio format the file is (WAV or AIFF).
+bool decodeAudio(const std::vector<uint8_t>& bytes, WavInfo& info, std::vector<float>& out);
 std::string hexHead(const std::vector<uint8_t>& bytes, size_t n = 16);
 
 }  // namespace mc909

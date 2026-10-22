@@ -1,6 +1,7 @@
 #include "import_check.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstring>
 
 namespace mc909 {
@@ -144,6 +145,7 @@ MidiInfo parseMidi(const std::vector<uint8_t>& b, std::vector<std::string>& warn
 Kind detect(const std::vector<uint8_t>& b)
 {
     if (b.size() >= 12 && tag(b, 0, "RIFF") && tag(b, 8, "WAVE")) return Kind::Wav;
+    if (b.size() >= 12 && tag(b, 0, "FORM") && tag(b, 8, "AIFF")) return Kind::Aiff;
     if (b.size() >= 4 && tag(b, 0, "MThd")) return Kind::Midi;
     return Kind::Unknown;
 }
@@ -154,6 +156,81 @@ std::string hexHead(const std::vector<uint8_t>& b, size_t n)
     char t[4];
     for (size_t i = 0; i < n && i < b.size(); ++i) { std::snprintf(t, sizeof t, "%02X ", b[i]); s += t; }
     return s;
+}
+
+// IEEE 80-bit extended, as used for the AIFF sample rate.
+static double readExtended80(const uint8_t* p)
+{
+    const int expo = ((p[0] & 0x7F) << 8) | p[1];
+    uint64_t mant = 0;
+    for (int i = 2; i < 10; ++i) mant = mant << 8 | p[i];
+    if (expo == 0 && mant == 0) return 0.0;
+    double v = std::ldexp((double)mant, expo - 16383 - 63);
+    return (p[0] & 0x80) ? -v : v;
+}
+
+bool decodeAiff(const std::vector<uint8_t>& b, WavInfo& info, std::vector<float>& out)
+{
+    out.clear();
+    info = WavInfo();
+    if (b.size() < 12 || !tag(b, 0, "FORM") || !tag(b, 8, "AIFF")) return false;
+    bool haveComm = false, haveSound = false;
+    size_t soundAt = 0;
+    size_t p = 12;
+    while (p + 8 <= b.size())
+    {
+        uint32_t sz = be32(&b[p + 4]);
+        size_t body = p + 8;
+        if (tag(b, p, "COMM"))
+        {
+            if (body + 18 > b.size()) return false;
+            info.channels = be16(&b[body]);
+            info.frames = be32(&b[body + 2]);
+            info.bitsPerSample = be16(&b[body + 6]);
+            info.sampleRate = (uint32_t)readExtended80(&b[body + 8]);
+            info.encoding = "PCM";
+            haveComm = true;
+        }
+        else if (tag(b, p, "SSND"))
+        {
+            if (body + 8 > b.size()) return false;
+            uint32_t offset = be32(&b[body]);
+            soundAt = body + 8 + offset;
+            haveSound = true;
+        }
+        size_t next = body + sz + (sz & 1);
+        if (next <= p) break;
+        p = next;
+    }
+    if (!haveComm || !haveSound || info.channels == 0 || info.sampleRate == 0) return false;
+    if (info.bitsPerSample != 8 && info.bitsPerSample != 16 && info.bitsPerSample != 24 && info.bitsPerSample != 32) return false;
+    const int bytes = info.bitsPerSample / 8;
+    if (soundAt + (uint64_t)info.frames * info.channels * bytes > b.size()) return false;   // truncated: not read in full
+    const uint64_t n = (uint64_t)info.frames * info.channels;
+    out.resize((size_t)n);
+    const uint8_t* d = &b[soundAt];
+    for (uint64_t i = 0; i < n; ++i)
+    {
+        const uint8_t* s = d + i * bytes;
+        float v;
+        if (bytes == 1) v = (int8_t)s[0] / 128.f;
+        else if (bytes == 2) v = (int16_t)(s[0] << 8 | s[1]) / 32768.f;
+        else if (bytes == 3) { int32_t x = (int32_t)((uint32_t)s[0] << 24 | (uint32_t)s[1] << 16 | (uint32_t)s[2] << 8) >> 8; v = x / 8388608.f; }
+        else v = (int32_t)be32(s) / 2147483648.f;
+        out[(size_t)i] = v;
+    }
+    info.ok = true;
+    return true;
+}
+
+bool decodeAudio(const std::vector<uint8_t>& b, WavInfo& info, std::vector<float>& out)
+{
+    switch (detect(b))
+    {
+    case Kind::Wav: return decodeWav(b, info, out);
+    case Kind::Aiff: return decodeAiff(b, info, out);
+    default: out.clear(); info = WavInfo(); return false;
+    }
 }
 
 bool decodeWav(const std::vector<uint8_t>& b, WavInfo& info, std::vector<float>& out)
@@ -199,7 +276,20 @@ Report analyze(const std::vector<uint8_t>& b)
 {
     Report r;
     r.kind = detect(b);
-    if (r.kind == Kind::Wav)
+    if (r.kind == Kind::Aiff)
+    {
+        std::vector<float> samples;
+        r.supported = decodeAiff(b, r.wav, samples);
+        if (!r.supported)
+        {
+            r.warnings.push_back("AIFF not read in full: compressed (AIFC), truncated, or an unsupported sample size");
+            r.summary = "AIFF (not decoded)";
+        }
+        else
+            r.summary = std::to_string(r.wav.channels) + " ch, " + std::to_string(r.wav.sampleRate) + " Hz, " +
+                        std::to_string(r.wav.bitsPerSample) + "-bit AIFF, " + std::to_string(r.wav.frames) + " frames";
+    }
+    else if (r.kind == Kind::Wav)
     {
         r.wav = parseWav(b, r.warnings);
         r.supported = r.wav.ok && r.warnings.empty();
