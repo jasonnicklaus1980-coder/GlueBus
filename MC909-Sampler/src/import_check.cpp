@@ -156,6 +156,45 @@ std::string hexHead(const std::vector<uint8_t>& b, size_t n)
     return s;
 }
 
+bool decodeWav(const std::vector<uint8_t>& b, WavInfo& info, std::vector<float>& out)
+{
+    out.clear();
+    std::vector<std::string> warn;
+    info = parseWav(b, warn);
+    if (!info.ok || !warn.empty()) return false;
+    // find the data chunk again (parseWav does not keep its position)
+    size_t p = 12, dataAt = 0; uint32_t dataSize = 0;
+    while (p + 8 <= b.size())
+    {
+        uint32_t sz = le32(&b[p + 4]);
+        if (tag(b, p, "data")) { dataAt = p + 8; dataSize = sz; break; }
+        size_t next = p + 8 + sz + (sz & 1);
+        if (next <= p) break;
+        p = next;
+    }
+    if (dataAt == 0 || dataAt + dataSize > b.size()) return false;
+    const int bytes = info.bitsPerSample / 8;
+    const uint64_t n = (uint64_t)info.frames * info.channels;
+    out.resize((size_t)n);
+    const uint8_t* d = &b[dataAt];
+    for (uint64_t i = 0; i < n; ++i)
+    {
+        const uint8_t* s = d + i * bytes;
+        float v = 0.f;
+        if (info.encoding == "float")
+        {
+            if (bytes == 4) { uint32_t u = le32(s); float f; std::memcpy(&f, &u, 4); v = f; }
+            else { uint64_t u = 0; for (int k = 7; k >= 0; --k) u = u << 8 | s[k]; double f; std::memcpy(&f, &u, 8); v = (float)f; }
+        }
+        else if (bytes == 1) v = ((int)s[0] - 128) / 128.f;
+        else if (bytes == 2) v = (int16_t)le16(s) / 32768.f;
+        else if (bytes == 3) { int32_t x = (int32_t)(s[0] << 8 | s[1] << 16 | (uint32_t)s[2] << 24) >> 8; v = x / 8388608.f; }
+        else { v = (int32_t)le32(s) / 2147483648.f; }
+        out[(size_t)i] = v;
+    }
+    return true;
+}
+
 Report analyze(const std::vector<uint8_t>& b)
 {
     Report r;
