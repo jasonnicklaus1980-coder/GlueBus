@@ -39,6 +39,7 @@ public:
     static constexpr int kPads = 16, kVoices = 16;
 
     explicit Sampler(double outRate = 44100.0) : outRate_(outRate) {}
+    void setRate(double r) { outRate_ = r; }
 
     int addSample(Sample s);    // returns the sample index
     bool addLayer(int padIndex, const Layer& l);   // false when the pad is full
