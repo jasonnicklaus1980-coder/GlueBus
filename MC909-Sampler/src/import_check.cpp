@@ -95,10 +95,13 @@ MidiInfo parseMidi(const std::vector<uint8_t>& b, std::vector<std::string>& warn
         size_t start = p + 8, end = start + len;
         if (end > b.size()) { m.trackProblems.push_back("track " + std::to_string(trackNo + 1) + ": declared length runs past the end of the file"); end = b.size(); }
         size_t q = start; uint8_t status = 0; bool sawEnd = false;
+        uint64_t tick = 0;
+        const size_t firstNote = m.notes.size();
         while (q < end)
         {
             uint32_t delta; if (!vlq(b, q, end, delta)) { m.trackProblems.push_back("track " + std::to_string(trackNo + 1) + ": event delta cut off"); break; }
             if (q >= end) break;
+            tick += delta;
             uint8_t c = b[q];
             if (c == 0xFF)                                    // meta event
             {
@@ -129,10 +132,31 @@ MidiInfo parseMidi(const std::vector<uint8_t>& b, std::vector<std::string>& warn
                 int note = b[q];
                 if (note < m.minNote) m.minNote = note;
                 if (note > m.maxNote) m.maxNote = note;
+                MidiNote n; n.tick = tick; n.channel = status & 0x0F; n.note = (uint8_t)note; n.velocity = b[q + 1];
+                n.duration = UINT64_MAX;                       // open until its note-off
+                m.notes.push_back(n);
+            }
+            else if (kind == 0x80 || (kind == 0x90 && b[q + 1] == 0))
+            {
+                for (size_t k = m.notes.size(); k-- > firstNote;)
+                {
+                    MidiNote& n = m.notes[k];
+                    if (n.duration == UINT64_MAX && n.note == b[q] && n.channel == (status & 0x0F))
+                    {
+                        n.duration = tick - n.tick;
+                        break;
+                    }
+                }
             }
             q += dataBytes;
         }
         if (!sawEnd) m.trackProblems.push_back("track " + std::to_string(trackNo + 1) + ": no end-of-track event");
+        for (size_t k = firstNote; k < m.notes.size(); ++k)
+            if (m.notes[k].duration == UINT64_MAX)
+            {
+                m.notes[k].duration = 0;
+                m.trackProblems.push_back("track " + std::to_string(trackNo + 1) + ": a note has no note-off");
+            }
         p = end; trackNo++;
     }
     if (trackNo != m.tracks) m.trackProblems.push_back("header declares " + std::to_string(m.tracks) + " tracks, found " + std::to_string(trackNo));

@@ -31,7 +31,7 @@ static std::vector<uint8_t> makeMidi(const std::vector<int>& notes, bool endTrac
 {
     std::vector<uint8_t> t;
     t.insert(t.end(), {0x00, 0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20});    // tempo 500000 us = 120 BPM
-    for (int n : notes) t.insert(t.end(), {0x00, 0x90, (uint8_t)n, 0x64});
+    for (int n : notes) { t.insert(t.end(), {0x00, 0x90, (uint8_t)n, 0x64}); t.insert(t.end(), {0x60, 0x80, (uint8_t)n, 0x40}); }   // each note lasts 96 ticks
     if (endTrack) t.insert(t.end(), {0x00, 0xFF, 0x2F, 0x00});
     std::vector<uint8_t> b; tagAt(b, "MThd"); put32be(b, 6); put16be(b, 0); put16be(b, 1); put16be(b, 96);
     tagAt(b, "MTrk"); put32be(b, (uint32_t)t.size()); b.insert(b.end(), t.begin(), t.end());
@@ -69,7 +69,18 @@ int main()
         CHECK(r.kind == Kind::Midi && r.supported, "valid single-track MIDI is supported");
         CHECK(r.midi.noteOns == 3 && r.midi.minNote == 60 && r.midi.maxNote == 67, "MIDI note count and range are read");
         CHECK(r.midi.firstTempoBpm > 119.9 && r.midi.firstTempoBpm < 120.1, "MIDI tempo is read (%.2f BPM)", r.midi.firstTempoBpm);
+        CHECK(r.midi.notes.size() == 3 && r.midi.notes[1].note == 64 && r.midi.notes[1].velocity == 0x64, "every note is kept with its pitch and velocity");
+        CHECK(r.midi.notes[0].duration == 96 && r.midi.notes[2].tick > r.midi.notes[1].tick, "note durations and start ticks are read");
     }
+    // a note with no note-off is flagged
+    {
+        std::vector<uint8_t> t = {0x00, 0x90, 60, 0x64, 0x00, 0xFF, 0x2F, 0x00};
+        std::vector<uint8_t> b; tagAt(b, "MThd"); put32be(b, 6); put16be(b, 0); put16be(b, 1); put16be(b, 96);
+        tagAt(b, "MTrk"); put32be(b, (uint32_t)t.size()); b.insert(b.end(), t.begin(), t.end());
+        auto r = analyze(b);
+        CHECK(!r.supported && r.midi.notes.size() == 1 && r.midi.notes[0].duration == 0, "a note with no note-off is flagged");
+    }
+
     // a MIDI track without an end-of-track event is flagged
     {
         auto r = analyze(makeMidi({60}, false));

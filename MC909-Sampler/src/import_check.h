@@ -17,10 +17,17 @@ struct WavInfo {
     std::string encoding;        // "PCM" or "float"
 };
 
+struct MidiNote {
+    uint64_t tick = 0;             // start, in ticks from the start of the track
+    uint64_t duration = 0;         // in ticks; 0 when the note has no note-off
+    uint8_t channel = 0, note = 0, velocity = 0;
+};
+
 struct MidiInfo {
     bool ok = false;
     uint16_t format = 0, tracks = 0, division = 0;
     uint64_t noteOns = 0;
+    std::vector<MidiNote> notes;   // every note, in the order the tracks list them
     int minNote = 127, maxNote = 0;
     double firstTempoBpm = 0;    // 0 when no tempo event is present
     std::vector<std::string> trackProblems;
