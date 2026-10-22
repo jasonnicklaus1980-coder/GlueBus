@@ -23,11 +23,16 @@ build/test_project: $(SRC) tests/test_project.cpp src/project.h src/import_check
 build/test_extras: $(SRC) tests/test_extras.cpp src/padmap.h src/waveedit.h src/sampler.h | build
 	$(CXX) $(FLAGS) $(SRC) tests/test_extras.cpp -o $@
 
-test: build/test_import build/test_sampler build/test_project build/test_extras
+WRAP_SRC := MPC/src/sampler_mpc.cpp
+build/test_wrapper: $(SRC) $(WRAP_SRC) tests/test_wrapper.cpp MPC/src/vst2.h src/padmap.h src/project.h src/sampler.h | build
+	$(CXX) $(FLAGS) -fno-exceptions -Isrc -IMPC/src $(SRC) $(WRAP_SRC) tests/test_wrapper.cpp -o $@
+
+test: build/test_import build/test_sampler build/test_project build/test_extras build/test_wrapper
 	./build/test_import
 	./build/test_sampler
 	./build/test_project
 	./build/test_extras
+	./build/test_wrapper
 
 clean:
 	rm -rf build

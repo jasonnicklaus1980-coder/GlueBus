@@ -45,7 +45,7 @@ int main()
         s.noteOn(0, 1.f);
         float L[1100], R[1100];
         s.render(L, R, 1100);
-        CHECK(std::fabs(L[500] - 0.5f * 500 / 1000 * 0.5f * 2 * 0.5f / 0.5f * (0.5f) * 2 * 0.5f / 0.5f * 0 + 0.0f) < 2.0f, "render runs");
+        CHECK(std::fabs(L[500] - 0.5f * 500 / 1000.f) < 1e-3f, "frame 500 reads the sample (%.4f)", L[500]);
         CHECK(s.activeVoices() == 0, "a one-shot ends at the end of its sample");
         CHECK(countNonFinite(L, 1100) == 0, "output is finite");
         // the sample is 0.5 * i/1000 for i in 0..999; with the 1 ms attack the first frames are faded in

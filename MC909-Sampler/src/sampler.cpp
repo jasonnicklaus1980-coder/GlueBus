@@ -1,4 +1,5 @@
 #include "sampler.h"
+#include "mathlite.h"
 
 #include <algorithm>
 #include <cmath>
@@ -43,9 +44,9 @@ void Sampler::startVoice(Voice& v, int padIndex, const Layer& layer, float veloc
     v.active = true;
     v.pad = padIndex; v.sample = layer.sample; v.choke = p.choke;
     v.loop = p.loop; v.reverse = p.reverse;
-    v.winStart = std::floor(layer.start * len);
-    v.winEnd = std::max(v.winStart + 1.0, std::floor(layer.end * len));
-    v.inc = std::pow(2.0, p.semitones / 12.0) * (double)s.rate / outRate_;
+    v.winStart = floord(layer.start * len);
+    v.winEnd = std::max(v.winStart + 1.0, floord(layer.end * len));
+    v.inc = expd(p.semitones / 12.0 * 0.6931471805599453) * (double)s.rate / outRate_;
     if (v.reverse) { v.pos = v.winEnd - 1.0; v.inc = -v.inc; } else v.pos = v.winStart;
     v.gain = velocity * p.volume;
     if (s.channels == 1)                                       // pan applies to mono samples
@@ -58,7 +59,7 @@ void Sampler::startVoice(Voice& v, int padIndex, const Layer& layer, float veloc
     v.attackStep = (float)(1.0 / std::max(0.001, (double)p.attack) / sr);
     v.decayStep = p.decay > 0.f ? (float)((1.0 - p.sustain) / (p.decay * sr)) : 1.f;
     v.sustain = p.sustain;
-    v.relMul = (float)(1.0 - std::exp(-6.9078 / (std::max(0.001, (double)p.release) * sr)));   // release: 60 dB down
+    v.relMul = (float)(1.0 - expd(-6.9078 / (std::max(0.001, (double)p.release) * sr)));   // release: 60 dB down
     v.env = 0.f; v.stage = Stage::Attack;
     v.age = ++clock_;
 }

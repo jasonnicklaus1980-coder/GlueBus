@@ -1,4 +1,5 @@
 #include "import_check.h"
+#include "mathlite.h"
 
 #include <cstdio>
 #include <cmath>
@@ -189,7 +190,7 @@ static double readExtended80(const uint8_t* p)
     uint64_t mant = 0;
     for (int i = 2; i < 10; ++i) mant = mant << 8 | p[i];
     if (expo == 0 && mant == 0) return 0.0;
-    double v = std::ldexp((double)mant, expo - 16383 - 63);
+    double v = ldexpd((double)mant, expo - 16383 - 63);
     return (p[0] & 0x80) ? -v : v;
 }
 

@@ -1,10 +1,12 @@
 // Pad mapping, waveform editing, pitch accuracy and a CPU figure for the sampler.
+#include "../src/mathlite.h"
 #include "../src/padmap.h"
 #include "../src/sampler.h"
 #include "../src/waveedit.h"
 
 #include <chrono>
 #include <cmath>
+#include <algorithm>
 #include <cstdio>
 
 using namespace mc909;
@@ -80,6 +82,19 @@ int main()
         double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         std::printf("cpu: 16 looping voices, 10 s stereo at 44.1 kHz rendered in %.1f ms on this machine\n", sec * 1000);
         CHECK(sec < 10.0, "16 voices render faster than real time on this machine");
+    }
+
+    // libm-free helpers against the standard library
+    {
+        double worst = 0;
+        for (double x = -30; x <= 30; x += 0.01) {
+            const double want = std::exp(x), got = expd(x);
+            worst = std::max(worst, std::fabs(got - want) / want);
+        }
+        CHECK(worst < 1e-13, "expd matches exp over -30..30 (worst relative error %.2e)", worst);
+        CHECK(std::fabs(floord(-0.5) + 1.0) < 1e-12 && floord(2.0) == 2.0 && floord(2.9) == 2.0, "floord rounds down");
+        CHECK(std::fabs(ldexpd(1.5, 40) / std::ldexp(1.5, 40) - 1.0) < 1e-15 && std::fabs(ldexpd(3.0, -1000) / std::ldexp(3.0, -1000) - 1.0) < 1e-12,
+              "ldexpd matches ldexp, including far out of range exponents");
     }
 
     std::printf("%d checks, %d failures\n", checks, fails);
