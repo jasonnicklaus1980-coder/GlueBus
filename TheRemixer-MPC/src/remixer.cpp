@@ -52,6 +52,8 @@ struct Plugin
     std::atomic<bool> armed {false};
     Ring ring;
 
+    bool notifying = false;               // guards notifyHost() against re-entry
+
     // host thread -> writer thread
     std::atomic<bool> writerStop {false};
     std::atomic<long> framesWritten {0};
@@ -230,14 +232,25 @@ void processAccumulating (AEffect* e, float** in, float** out, int32_t n)
 }
 
 // ------------------------------------------------------------------------------------------------ parameters
+// Record is a press, not a switch: MPC sends 1 on each press and 0 on release, and the skin's buttons are Instant.
+// Each press toggles recording. The plugin then sets Record back to 0 and tells the host, so the next press is a
+// press again (the same pattern as Da Lufs Plug's Prev/Next/Reset). The state is shown by the Status readout.
+void notifyHost (Plugin* p)
+{
+    if (p->master == nullptr || p->notifying) return;
+    p->notifying = true;
+    p->master (&p->fx, 0 /* audioMasterAutomate */, P_RECORD, 0, nullptr, 0.f);
+    p->master (&p->fx, 42 /* audioMasterUpdateDisplay */, 0, 0, nullptr, 0.f);
+    p->notifying = false;
+}
+
 void setParameter (AEffect* e, int32_t idx, float v)
 {
     Plugin* p = static_cast<Plugin*> (e->object);
-    if (idx == P_RECORD)
-    {
-        if (v >= 0.5f) startRecording (p);
-        else stopRecording (p);
-    }
+    if (idx != P_RECORD || v < 0.5f || p->notifying) return;   // releases and our own resets do nothing
+    if (p->state.load() == S_RECORDING) stopRecording (p);
+    else startRecording (p);
+    notifyHost (p);
 }
 
 float getParameter (AEffect* e, int32_t idx)
@@ -245,7 +258,7 @@ float getParameter (AEffect* e, int32_t idx)
     Plugin* p = static_cast<Plugin*> (e->object);
     switch (idx)
     {
-        case P_RECORD:    return p->state.load() == S_RECORDING ? 1.f : 0.f;
+        case P_RECORD:    return 0.f;                       // momentary: always at rest
         case P_PEAK_L:    return toDb (p->peakL.load());
         case P_PEAK_R:    return toDb (p->peakR.load());
         case P_CLIPS:     return (float) p->clips.load();
@@ -292,7 +305,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
             const float v = getParameter (e, idx);
             switch (idx)
             {
-                case P_RECORD:   std::snprintf (b, sizeof b, "%s", v >= 0.5f ? "Recording" : "Off"); break;
+                case P_RECORD:   std::snprintf (b, sizeof b, "%s", "Press"); break;
                 case P_PEAK_L:
                 case P_PEAK_R:
                     if (v <= -119.f) std::snprintf (b, sizeof b, "-inf");

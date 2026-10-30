@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build theremixer.so for the MPC (32-bit ARM hard-float), verify it, and assemble a release folder + zip:
-#   TheRemixer-0.1.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,INSTALL.md,SHA256SUMS,payload/vst/theremixer.so}
+#   TheRemixer-0.1.0/{install.sh,uninstall.sh,plugin.xml,plugin_list.awk,INSTALL.md,SHA256SUMS,payload/vst/theremixer.so,payload/Synths/<skin>}
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION=0.1.0; NAME="TheRemixer-$VERSION"; SO=build/arm/theremixer.so
@@ -21,11 +21,14 @@ maxg=$("$RE" -V "$SO" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)
 echo "Highest glibc symbol: $maxg  (the MPC has at least GLIBC_2.34, as the JV-880 package needs)"
 [ "$(printf '%s\n' "$maxg" GLIBC_2.34 | sort -V | tail -1)" = GLIBC_2.34 ] || { echo "ERROR: needs $maxg, newer than GLIBC_2.34"; exit 1; }
 
-rm -rf "dist/$NAME"; mkdir -p "dist/$NAME/payload/vst"
+SKIN="mpc/skin/GlueBus - VST - The Remixer"
+[ -f "$SKIN/Plugin Skins/TUI.json" ] || { echo "ERROR: skin missing: $SKIN (run skin_tools/make_skin.py)"; exit 1; }
+rm -rf "dist/$NAME"; mkdir -p "dist/$NAME/payload/vst" "dist/$NAME/payload/Synths"
+cp -a "$SKIN" "dist/$NAME/payload/Synths/"
 cp "$SO" "dist/$NAME/payload/vst/theremixer.so"
 cp mpc/install.sh mpc/uninstall.sh mpc/plugin.xml mpc/plugin_list.awk "dist/$NAME/"
 cp mpc/INSTALL.md "dist/$NAME/INSTALL.md"
 chmod +x "dist/$NAME/"*.sh
-( cd "dist/$NAME" && sha256sum INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload/vst/theremixer.so > SHA256SUMS )
+( cd "dist/$NAME" && find INSTALL.md install.sh uninstall.sh plugin.xml plugin_list.awk payload -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
 ( cd dist && rm -f "$NAME-mpc-armv7.zip" && zip -qr "$NAME-mpc-armv7.zip" "$NAME" )
 echo "Built dist/$NAME-mpc-armv7.zip"

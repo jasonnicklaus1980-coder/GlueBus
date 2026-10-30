@@ -20,10 +20,12 @@
    A multi-minute test is needed on the device's storage.
 4. **Stop latency.** Stopping waits 50 ms so audio already in flight is written before the file closes. Check that the
    last sounds aren't cut off.
-5. **Threading.** `setParameter` runs on the host's control thread and starts or stops the writer thread there. Confirm
+5. **The skin on the device.** Whether the MPC finds the skin under `/sdcard/Synths/GlueBus - VST - The Remixer` and draws
+   the screen, and whether the REC button starts and stops recording with a single press each time.
+6. **Threading.** `setParameter` runs on the host's control thread and starts or stops the writer thread there. Confirm
    the MPC calls `setParameter` from a thread that is allowed to block for the 50 ms stop.
-6. **WAV compatibility.** The MPC must load and play the 24-bit WAV. Check that it appears in the sample browser.
-7. **Plugin loading on the device.** The ARM build is verified (see below), but it has not been loaded by the MPC itself.
+7. **WAV compatibility.** The MPC must load and play the 24-bit WAV. Check that it appears in the sample browser.
+8. **Plugin loading on the device.** The ARM build is verified (see below), but it has not been loaded by the MPC itself.
 
 ## ARM verification (cross-built and run under QEMU, not on the device)
 - `make arm`: ELF32, ARM EABI5, ARMv7, VFP hard-float; needs only libc and libm; highest glibc symbol GLIBC_2.34.
@@ -35,10 +37,14 @@
 
 ## Design decisions for later phases
 - 24-bit PCM, not 32-bit float: the float WAV format is less certain on the MPC.
-- No skin yet. The MPC shows the generic view. The skin is a later phase, and it must be verified on the device first.
+- A simple RECORD skin (`skin_tools/make_skin.py`, folder `GlueBus - VST - The Remixer`) follows the working skins in this
+  repo: one tab, a background, a REC button and labelled readouts. Its structure is checked by `skin_tools/test_skin.py`.
+  It has not been seen on the MPC.
+- Record is a press, not a switch. Each press toggles recording, and the plugin resets the parameter to 0 and tells the
+  host, the same pattern as Da Lufs Plug's buttons. Buttons in the working skins are all `Instant`.
 - The recording path is in the plugin, not in a separate app, so recording works from any track the plugin sits on.
 
 ## Next steps
-1. Confirm the 7 items above on the MPC X.
+1. Confirm the 8 items above on the MPC X.
 2. Phase 2 (analysis): key, BPM and chord recognition on the recording, starting from the existing `velvet-interpolator`
    analysis code.

@@ -26,6 +26,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf file zip
+          pip install --quiet pillow
+
+      - name: Skin structure check
+        run: python3 skin_tools/test_skin.py
 
       - name: Offline host test (x86)
         run: make test

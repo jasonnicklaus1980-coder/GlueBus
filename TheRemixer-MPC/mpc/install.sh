@@ -6,6 +6,7 @@
 set -e
 cd "$(dirname "$0")"
 NAME='The Remixer'; VERSION='0.1.0'; SO_DIR='/sdcard/vst'; SO='theremixer.so'
+SKIN='GlueBus - VST - The Remixer'   # must be "<manufacturer> - VST - <name>" from plugin.xml, or the MPC won't find it
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -20,11 +21,12 @@ SETTINGS=$(ls "$PFX"/media/az01-internal/Settings/*/MPC.settings 2>/dev/null | h
 [ -n "$SETTINGS" ] || die "MPC.settings not found (not an MPC OS device?)"
 [ -d "$(dirname "$PFX$SO_DIR")" ] || die "$(dirname "$SO_DIR") not found"
 [ -f payload/vst/"$SO" ] || die "$SO missing from the package"
+[ -d "payload/Synths/$SKIN" ] || die "skin folder missing from the package"
 grep -q '/sdcard/Synths' "$SETTINGS" || echo "warning: /sdcard/Synths isn't in MPC's SynthContentLocations"
 if [ -f SHA256SUMS ]; then sha256sum -c SHA256SUMS >/dev/null 2>&1 || die "files damaged (SHA256SUMS mismatch): copy the folder again"; fi
 
 echo "Installing $NAME $VERSION:"
-echo "  $SO_DIR/$SO and an entry in $SETTINGS"
+echo "  $SO_DIR/$SO, /sdcard/Synths/$SKIN, and an entry in $SETTINGS"
 if [ $YES = 0 ]; then
     printf "MPC will be stopped and restarted. Save your project first. Continue? [y/N] "
     read -r ok; case "$ok" in y|Y|yes) ;; *) echo "cancelled"; exit 1 ;; esac
@@ -39,6 +41,8 @@ fi
 
 mkdir -p "$PFX$SO_DIR"
 cp payload/vst/"$SO" "$PFX$SO_DIR/$SO.new" && mv "$PFX$SO_DIR/$SO.new" "$PFX$SO_DIR/$SO"
+mkdir -p "$PFX/sdcard/Synths"
+rm -rf "$PFX/sdcard/Synths/$SKIN"; cp -a "payload/Synths/$SKIN" "$PFX/sdcard/Synths/$SKIN"
 
 BAK="$SETTINGS.bak-theremixer-$(date +%Y%m%d-%H%M%S)"
 cp "$SETTINGS" "$BAK"

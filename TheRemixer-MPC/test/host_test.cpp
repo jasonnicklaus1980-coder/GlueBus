@@ -65,8 +65,9 @@ int main (int argc, char** argv)
     long clipsSeen = 0;
     for (int b = 0; b < blocks; ++b)
     {
-        if (b == recStart) fx->setParameter (fx, 0, 1.f);
-        if (b == recEnd) fx->setParameter (fx, 0, 0.f);
+        // Record is a press: 1 toggles it, 0 (release) does nothing. Start with a press, then a release.
+        if (b == recStart) { fx->setParameter (fx, 0, 1.f); fx->setParameter (fx, 0, 0.f); }
+        if (b == recEnd) { fx->setParameter (fx, 0, 1.f); fx->setParameter (fx, 0, 0.f); }
         for (int i = 0; i < block; ++i)
         {
             const double t = (double) (b * block + i) / rate;
@@ -86,6 +87,7 @@ int main (int argc, char** argv)
     check (clipsSeen == 0, "no clip warnings on a tone under full scale");
     check ((long) fx->getParameter (fx, 5) == 0, "no dropouts");
     check ((long) fx->getParameter (fx, 6) == 2, "status is Saved after stop");
+    check (fx->getParameter (fx, 0) == 0.f, "Record is back at rest after the press");
 
     // the newest rec_*.wav in the test folder is the one we just wrote
     char newest[512] = "";

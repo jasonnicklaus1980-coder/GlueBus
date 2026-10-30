@@ -1,9 +1,9 @@
 #!/bin/sh
-# Removes The Remixer: deletes /sdcard/vst/theremixer.so and its MPC.settings entry. Recordings are kept.
+# Removes The Remixer: deletes /sdcard/vst/theremixer.so, its skin and its MPC.settings entry. Recordings are kept.
 # Run on the device as root:  sh uninstall.sh [-y]
 set -e
 cd "$(dirname "$0")"
-NAME='The Remixer'; SO_DIR='/sdcard/vst'; SO='theremixer.so'
+NAME='The Remixer'; SO_DIR='/sdcard/vst'; SO='theremixer.so'; SKIN='GlueBus - VST - The Remixer'
 YES=0; [ "$1" = "-y" ] && YES=1
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -30,6 +30,7 @@ n=$(grep -c "file=\"$SO_DIR/$SO\"" "$SETTINGS.new" || true)
 [ "$n" = 0 ] || { rm -f "$SETTINGS.new"; die "settings edit failed; MPC.settings unchanged"; }
 mv "$SETTINGS.new" "$SETTINGS"
 rm -f "$PFX$SO_DIR/$SO"
+rm -rf "$PFX/sdcard/Synths/$SKIN"
 sync
 
 echo "Removed $NAME. Settings backup: $BAK"
