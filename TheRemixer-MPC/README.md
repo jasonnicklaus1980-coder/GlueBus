@@ -15,9 +15,10 @@ scripts/package.sh   # verified ARM build + install zip in dist/
 
 ## Analysis (Phase 2, host build)
 ```
-build/native/remixer_analyze recording.wav outdir   # tempo, key, chords, notes -> outdir/chords.txt, melody.mid
+build/native/remixer_analyze [-t semitones] [-i inversion] [-g grid_beats] recording.wav outdir
+# tempo, key, chords, notes -> outdir/chords.txt, chords.mid, melody.mid
 ```
-Tests run on synthetic audio with known answers. See `docs/PHASE2.md` for the results and limits.
+Tests run on synthetic audio with known answers. See `docs/PHASE2.md` (analysis) and `docs/PHASE3.md` (MIDI).
 
 ## Install
 See `mpc/INSTALL.md`.
