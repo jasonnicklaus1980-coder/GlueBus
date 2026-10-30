@@ -24,8 +24,8 @@
 - **Chord boundaries** come from analysis frames of 2048 samples, so each boundary is accurate to about 46 ms.
 - **Synthetic audio only.** Real recordings (drums, reverb, noise, a sampled piano) will score lower. No real-recording
   accuracy has been measured yet.
-- **Not on the MPC yet.** The analysis runs on the host only. The plugin build is unchanged, and nothing here has run
-  on the device.
+- **Not on the MPC yet.** The analysis is not in the plugin, and nothing here has run on the device. It does build for
+  ARMv7 and passes its tests under `qemu-arm` (same results as on the host). Emulation says nothing about speed.
 - **Speed and memory** on the MPC X are unmeasured. The poly and chord analysis use a 65536-note cap and static buffers.
 
 ## Next steps

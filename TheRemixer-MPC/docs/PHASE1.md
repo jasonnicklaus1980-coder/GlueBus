@@ -23,7 +23,15 @@
 5. **Threading.** `setParameter` runs on the host's control thread and starts or stops the writer thread there. Confirm
    the MPC calls `setParameter` from a thread that is allowed to block for the 50 ms stop.
 6. **WAV compatibility.** The MPC must load and play the 24-bit WAV. Check that it appears in the sample browser.
-7. **Plugin loading on ARMv7.** Build and load on the device (`make arm` / `scripts/package.sh` in CI).
+7. **Plugin loading on the device.** The ARM build is verified (see below), but it has not been loaded by the MPC itself.
+
+## ARM verification (cross-built and run under QEMU, not on the device)
+- `make arm`: ELF32, ARM EABI5, ARMv7, VFP hard-float; needs only libc and libm; highest glibc symbol GLIBC_2.34.
+- The plugin host test (`test/host_test.cpp`), built for ARM and run under `qemu-arm`, passes: bit-exact passthrough,
+  valid 24-bit WAV, samples match the input to 24-bit precision.
+- The analysis tests, built for ARM and run under `qemu-arm`, pass with the same results as on the host.
+- `scripts/package.sh` produces `TheRemixer-0.1.0-mpc-armv7.zip`; all six files match `SHA256SUMS`.
+- Emulation checks the code's behaviour, not its speed. Timing on the MPC X is still unmeasured.
 
 ## Design decisions for later phases
 - 24-bit PCM, not 32-bit float: the float WAV format is less certain on the MPC.
