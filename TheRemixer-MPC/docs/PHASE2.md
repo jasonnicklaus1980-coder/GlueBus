@@ -18,6 +18,13 @@
 | 24-bit / 16-bit / float WAV round trips | sample error 9e-8 / 2e-5 / 0 |
 | Non-WAV and missing files | rejected |
 
+## Chord confidence (added)
+- `cc_segment_fit` gives each chord segment a fit from 0 to 1: the average match between the audio and the chord's
+  notes. Chords with a fit below **0.85** are shown as **N**, so uncertain chords are no longer printed as fact.
+- Measured fits: clean synthetic progression 0.99; white noise 0.61; sound effects 0.70 to 0.86.
+- **0.85 is provisional.** It was set from synthetic chords and sound effects, not from real music. Real chords with
+  reverb or many instruments may score lower and be dropped. Check it on real recordings before relying on it.
+
 ## Known limits
 - **Tempo needs a beat.** A sustained chord progression has no onsets, so the tempo reading is meaningless there.
   The CLI shows the confidence; treat a low value as "no tempo found".

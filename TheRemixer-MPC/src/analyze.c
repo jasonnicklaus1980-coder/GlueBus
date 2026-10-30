@@ -5,6 +5,10 @@
 #include <string.h>
 
 #define RM_MAX_NOTES 65536
+/* A chord whose audio fits it less well than this is shown as N (no chord). Provisional: measured on synthetic chords
+   (0.99), white noise (0.61) and sound effects (0.70 to 0.86). Set from real recordings before relying on it. */
+#define RM_CHORD_MIN_FIT 0.85
+#define RM_STATE_NONE (12 * 9)
 
 int rm_analyze(const float* mono, size_t n, double sr, rm_report* r) {
     memset(r, 0, sizeof *r);
@@ -36,6 +40,12 @@ int rm_analyze(const float* mono, size_t n, double sr, rm_report* r) {
         size_t count = 0;
         if (cc_analyze(mono, n, sr, r->chords, cap, &count) < 0) count = 0;
         r->nchords = count;
+        r->chord_fit = malloc((count ? count : 1) * sizeof(double));
+        if (!r->chord_fit) return -1;
+        for (size_t i = 0; i < count; ++i) {
+            r->chord_fit[i] = cc_segment_fit(mono, n, sr, &r->chords[i]);
+            if (r->chord_fit[i] < RM_CHORD_MIN_FIT) r->chords[i].state = RM_STATE_NONE;
+        }
     }
     return 0;
 }
@@ -49,6 +59,7 @@ double rm_chord_end(const rm_report* r, size_t i) {
 
 void rm_report_free(rm_report* r) {
     free(r->chords);
+    free(r->chord_fit);
     free(r->notes);
     memset(r, 0, sizeof *r);
 }
@@ -66,6 +77,6 @@ void rm_print(const rm_report* r, FILE* f) {
     for (size_t i = 0; i < r->nchords; ++i) {
         cc_state_name(r->chords[i].state, name);
         /* segments count analysis frames of CC_HOP samples each */
-        fprintf(f, "  %7.2f - %7.2f  %s\n", rm_chord_start(r, i), rm_chord_end(r, i), name);
+        fprintf(f, "  %7.2f - %7.2f  %-6s fit %.2f\n", rm_chord_start(r, i), rm_chord_end(r, i), name, r->chord_fit[i]);
     }
 }

@@ -19,6 +19,9 @@ typedef struct {
    Returns -1 on bad input. */
 long cc_analyze(const float* x, size_t n, double sr, cc_segment* segments, size_t max_segments, size_t* out_count);
 
+/* How well a segment fits its chord, 0..1 (added in TheRemixer): mean cosine of chroma and chord template. */
+double cc_segment_fit(const float* x, size_t n, double sr, const cc_segment* seg);
+
 /* Name of a state, e.g. "C#m7". Writes into buf (at least 8 bytes). */
 void cc_state_name(int state, char* buf);
 

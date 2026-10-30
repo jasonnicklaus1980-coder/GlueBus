@@ -130,6 +130,32 @@ int main(void) {
         free(x);
     }
 
+    printf("chord fit\n");
+    {
+        size_t n = (size_t)(4.0 * sr);
+        float* w = calloc(n, sizeof(float));
+        for (size_t i = 0; i < n; ++i) w[i] = (float)(0.3 * rnd());
+        rm_report r;
+        rm_analyze(w, n, sr, &r);
+        int all_none = r.nchords > 0;
+        for (size_t i = 0; i < r.nchords; ++i) if (r.chords[i].state != 12 * 9) all_none = 0;
+        check(all_none, "white noise gives no chord: every segment is N");
+        rm_report_free(&r);
+        free(w);
+    }
+    {
+        const int triad[3] = { 60, 64, 67 };
+        size_t n = (size_t)(3.0 * sr);
+        float* x = calloc(n, sizeof(float));
+        add_chord(x, n, sr, triad, 3, 0.0, 3.0);
+        rm_report r;
+        rm_analyze(x, n, sr, &r);
+        printf("     C major triad fit: %.2f\n", r.nchords ? r.chord_fit[0] : 0.0);
+        check(r.nchords >= 1 && r.chords[0].state == 0 && r.chord_fit[0] > 0.95, "a clean C major triad is kept with a high fit");
+        rm_report_free(&r);
+        free(x);
+    }
+
     printf("key and notes\n");
     {
         /* C major scale, 0.4 s per note, then the C major triad held */

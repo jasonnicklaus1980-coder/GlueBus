@@ -69,13 +69,8 @@ static double frame_chroma(const float* x, const int* bin_pc, const unsigned cha
     return energy;
 }
 
-long cc_analyze(const float* x, size_t n, double sr, cc_segment* segments, size_t max_segments, size_t* out_count) {
-    *out_count = 0;
-    if (!x || !segments || !out_count || sr <= 0 || n < CC_NFFT) return -1;
-
-    /* bin -> pitch class, keeping 65..2100 Hz (same as the Python prototype) */
-    static int bin_pc[CC_NBINS];
-    static unsigned char keep[CC_NBINS];
+/* frame -> pitch class for each FFT bin, keeping 65..2100 Hz. Shared by cc_analyze and cc_segment_fit. */
+static void bin_tables(double sr, int* bin_pc, unsigned char* keep) {
     for (int k = 0; k < CC_NBINS; k++) {
         double f = k * sr / CC_NFFT;
         keep[k] = (f >= 65.0 && f <= 2100.0);
@@ -85,6 +80,55 @@ long cc_analyze(const float* x, size_t n, double sr, cc_segment* segments, size_
             bin_pc[k] = (int)(((r % 12) + 12) % 12);
         } else bin_pc[k] = 0;
     }
+}
+
+/* unit-length pitch-class template for each state s = root*9 + quality */
+static void chord_templates(double T[][12]) {
+    for (int root = 0; root < 12; root++)
+        for (int q = 0; q < CC_NQUAL; q++) {
+            double v[12] = {0};
+            for (int i = 0; i < cc_quality_len[q]; i++) v[(root + cc_quality_int[q][i]) % 12] = 1.0;
+            double nrm = 0; for (int i = 0; i < 12; i++) nrm += v[i] * v[i];
+            nrm = sqrt(nrm);
+            for (int i = 0; i < 12; i++) T[root * CC_NQUAL + q][i] = v[i] / nrm;
+        }
+}
+
+/* Added in TheRemixer (not in Velvet Interpolator): how well a segment fits its chord.
+   Mean cosine between each frame's chroma and the chord's template, over the frames of the segment that have energy.
+   1.0 = the chroma is exactly the chord; values near 0 mean the audio does not look like that chord. Returns 0 for N. */
+double cc_segment_fit(const float* x, size_t n, double sr, const cc_segment* seg) {
+    if (!x || !seg || sr <= 0 || seg->state < 0 || seg->state >= 12 * CC_NQUAL) return 0.0;
+    if (seg->end_frame < seg->start_frame) return 0.0;
+    static int bin_pc[CC_NBINS];
+    static unsigned char keep[CC_NBINS];
+    bin_tables(sr, bin_pc, keep);
+    static double T[12 * CC_NQUAL][12];
+    chord_templates(T);
+    double sum = 0.0;
+    size_t used = 0;
+    for (size_t f = seg->start_frame; f <= seg->end_frame; f++) {
+        size_t pos = f * CC_HOP;
+        if (pos + CC_NFFT > n) break;
+        double c[12];
+        double energy = frame_chroma(x + pos, bin_pc, keep, c);
+        if (energy <= 0.0) continue;
+        double dot = 0.0;
+        for (int i = 0; i < 12; i++) dot += T[seg->state][i] * c[i];
+        sum += dot;
+        used++;
+    }
+    return used ? sum / (double)used : 0.0;
+}
+
+long cc_analyze(const float* x, size_t n, double sr, cc_segment* segments, size_t max_segments, size_t* out_count) {
+    *out_count = 0;
+    if (!x || !segments || !out_count || sr <= 0 || n < CC_NFFT) return -1;
+
+    /* bin -> pitch class, keeping 65..2100 Hz (same as the Python prototype) */
+    static int bin_pc[CC_NBINS];
+    static unsigned char keep[CC_NBINS];
+    bin_tables(sr, bin_pc, keep);
 
     size_t frames = (n - CC_NFFT) / CC_HOP + 1;
     double* energy = malloc(sizeof(double) * frames);
@@ -100,14 +144,7 @@ long cc_analyze(const float* x, size_t n, double sr, cc_segment* segments, size_
 
     /* templates: state s = root*9 + quality */
     static double T[12 * CC_NQUAL][12];
-    for (int root = 0; root < 12; root++)
-        for (int q = 0; q < CC_NQUAL; q++) {
-            double v[12] = {0};
-            for (int i = 0; i < cc_quality_len[q]; i++) v[(root + cc_quality_int[q][i]) % 12] = 1.0;
-            double nrm = 0; for (int i = 0; i < 12; i++) nrm += v[i] * v[i];
-            nrm = sqrt(nrm);
-            for (int i = 0; i < 12; i++) T[root * CC_NQUAL + q][i] = v[i] / nrm;
-        }
+    chord_templates(T);
 
     /* emissions, then Viterbi with the same rules as chords.viterbi (switch penalty 6.0) */
     const int S = CC_NSTATES;

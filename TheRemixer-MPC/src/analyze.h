@@ -14,7 +14,8 @@ typedef struct {
     double bpm, bpm_conf;
     int key;                     /* 0..11 major tonic C..B, 12..23 minor; see vi_key_name() */
     double key_conf;
-    cc_segment* chords;          /* chord segments from the recording */
+    cc_segment* chords;          /* chord segments from the recording; a segment that fits no chord is N */
+    double* chord_fit;           /* per segment: how well it fits its chord, 0..1 (cc_segment_fit) */
     size_t nchords;
     vi_poly_note* notes;         /* polyphonic note transcription */
     size_t nnotes;
