@@ -7,6 +7,7 @@
      chords.txt  one chord per line: start, end, name (seconds)
      chords.mid  the chords voiced as MIDI, at the detected tempo (120 BPM if the tempo is not trusted)
      melody.mid  the polyphonic melody as MIDI, transposed and quantized as requested
+     pads.txt    the pad layout: chords on bank A, melody pitches on bank B (pads 1..16 in each bank)
    Analysis runs on the mono mix of the file. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,7 @@
 #include "analyze.h"
 #include "analysis/musicout.h"
 #include "midi_build.h"
+#include "pad_layout.h"
 #include "wav_read.h"
 
 static int write_text_chords(const char* path, const rm_report* r) {
@@ -24,6 +26,28 @@ static int write_text_chords(const char* path, const rm_report* r) {
         cc_state_name(r->chords[i].state, name);
         fprintf(f, "%.3f\t%.3f\t%s\n", rm_chord_start(r, i), rm_chord_end(r, i), name);
     }
+    fclose(f);
+    return 0;
+}
+
+/* pads.txt: the bank layout. Chords go on bank A, one chord per pad. The melody goes on bank B, one pitch per pad,
+   so the two never share a pad. Each bank has its own pads 1..16 and the same note numbers. */
+static int write_pads(const char* path, const rm_report* r, int transpose) {
+    FILE* f = fopen(path, "w");
+    if (!f) return -1;
+    int states[RM_PADS], pitches[RM_PADS];
+    size_t k = rm_chord_layout(r, states);
+    size_t folded = 0;
+    size_t m = rm_melody_layout(r, transpose, pitches, &folded);
+    char name[16];
+    fprintf(f, "bank\tpad\tnote\trole\tcontent\n");
+    for (size_t j = 0; j < k; ++j) {
+        cc_state_name(states[j], name);
+        fprintf(f, "A\t%zu\t%d\tchord\t%s\n", j + 1, rm_pad_note((int)j), name);
+    }
+    for (size_t j = 0; j < m; ++j)
+        fprintf(f, "B\t%zu\t%d\tmelody\t%d\n", j + 1, rm_pad_note((int)j), pitches[j]);
+    if (folded) fprintf(f, "# %zu melody pitches did not fit on a pad and fold onto the top melody pad\n", folded);
     fclose(f);
     return 0;
 }
@@ -88,7 +112,10 @@ int main(int argc, char** argv) {
     snprintf(path, sizeof path, "%s/melody.mid", outdir);
     if (write_midi(path, notes, nm, bpm) != 0) rc = 1;
 
-    if (rc == 0) printf("wrote %s/chords.txt, chords.mid and melody.mid\n", outdir);
+    snprintf(path, sizeof path, "%s/pads.txt", outdir);
+    if (write_pads(path, &r, transpose) != 0) { fprintf(stderr, "cannot write %s\n", path); rc = 1; }
+
+    if (rc == 0) printf("wrote %s/chords.txt, chords.mid, melody.mid and pads.txt\n", outdir);
     free(notes);
     rm_report_free(&r);
     free(mono);

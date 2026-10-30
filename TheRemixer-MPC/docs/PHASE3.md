@@ -12,6 +12,17 @@
 - Pad output: `padsend` (vendored unchanged from Velvet Interpolator) turns a note schedule into VST MIDI events
   sample-accurately. Tested here; not yet wired into the plugin.
 
+## Pad layout (decided here; the MPC side is not verified)
+- **Chords on bank A:** each distinct chord gets its own pad, in order of first appearance, up to 16. A chord past
+  the 16th has no pad. `N` (no chord) has none either.
+- **Melody on bank B:** each distinct pitch (after transposition) gets a pad, sorted from the lowest pitch. Up to 16
+  pitches. Beyond 16, the lowest 16 get pads and the rest fold onto the nearest pad; the count is written to `pads.txt`.
+- **Pad notes:** pad *p* sends MIDI note 36 + *p* (pads 1..16 are notes 36..51). This is an **assumption** about the
+  MPC's default bank; check it on the device.
+- Chords and melody are on different banks, so they never share a pad. Putting both on one bank would leave 16 pads
+  for both, which is too few for a progression and a melody together.
+- `remixer_analyze` writes this table as `pads.txt`: bank, pad, note, role, content.
+
 ## Checked
 | Check | Result |
 |---|---|
@@ -24,6 +35,7 @@
 | Written chord MIDI, parsed back | 6 note-ons, 6 note-offs, pitches match the voicing |
 | Pad schedule | 6 note-ons, first on its exact sample; stop sends all note-offs |
 | Both test programs under `qemu-arm` | pass |
+| Pad layout: chords (order, repeats, N, 16-pad limit), melody (sorted, transposed, folding past 16), pad notes | 22 checks pass |
 
 ## Known limits
 - **No piano-roll editor or MIDI import yet.** Editing is by re-running with different options, not in a UI.
@@ -34,6 +46,6 @@
 - **120 BPM fallback.** When the tempo is not trusted, the MIDI is at 120 BPM whatever the song's real tempo is.
 
 ## Next steps
-1. Decide the pad layout: one chord per pad, or one scale row for a melody, and how the MPC receives the notes.
+1. Check the pad notes (36..51 from pads 1..16) and the bank switching on the MPC.
 2. Check the MIDI files on the MPC (import and playback).
 3. Add the analysis and pad output to the plugin after the Phase 1 device checks.
