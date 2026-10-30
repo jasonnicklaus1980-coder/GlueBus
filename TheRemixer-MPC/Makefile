@@ -33,8 +33,23 @@ build/native/host_test: test/host_test.cpp src/vst2.h
 	@mkdir -p build/native
 	g++ -O2 -Wall -std=c++17 -Isrc test/host_test.cpp -o $@ -ldl -lm
 
-test: native build/native/host_test
+test: native build/native/host_test analysis-test build/native/remixer_analyze
 	./build/native/host_test build/native/theremixer.so
+
+# Analysis (chords, key, notes, tempo, WAV reading). Plain C, host-side for now; the plugin build is unchanged.
+ANALYSIS_SRC := src/analysis/chordcore.c src/analysis/keys.c src/analysis/notes.c src/analysis/poly.c \
+                src/analysis/hpss.c src/analysis/musicout.c src/tempo.c src/wav_read.c src/analyze.c
+build/native/test_analysis: test/test_analysis.c $(ANALYSIS_SRC)
+	@mkdir -p build/native
+	gcc -std=gnu99 -O2 -Wall -Wextra -Isrc test/test_analysis.c $(ANALYSIS_SRC) -o $@ -lm
+
+analysis-test: build/native/test_analysis
+	cd $(CURDIR) && ./build/native/test_analysis
+.PHONY: analysis-test
+
+build/native/remixer_analyze: tools/remixer_analyze.c $(ANALYSIS_SRC)
+	@mkdir -p build/native
+	gcc -std=gnu99 -O2 -Wall -Wextra -Isrc tools/remixer_analyze.c $(ANALYSIS_SRC) -o $@ -lm
 
 clean:
 	rm -rf build dist

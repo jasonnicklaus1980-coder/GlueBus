@@ -8,10 +8,16 @@ A MPC X plugin for recording, analysing and remixing music. This is the Phase 1 
 
 ## Build and test (no MPC needed)
 ```
-make test        # native build + host test: passthrough, WAV recording, sample accuracy
+make test        # native build + host tests: passthrough, WAV recording, analysis, CLI
 make arm         # ARMv7 build (needs arm-linux-gnueabihf-gcc, or use `make docker`)
 scripts/package.sh   # verified ARM build + install zip in dist/
 ```
+
+## Analysis (Phase 2, host build)
+```
+build/native/remixer_analyze recording.wav outdir   # tempo, key, chords, notes -> outdir/chords.txt, melody.mid
+```
+Tests run on synthetic audio with known answers. See `docs/PHASE2.md` for the results and limits.
 
 ## Install
 See `mpc/INSTALL.md`.
