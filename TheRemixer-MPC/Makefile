@@ -39,7 +39,7 @@ test: native build/native/host_test analysis-test build/native/remixer_analyze
 # Analysis (chords, key, notes, tempo, WAV reading). Plain C, host-side for now; the plugin build is unchanged.
 ANALYSIS_SRC := src/analysis/chordcore.c src/analysis/keys.c src/analysis/notes.c src/analysis/poly.c \
                 src/analysis/hpss.c src/analysis/musicout.c src/analysis/padsend.c \
-                src/tempo.c src/wav_read.c src/analyze.c src/midi_build.c src/pad_layout.c
+                src/tempo.c src/wav_read.c src/analyze.c src/midi_build.c src/pad_layout.c src/pad_play.c
 build/native/test_analysis: test/test_analysis.c $(ANALYSIS_SRC)
 	@mkdir -p build/native
 	gcc -std=gnu99 -O2 -Wall -Wextra -Isrc test/test_analysis.c $(ANALYSIS_SRC) -o $@ -lm
@@ -52,8 +52,12 @@ build/native/test_pad_layout: test/test_pad_layout.c $(ANALYSIS_SRC)
 	@mkdir -p build/native
 	gcc -std=gnu99 -O2 -Wall -Wextra -Isrc test/test_pad_layout.c $(ANALYSIS_SRC) -o $@ -lm
 
-analysis-test: build/native/test_analysis build/native/test_midi build/native/test_pad_layout
-	cd $(CURDIR) && ./build/native/test_analysis && ./build/native/test_midi && ./build/native/test_pad_layout
+build/native/test_pad_play: test/test_pad_play.c $(ANALYSIS_SRC)
+	@mkdir -p build/native
+	gcc -std=gnu99 -O2 -Wall -Wextra -Isrc test/test_pad_play.c $(ANALYSIS_SRC) -o $@ -lm
+
+analysis-test: build/native/test_analysis build/native/test_midi build/native/test_pad_layout build/native/test_pad_play
+	cd $(CURDIR) && ./build/native/test_analysis && ./build/native/test_midi && ./build/native/test_pad_layout && ./build/native/test_pad_play
 .PHONY: analysis-test
 
 build/native/remixer_analyze: tools/remixer_analyze.c $(ANALYSIS_SRC)
