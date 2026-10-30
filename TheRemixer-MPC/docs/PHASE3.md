@@ -7,8 +7,8 @@
   Notes that collapse to nothing on the grid are dropped, as are notes out of MIDI range.
 - `rm_quantize`: snaps a time to the grid at a tempo.
 - `remixer_analyze -t N -i N -g BEATS recording.wav outdir`: writes `chords.txt`, `chords.mid` and `melody.mid`.
-  The MIDI tempo and grid use the detected tempo only when its confidence is 0.5 or higher; otherwise 120 BPM, and the
-  CLI says so.
+  The MIDI tempo and grid use the detected tempo only when its confidence is 0.7 or higher (a click track scores about
+  0.9; a sustained chord progression scores about 0.5). Otherwise they use 120 BPM, and the CLI says so.
 - Pad output: `padsend` (vendored unchanged from Velvet Interpolator) turns a note schedule into VST MIDI events
   sample-accurately. Tested here; not yet wired into the plugin.
 
@@ -31,7 +31,7 @@
 - **Melody notes come from the polyphonic transcriber**, so they inherit its limits on real material (see PHASE2).
 - **Pad mapping** (which notes go to which pad, and how the MPC receives them) is not designed yet; `padsend` only
   produces the events.
-- **Chord MIDI at 120 BPM** when the tempo is not trusted, so the file starts on the grid but is not in the song's tempo.
+- **120 BPM fallback.** When the tempo is not trusted, the MIDI is at 120 BPM whatever the song's real tempo is.
 
 ## Next steps
 1. Decide the pad layout: one chord per pad, or one scale row for a melody, and how the MPC receives the notes.

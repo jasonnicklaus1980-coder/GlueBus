@@ -34,6 +34,10 @@ static int write_midi(const char* path, const vi_note* notes, size_t n, double b
     return rc;
 }
 
+/* Below this tempo confidence there is no clear beat (a sustained chord progression scores about 0.5; a click track
+   about 0.9), so MIDI and the grid use 120 BPM instead. */
+#define TRUST_TEMPO_CONF 0.7
+
 int main(int argc, char** argv) {
     int transpose = 0, inversion = 0;
     double grid = 0.0;
@@ -61,7 +65,7 @@ int main(int argc, char** argv) {
     if (rm_analyze(mono, n, sr, &r) != 0) { fprintf(stderr, "analysis failed\n"); free(mono); return 1; }
     rm_print(&r, stdout);
     /* the MIDI tempo and the grid use the detected tempo only when the estimate is trustworthy */
-    int trust_tempo = r.bpm > 0 && r.bpm_conf >= 0.5;
+    int trust_tempo = r.bpm > 0 && r.bpm_conf >= TRUST_TEMPO_CONF;
     double bpm = trust_tempo ? r.bpm : 120.0;
     if (!trust_tempo) printf("Tempo not trusted (no clear beat): MIDI and grid use 120 BPM\n");
 
