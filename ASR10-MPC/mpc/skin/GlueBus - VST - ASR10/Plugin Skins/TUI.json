@@ -142,7 +142,7 @@
                                         "knobType": "FilmStrip",
                                         "filmStrip": "asr_fader.png",
                                         "numFrames": 127,
-                                        "invert": true,
+                                        "invert": false,
                                         "dragOrientation": "Vertical",
                                         "handleName": "Data"
                                     }
@@ -298,7 +298,7 @@
                                         "knobType": "FilmStrip",
                                         "filmStrip": "asr_fader.png",
                                         "numFrames": 127,
-                                        "invert": true,
+                                        "invert": false,
                                         "dragOrientation": "Vertical",
                                         "handleName": "Data"
                                     }

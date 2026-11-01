@@ -223,7 +223,7 @@ def build():
     for with_value in (False, True):          # Data Entry (the display shows its value) / Volume (value under it)
         parts = [focus((0, 0, sw, sh)),
                  label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case"),
-                 comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": True,
+                 comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": False,
                       "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((sw - FS) // 2, FY, FS, FS)))]
         if with_value: parts.append(label("Value", 18, VFD_COL, (0, FY + FH + 6, sw, 28), case="Upper Case"))
         defs.append({"key": "asrSliderV" if with_value else "asrSlider", "value": definition(
