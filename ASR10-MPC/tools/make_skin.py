@@ -111,6 +111,24 @@ def fader_strip():
     for f in range(FRAMES): strip.paste(fader_frame(f / (FRAMES - 1)), ((FS - FW) // 2, f * FS + (FS - FH) // 2))
     return strip
 
+# The device slices a filmstrip by its image width, so every frame must be square. A slider box is SLIDER_W wide, so
+# the fader's travel (FH tall) is split into PIECES square knobs stacked in the box, each with its own 128-frame strip,
+# the way the SP-1200 sliders are built. Piece i shows rows i*PIECE .. (i+1)*PIECE of every frame.
+PIECE = SLIDER_W                           # square piece: as wide as the box
+PIECES = FH // PIECE                       # 330 / 110 = 3 pieces per slider
+assert PIECE * PIECES == FH
+def fader_pieces():
+    full = fader_strip()
+    x0 = (FS - PIECE) // 2                 # the piece is centred on the fader
+    pieces = []
+    for i in range(PIECES):
+        piece = Image.new("RGBA", (PIECE, PIECE * FRAMES), (0, 0, 0, 0))
+        for f in range(FRAMES):
+            y0 = f * FS + i * PIECE
+            piece.paste(full.crop((x0, y0, x0 + PIECE, y0 + PIECE)), (0, f * PIECE))
+        pieces.append(piece)
+    return pieces
+
 def asr_key(on, w=KEY_W, h=KEY_H):
     """Small grey ASR-10 key with a red LED at its top edge; label is printed on the panel above it."""
     s = SS; im = Image.new("RGBA", (w * s, (h + 10) * s), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
@@ -218,13 +236,17 @@ def build():
     os.makedirs(OUT)
     defs = []
 
-    fader_strip().save(os.path.join(OUT, "asr_fader.png"), optimize=True)
+    for i, piece in enumerate(fader_pieces()):
+        piece.save(os.path.join(OUT, f"asr_fader{i}.png"), optimize=True)
+    if os.path.exists(os.path.join(OUT, "asr_fader.png")): os.remove(os.path.join(OUT, "asr_fader.png"))   # the old single strip
     sw, sh = SLIDER_W, SLIDER_H
     for with_value in (False, True):          # Data Entry (the display shows its value) / Volume (value under it)
         parts = [focus((0, 0, sw, sh)),
-                 label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case"),
-                 comp("Knob", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": "asr_fader.png", "numFrames": NUMFRAMES, "invert": False,
-                      "dragOrientation": "Vertical", "handleName": "Data"}, bounds(((sw - FS) // 2, FY, FS, FS)))]
+                 label("Name", 14, NAME_COL, (0, 4, sw, 22), case="Upper Case")]
+        for i in range(PIECES):
+            parts.append(comp(f"Knob {i + 1}", "Knob", {"version": 5, "knobType": "FilmStrip", "filmStrip": f"asr_fader{i}.png",
+                              "numFrames": NUMFRAMES, "invert": False, "dragOrientation": "Vertical", "handleName": "Data"},
+                              bounds((0, FY + i * PIECE, PIECE, PIECE))))
         if with_value: parts.append(label("Value", 18, VFD_COL, (0, FY + FH + 6, sw, 28), case="Upper Case"))
         defs.append({"key": "asrSliderV" if with_value else "asrSlider", "value": definition(
             [action("Mouse Down", "Q-Link"), action("Double Click", "Show Overlay", "knob overlay"), action("Enter Pressed", "Show Overlay", "knob overlay")],
@@ -282,11 +304,11 @@ def build():
 # ---------- preview (typical state; MPC draws the live labels itself) ----------
 def preview(path):
     im = Image.open(os.path.join(OUT, "asr_bg.png")).convert("RGBA"); d = ImageDraw.Draw(im)
-    strip = Image.open(os.path.join(OUT, "asr_fader.png"))
-    fx0 = (FS - FW) // 2
+    pieces = [Image.open(os.path.join(OUT, f"asr_fader{i}.png")) for i in range(PIECES)]
     for key, lab, show, sx in SLIDERS:
         fr = round((24 / 36 if key == "volume" else 0.5) * (FRAMES - 1))
-        im.alpha_composite(strip.crop((fx0, fr * FS, fx0 + FW, fr * FS + FH)), (int(sx + (SLIDER_W - FW) / 2), SLIDER_Y + FY))
+        for i, strip in enumerate(pieces):
+            im.alpha_composite(strip.crop((0, fr * PIECE, PIECE, fr * PIECE + PIECE)), (int(sx), SLIDER_Y + FY + i * PIECE))
         text_c(d, sx + SLIDER_W / 2, SLIDER_Y + 15, lab, font(13), PRINT)
         if show: text_c(d, sx + SLIDER_W / 2, SLIDER_Y + FY + FH + 20, "+0.0", font(16), VFD_TXT)
     vx, vy, vw, vh = VFD
