@@ -22,7 +22,7 @@ SKIN_DIR = os.path.join(ROOT, "mpc", "skin", "GlueBus - VST - ASR10")
 OUT = os.path.join(SKIN_DIR, "Plugin Skins")
 W, H = 1280, 628
 FRAMES, NUMFRAMES, SS = 128, 127, 4     # filmstrip frames; numFrames = last frame index (stock MPC strips); supersampling
-VERSION = "1.2.0.0"
+VERSION = "1.3.0.0"
 
 FONT_DIRS = ["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu", "/Library/Fonts", "C:/Windows/Fonts"]
 def font(size, name="DejaVuSans-Bold.ttf"):

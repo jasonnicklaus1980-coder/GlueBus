@@ -17,7 +17,7 @@ installer, packaging and skin pipeline (tested on an MPC X with SP1200).
 
 ## Build + install
     make test                         # native x86 build + offline VST2 host test
-    ./scripts/package.sh              # ARM build, ELF checks, dist/ASR10-1.2.0-mpc-armv7.zip
+    ./scripts/package.sh              # ARM build, ELF checks, dist/ASR10-1.3.0-mpc-armv7.zip
     python3 tools/make_skin.py docs/skin-preview.png   # regenerate the skin (needs Pillow)
 Device install (Terminus): `mpc/INSTALL.md`.
 

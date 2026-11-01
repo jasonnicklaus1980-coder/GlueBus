@@ -1,4 +1,4 @@
-# ASR10 1.2.0
+# ASR10 1.3.0
 
 Ensoniq ASR-10 sampler character (16-bit sigma-delta converters at 30 kHz or 44.1 kHz, OTTO interpolated playback,
 4-pole digital filters) as a native MPC OS VST2 insert effect, with an ASR-10 style screen: its two sliders
@@ -10,8 +10,8 @@ plugin host.
 - **Root shell access** (SSH). Installing plugins this way is unofficial: back up first, use at your own risk.
 
 ## Install with Terminus
-1. Upload `ASR10-1.2.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
-2. Save your MPC project, then run: `cd /tmp && unzip -o ASR10-1.2.0-mpc-armv7.zip && sh ASR10-1.2.0/install.sh`
+1. Upload `ASR10-1.3.0-mpc-armv7.zip` to `/tmp` on the MPC (SFTP).
+2. Save your MPC project, then run: `cd /tmp && unzip -o ASR10-1.3.0-mpc-armv7.zip && sh ASR10-1.3.0/install.sh`
 3. Answer `y`. MPC restarts; add **ASR10** as an insert (drum program, pad, track or bus).
 
 The installer checks the device, copies `asr10.so` to `/sdcard/vst/` and the skin to
@@ -56,7 +56,7 @@ Push it up (to Open) when you switch to LP2/LP2 or LP3/LP1.
   Detune Chorus, Dark Detune
 
 ## Uninstall
-`sh /tmp/ASR10-1.2.0/uninstall.sh` (unzip the package to `/tmp` again first) removes the plugin, its skin and the
+`sh /tmp/ASR10-1.3.0/uninstall.sh` (unzip the package to `/tmp` again first) removes the plugin, its skin and the
 plugin-list entry.
 
 ## Troubleshooting

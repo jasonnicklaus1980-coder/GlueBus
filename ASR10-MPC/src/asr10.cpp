@@ -510,7 +510,7 @@ intptr_t dispatcher (AEffect* e, int32_t op, int32_t idx, intptr_t val, void* pt
         case effGetEffectName:
         case effGetProductString: copyStr (ptr, "ASR10", 32); return 1;
         case effGetVendorString:  copyStr (ptr, "GlueBus", 32); return 1;
-        case effGetVendorVersion: return 1200;
+        case effGetVendorVersion: return 1300;
         case effGetPlugCategory:  return kPlugCategEffect;
         case effGetVstVersion:    return 2400;
         case effGetTailSize:      return 1;
@@ -545,6 +545,6 @@ ASR_EXPORT AEffect* VSTPluginMain (audioMasterCallback master)
     fx.ioRatio = 1.f;
     fx.object = p;
     fx.uniqueID = ('A' << 24) | ('S' << 16) | ('R' << 8) | '1';   // 'ASR1' = 0x41535231
-    fx.version = 1200;
+    fx.version = 1300;
     return &fx;
 }
