@@ -1,0 +1,23 @@
+name: build-mpc3k
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ARM cross-compiler
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
+      - name: Build native and MPC X binaries
+        run: |
+          make -C c mpc3k
+          make -C c mpcx-arm
+          file c/mpc3k-arm c/mpc3k_mpcx_armhf
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mpc3k-arm
+          path: |
+            c/mpc3k-arm
+            c/mpc3k_mpcx_armhf
+            launcher/mpc3k-run.sh
+            launcher/mpc3k-make-kit.sh
+            QUICKSTART_MPCX.md

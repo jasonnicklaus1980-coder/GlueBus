@@ -1,0 +1,61 @@
+Y0 01  Pad Bank         note 5C
+Y0 02  Full Level       note 40
+Y0 04  7                note 43
+Y0 08  8                note 44
+Y0 10  9                note 45
+Y0 20  Disk             note 4E
+Y0 40  Program/Sounds   note 51
+Y0 80  Mixer/Effects    note 50
+Y1 01  16 Levels        note 41
+Y1 02  Assign           note 79
+Y1 04  4                note 4B
+Y1 08  5                note 4C
+Y1 10  6                note 4D
+Y1 20  MIDI             note 5A
+Y1 40  Song             note 52
+Y1 80  Other            note 5B
+Y2 01  After            note 42
+Y2 02  None             note 00
+Y2 04  1                note 54
+Y2 08  2                note 55
+Y2 10  3                note 56
+Y2 20  Seq Edit         note 57
+Y2 40  Step Edit        note 58
+Y2 80  Edit Loop        note 59
+Y3 01  Soft Key 1       note 46
+Y3 02  Soft Key 2       note 47
+Y3 04  0                note 5E
+Y3 08  .                note 5D
+Y3 10  ENTER            note 5F
+Y3 20  Tempo/Sync       note 4F
+Y3 40  Transpose        note 63
+Y3 80  Simul Seq        note 64
+Y4 01  Soft Key 3       note 48
+Y4 02  Soft Key 4       note 49
+Y4 04  None             note 00
+Y4 08  <<               note 6F
+Y4 10  <                note 70
+Y4 20  Auto Punch       note 61
+Y4 40  Count In         note 69
+Y4 80  Wait For         note 60
+Y5 03  None             note 00
+Y5 04  -                note 6E
+Y5 08  +                note 65
+Y5 10  Left Arrow       note 6A
+Y5 20  Up Arrow         note 62
+Y5 40  Down Arrow       note 6B
+Y5 80  Right Arrow      note 6C
+Y6 07  None             note 00
+Y6 08  Erase            note 66
+Y6 10  Timing Correct   note 67
+Y6 20  Tap Tempo        note 68
+Y6 40  Main Screen      note 6D
+Y6 80  Help             note 4A
+Y7 01  Stop             note 76
+Y7 02  Play             note 77
+Y7 04  Play Start       note 78
+Y7 08  Rec              note 74
+Y7 10  Over Dub         note 75
+Y7 20  Locate           note 71
+Y7 40  >                note 72
+Y7 80  >>               note 73
